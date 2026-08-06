@@ -101,8 +101,9 @@ export default function Home() {
   return (
     <main>
       <header className="topbar">
-        <a className="logo" href="#top" aria-label="한끼 아마야구 홈">
-          <span>한끼</span> 아마야구
+        <a className="brand-lockup" href="#top" aria-label="야마ON 홈">
+          <img src="/yamaon-logo.png" alt="" />
+          <span><b>야마ON</b><small>BY 한끼방패</small></span>
         </a>
         <nav aria-label="주요 메뉴">
           <a href="#schools">학교 찾기</a>
@@ -114,8 +115,8 @@ export default function Home() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="kicker"><span /> KOREA HIGH SCHOOL BASEBALL</p>
-          <h1>오늘의 선수를<br /><em>내일의 이름</em>으로.</h1>
+          <p className="kicker"><span /> AMATEUR BASEBALL ON AIR</p>
+          <h1>야구의 모든 순간,<br /><em>지금 ON.</em></h1>
           <p className="hero-lead">학교와 선수, 기록과 영상을 한곳에서.<br />고교야구의 모든 순간을 선명하게 남깁니다.</p>
           <div className="hero-search">
             <span aria-hidden="true">⌕</span>
@@ -137,17 +138,11 @@ export default function Home() {
 
         <div className="hero-visual" aria-label="이번 주 주목할 선수 샘플">
           <div className="score-grid" />
-          <div className="baseball-mark"><i /><i /><i /><i /></div>
-          <article className="spotlight-card">
-            <div className="spotlight-top"><span>WEEKLY SPOTLIGHT</span><b>01</b></div>
-            <div className="jersey"><span>SEOUL</span><strong>18</strong></div>
-            <div className="spotlight-bottom">
-              <div><small>서울고 · 우완 투수</small><h2>김○현</h2></div>
-              <strong>148<small> km/h</small></strong>
-            </div>
-            <span className="sample-tag">샘플 프로필</span>
-          </article>
-          <p className="vertical-label">PLAYER · TEAM · RECORD · FILM</p>
+          <div className="broadcast-corner corner-a" />
+          <div className="broadcast-corner corner-b" />
+          <span className="on-air"><i /> ON AIR</span>
+          <img className="hero-logo-image" src="/yamaon-logo.png" alt="야마ON by 한끼방패" />
+          <div className="ticker"><b>LIVE</b><span>PLAYER · TEAM · RECORD · FILM · HIGH SCHOOL BASEBALL</span></div>
         </div>
       </section>
 
@@ -224,7 +219,7 @@ export default function Home() {
       </section>
 
       <footer>
-        <a className="logo" href="#top"><span>한끼</span> 아마야구</a>
+        <a className="brand-lockup footer-brand" href="#top"><img src="/yamaon-logo.png" alt="" /><span><b>야마ON</b><small>BY 한끼방패</small></span></a>
         <p>고교야구 선수와 팀의 오늘을 기록합니다.</p>
         <small>© 2026 HANKKI AMATEUR BASEBALL</small>
       </footer>
