@@ -111,6 +111,15 @@ const schools: School[] = [
   { name: "예일메디텍고", region: "경북", players: 30, coach: "권시훈" },
   { name: "의성고", region: "경북", players: 44, coach: "김형근" },
   { name: "포항제철고", region: "경북", players: 31, coach: "김백만" },
+  { name: "거제BC(U-18)", region: "경남", players: 24, coach: "권두조", featured: true },
+  { name: "금남고", region: "경남", players: 22, coach: "전봉석" },
+  { name: "김해고", region: "경남", players: 41, coach: "오성민" },
+  { name: "마산고", region: "경남", players: 52, coach: "고윤성" },
+  { name: "마산용마고", region: "경남", players: 44, coach: "진민수" },
+  { name: "물금고", region: "경남", players: 41, coach: "강승영" },
+  { name: "밀양BC(U-18)", region: "경남", players: 19, coach: "최동욱" },
+  { name: "야로고BC", region: "경남", players: 19, coach: "장인욱" },
+  { name: "창원공고야구단", region: "경남", players: 35, coach: "차정민" },
   { name: "광주동성고", region: "광주", players: 32, coach: "김재덕" },
   { name: "광주제일고", region: "광주", players: 38, coach: "조윤채", featured: true },
   { name: "광주진흥고", region: "광주", players: 38, coach: "김인호" },
@@ -149,7 +158,7 @@ const players: Player[] = [
   },
 ];
 
-const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남", "경북"];
+const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남"];
 
 export default function Home() {
   const [query, setQuery] = useState("");
