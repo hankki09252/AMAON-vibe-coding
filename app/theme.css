@@ -55,6 +55,7 @@ body { background: var(--brand-black); color: #111; }
 }
 .kicker span { background: var(--brand-orange); }
 .hero h1 { text-transform: uppercase; font-style: italic; text-shadow: 4px 4px 0 rgba(255, 105, 0, .15); }
+.hero-title-line { display: inline-block; white-space: nowrap; font-size: clamp(34px, 3.6vw, 58px); letter-spacing: -.07em; }
 .hero h1 em { color: var(--brand-orange); }
 .hero-lead { color: #bdbdbd; }
 .hero-search { border: 2px solid white; transform: skew(-3deg); }
@@ -202,6 +203,7 @@ footer p, footer small { color: #777; }
   .hero-logo-image { width: 78%; }
   .ticker { bottom: 25px; }
   .hero-copy:before { font-size: 70px; }
+  .hero-title-line { font-size: clamp(32px, 7vw, 52px); }
   .gd-section { padding: 78px 22px; }
   .gd-heading { align-items: start; }
   .gd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -217,6 +219,7 @@ footer p, footer small { color: #777; }
   .on-air { top: 20px; right: 20px; }
   .broadcast-corner { width: 90px; height: 45px; }
   .hero-logo-image { width: 88%; }
+  .hero-title-line { font-size: clamp(30px, 9.6vw, 40px); }
   .gd-heading { display: block; }
   .gd-heading h2 { font-size: 39px; letter-spacing: -2.5px; }
   .gd-summary { margin-top: 22px; text-align: left; }

@@ -209,7 +209,7 @@ export default function Home() {
       <section className="hero" id="top">
         <div className="hero-copy">
           <p className="kicker"><span /> AMATEUR BASEBALL ON AIR</p>
-          <h1>야구의 모든 순간,<br /><em>지금 ON.</em></h1>
+          <h1><span className="hero-title-line">야구의 모든 순간,</span><br /><em>지금 ON.</em></h1>
           <p className="hero-lead">학교와 선수, 기록과 영상을 한곳에서.<br />고교야구의 모든 순간을 선명하게 남깁니다.</p>
           <div className="hero-search">
             <span aria-hidden="true">⌕</span>
