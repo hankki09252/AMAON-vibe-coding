@@ -63,7 +63,9 @@ const schools: School[] = [
   { name: "대구고", region: "대구", players: 59, coach: "손경호" },
   { name: "대구북구SC(U-18)", region: "대구", players: 25, coach: "이시원" },
   { name: "대구상원고", region: "대구", players: 63, coach: "김승관", featured: true },
-  { name: "광주제일고", region: "광주", players: 38, coach: "조윤채" },
+  { name: "광주동성고", region: "광주", players: 32, coach: "김재덕" },
+  { name: "광주제일고", region: "광주", players: 38, coach: "조윤채", featured: true },
+  { name: "광주진흥고", region: "광주", players: 38, coach: "김인호" },
 ];
 
 const players: Player[] = [
