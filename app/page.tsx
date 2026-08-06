@@ -255,10 +255,13 @@ export default function Home() {
             <article className="school-row" key={school.name}>
               <span className="school-index">{String(index + 1).padStart(2, "0")}</span>
               <div className="school-emblem" aria-hidden="true">{school.name.slice(0, 1)}</div>
-              <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>
+              {school.name === "GD챌린저스BC(U-18)" ? (
+                <button className="school-name school-name-link" onClick={() => document.getElementById("gd-roster")?.scrollIntoView({ behavior: "smooth" })}>
+                  <h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p>
+                </button>
+              ) : <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>}
               {school.featured && <span className="verified">✓ 정보 확인</span>}
               <div className="roster"><strong>{school.players}</strong><span>명</span></div>
-              <button className="arrow-button" aria-label={`${school.name} 상세 보기`} onClick={() => school.name === "GD챌린저스BC(U-18)" && document.getElementById("gd-roster")?.scrollIntoView({ behavior: "smooth" })}>↗</button>
             </article>
           )) : <div className="empty">조건에 맞는 학교가 없습니다. 다른 지역이나 검색어를 선택해 주세요.</div>}
         </div>

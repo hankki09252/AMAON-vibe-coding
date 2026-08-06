@@ -88,6 +88,10 @@ body { background: var(--brand-black); color: #111; }
 .school-emblem { border-radius: 3px; background: #050505; color: var(--brand-orange); transform: rotate(45deg); }
 .school-emblem::first-letter { transform: rotate(-45deg); }
 .verified { background: #111; color: var(--brand-orange); border-left: 3px solid var(--brand-orange); }
+.school-row { grid-template-columns: 42px 48px minmax(200px, 1fr) auto 80px; }
+.school-name-link { width: fit-content; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.school-name-link h3 { text-decoration: underline; text-decoration-color: var(--brand-orange); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.school-name-link:hover h3, .school-name-link:focus-visible h3 { color: var(--brand-orange); }
 
 .player-section { background: #050505; border-top: 1px solid #333; border-bottom: 1px solid #333; }
 .player-card { background: #111; color: white; border: 1px solid #333; box-shadow: 8px 8px 0 #242424; }
@@ -199,6 +203,7 @@ footer p, footer small { color: #777; }
   .gd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gd-portrait { height: 190px; }
   .gd-modal { padding: 30px 22px; }
+  .school-row { grid-template-columns: 34px 40px minmax(120px, 1fr) 52px; }
 }
 
 @media (max-width: 420px) {
@@ -220,4 +225,5 @@ footer p, footer small { color: #777; }
   .gd-profile-stats > div { min-height: 68px; border-right: 0; border-bottom: 1px solid #333; }
   .gd-media-head { align-items: flex-start; flex-direction: column; }
   .gd-media-grid { grid-template-columns: 1fr; }
+  .school-row { grid-template-columns: 30px 1fr 47px; }
 }
