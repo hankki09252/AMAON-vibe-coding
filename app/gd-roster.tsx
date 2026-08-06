@@ -20,7 +20,17 @@ type MediaItem = {
   contentType: string;
   url: string;
   uploadedAt: string;
+  category: MediaCategory;
 };
+
+type MediaCategory = "pitching" | "batting" | "fielding" | "photo";
+
+const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
+  { id: "pitching", label: "투구영상", shortLabel: "PITCHING" },
+  { id: "batting", label: "타격영상", shortLabel: "BATTING" },
+  { id: "fielding", label: "수비영상", shortLabel: "FIELDING" },
+  { id: "photo", label: "사진", shortLabel: "PHOTO" },
+];
 
 const gdPlayers: GdPlayer[] = [
   { id: "13", number: "13", name: "기재혁", position: "외야수", grade: "1학년", height: 182, weight: 80, batsThrows: "우투우타" },
@@ -51,6 +61,7 @@ export default function GdRoster() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("photo");
 
   async function loadMedia() {
     setLoading(true);
@@ -84,6 +95,7 @@ export default function GdRoster() {
       for (const file of files) {
         const form = new FormData();
         form.append("playerId", selected.id);
+        form.append("category", selectedCategory);
         form.append("file", file);
         const response = await fetch("/api/media", { method: "POST", body: form });
         if (!response.ok) {
@@ -91,7 +103,8 @@ export default function GdRoster() {
           throw new Error(data?.error ?? `${file.name} 업로드에 실패했습니다.`);
         }
       }
-      setNotice(`${files.length}개 파일을 업로드했습니다.`);
+      const categoryLabel = mediaCategories.find((category) => category.id === selectedCategory)?.label;
+      setNotice(`${categoryLabel}에 ${files.length}개 파일을 업로드했습니다.`);
       await loadMedia();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "업로드 중 오류가 발생했습니다.");
@@ -102,8 +115,8 @@ export default function GdRoster() {
   }
 
   const selectedMedia = selected ? mediaByPlayer.get(selected.id) ?? [] : [];
-  const selectedImages = selectedMedia.filter((item) => item.type === "image");
-  const selectedVideos = selectedMedia.filter((item) => item.type === "video");
+  const selectedCategoryMedia = selectedMedia.filter((item) => item.category === selectedCategory);
+  const activeCategory = mediaCategories.find((category) => category.id === selectedCategory) ?? mediaCategories[0];
 
   return (
     <section className="gd-section" id="gd-roster">
@@ -121,7 +134,7 @@ export default function GdRoster() {
           const playerMedia = mediaByPlayer.get(player.id) ?? [];
           const portrait = playerMedia.find((item) => item.type === "image");
           return (
-            <button className="gd-card" key={player.id} onClick={() => { setSelected(player); setNotice(""); }}>
+            <button className="gd-card" key={player.id} onClick={() => { setSelected(player); setSelectedCategory("photo"); setNotice(""); }}>
               <div className="gd-portrait">
                 {portrait ? <img src={portrait.url} alt={`${player.name} 선수`} /> : <span aria-hidden="true"><b>{player.number}</b><i>GD</i></span>}
                 <small>{playerMedia.length ? `MEDIA ${playerMedia.length}` : "PHOTO READY"}</small>
@@ -152,12 +165,18 @@ export default function GdRoster() {
               <div><span>THROW / BAT</span><strong>{selected.batsThrows}</strong></div>
             </div>
 
-            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>선수별 미디어는 이 프로필에 저장됩니다.</p></div><label className={uploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? "업로드 중…" : "+ 사진·영상 올리기"}</span></label></div>
+            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div><label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? "업로드 중…" : `+ ${activeCategory.label} 올리기`}</span></label></div>
+            <div className="gd-media-categories" aria-label="미디어 카테고리">
+              {mediaCategories.map((category) => (
+                <button key={category.id} className={selectedCategory === category.id ? "active" : ""} onClick={() => { setSelectedCategory(category.id); setNotice(""); }}>
+                  <span>{category.label}</span><small>{selectedMedia.filter((item) => item.category === category.id).length}</small>
+                </button>
+              ))}
+            </div>
             {notice && <p className="gd-notice">{notice}</p>}
             <div className="gd-media-grid">
-              {selectedImages.map((item) => <figure key={item.key}><img src={item.url} alt={`${selected.name} 업로드 사진`} /><figcaption>PHOTO</figcaption></figure>)}
-              {selectedVideos.map((item) => <figure key={item.key}><video src={item.url} controls preload="metadata" /><figcaption>GAME FILM</figcaption></figure>)}
-              {!selectedMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 미디어가 없습니다.</strong><p>JPG·PNG·WEBP 사진 또는 MP4·WEBM·MOV 영상을 올려주세요.</p></div>}
+              {selectedCategoryMedia.map((item) => <figure key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selected.name} 업로드 사진`} /> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}</figcaption></figure>)}
+              {!selectedCategoryMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 {activeCategory.label}이 없습니다.</strong><p>{selectedCategory === "photo" ? "JPG·PNG·WEBP 사진을 올려주세요." : "MP4·WEBM·MOV 영상을 올려주세요."}</p></div>}
             </div>
             <p className="gd-rights">선수·보호자 동의와 촬영물 사용 권리가 확인된 파일만 올려주세요. 파일당 최대 100MB입니다.</p>
           </section>
