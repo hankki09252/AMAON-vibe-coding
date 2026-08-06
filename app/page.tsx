@@ -52,8 +52,11 @@ const schools: School[] = [
   { name: "야탑고", region: "경기", players: 38, coach: "최경훈", featured: true },
   { name: "유신고", region: "경기", players: 42, coach: "홍석무" },
   { name: "인천고", region: "인천", players: 46, coach: "계기범" },
-  { name: "경남고", region: "부산", players: 53, coach: "전광열" },
-  { name: "부산고", region: "부산", players: 45, coach: "박계원" },
+  { name: "개성고", region: "부산", players: 43, coach: "홍민국" },
+  { name: "경남고", region: "부산", players: 53, coach: "전광열", featured: true },
+  { name: "부경고", region: "부산", players: 38, coach: "채종범" },
+  { name: "부산고", region: "부산", players: 45, coach: "박계원", featured: true },
+  { name: "부산공업고", region: "부산", players: 41, coach: "이승학" },
   { name: "대구상원고", region: "대구", players: 63, coach: "김승관" },
   { name: "광주제일고", region: "광주", players: 38, coach: "조윤채" },
 ];
