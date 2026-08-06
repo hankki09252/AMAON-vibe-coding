@@ -103,6 +103,9 @@ const schools: School[] = [
   { name: "전북인공지능고", region: "전북", players: 28, coach: "길휘종" },
   { name: "전주고", region: "전북", players: 43, coach: "최대근" },
   { name: "한국마사고BC", region: "전북", players: 23, coach: "박대희" },
+  { name: "광남고BC", region: "전남", players: 28, coach: "허세환", featured: true },
+  { name: "순천효천고BC", region: "전남", players: 47, coach: "정진" },
+  { name: "화순고", region: "전남", players: 31, coach: "최길환" },
   { name: "광주동성고", region: "광주", players: 32, coach: "김재덕" },
   { name: "광주제일고", region: "광주", players: 38, coach: "조윤채", featured: true },
   { name: "광주진흥고", region: "광주", players: 38, coach: "김인호" },
@@ -141,7 +144,7 @@ const players: Player[] = [
   },
 ];
 
-const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북"];
+const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남"];
 
 export default function Home() {
   const [query, setQuery] = useState("");
