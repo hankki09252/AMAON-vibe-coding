@@ -90,7 +90,6 @@ body { background: var(--brand-black); color: #111; }
 .verified { background: #111; color: var(--brand-orange); border-left: 3px solid var(--brand-orange); }
 .school-row { grid-template-columns: 42px 48px minmax(200px, 1fr) auto 80px; }
 .school-name-link { width: fit-content; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.school-name-link h3 { text-decoration: underline; text-decoration-color: var(--brand-orange); text-decoration-thickness: 2px; text-underline-offset: 5px; }
 .school-name-link:hover h3, .school-name-link:focus-visible h3 { color: var(--brand-orange); }
 
 .player-section { background: #050505; border-top: 1px solid #333; border-bottom: 1px solid #333; }
