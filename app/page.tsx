@@ -92,6 +92,8 @@ const schools: School[] = [
   { name: "상동고", region: "강원", players: 44, coach: "백재호" },
   { name: "설악고", region: "강원", players: 31, coach: "윤형국" },
   { name: "원주고", region: "강원", players: 27, coach: "정성민" },
+  { name: "세광고", region: "충북", players: 48, coach: "방진호", featured: true },
+  { name: "청주고", region: "충북", players: 40, coach: "김인철" },
   { name: "광주동성고", region: "광주", players: 32, coach: "김재덕" },
   { name: "광주제일고", region: "광주", players: 38, coach: "조윤채", featured: true },
   { name: "광주진흥고", region: "광주", players: 38, coach: "김인호" },
@@ -130,7 +132,7 @@ const players: Player[] = [
   },
 ];
 
-const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원"];
+const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북"];
 
 export default function Home() {
   const [query, setQuery] = useState("");
