@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import GdRoster from "./gd-roster";
 
 type School = {
   name: string;
@@ -22,7 +23,7 @@ type Player = {
 };
 
 const schools: School[] = [
-  { name: "GD챌린저스BC(U-18)", region: "서울", players: 20, coach: "송구홍" },
+  { name: "GD챌린저스BC(U-18)", region: "서울", players: 20, coach: "송구홍", featured: true },
   { name: "경기고", region: "서울", players: 60, coach: "오규택", featured: true },
   { name: "경기상업고", region: "서울", players: 53, coach: "최덕현" },
   { name: "경동고", region: "서울", players: 55, coach: "조정권" },
@@ -198,6 +199,7 @@ export default function Home() {
         </a>
         <nav aria-label="주요 메뉴">
           <a href="#schools">학교 찾기</a>
+          <a href="#gd-roster">GD 선수단</a>
           <a href="#players">선수 프로필</a>
           <a href="#how">등록 안내</a>
         </nav>
@@ -256,12 +258,14 @@ export default function Home() {
               <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>
               {school.featured && <span className="verified">✓ 정보 확인</span>}
               <div className="roster"><strong>{school.players}</strong><span>명</span></div>
-              <button className="arrow-button" aria-label={`${school.name} 상세 보기`}>↗</button>
+              <button className="arrow-button" aria-label={`${school.name} 상세 보기`} onClick={() => school.name === "GD챌린저스BC(U-18)" && document.getElementById("gd-roster")?.scrollIntoView({ behavior: "smooth" })}>↗</button>
             </article>
           )) : <div className="empty">조건에 맞는 학교가 없습니다. 다른 지역이나 검색어를 선택해 주세요.</div>}
         </div>
         <p className="data-note">학교·선수 수는 제공하신 2026년 자료를 바탕으로 구성한 시안 데이터입니다.</p>
       </section>
+
+      <GdRoster />
 
       <section className="player-section" id="players">
         <div className="section-title light">
