@@ -26,10 +26,10 @@ type MediaItem = {
 type MediaCategory = "pitching" | "batting" | "fielding" | "photo";
 
 const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
-  { id: "pitching", label: "투구영상", shortLabel: "PITCHING" },
+  { id: "photo", label: "사진", shortLabel: "PHOTO" },
   { id: "batting", label: "타격영상", shortLabel: "BATTING" },
   { id: "fielding", label: "수비영상", shortLabel: "FIELDING" },
-  { id: "photo", label: "사진", shortLabel: "PHOTO" },
+  { id: "pitching", label: "투구영상", shortLabel: "PITCHING" },
 ];
 
 const gdPlayers: GdPlayer[] = [
