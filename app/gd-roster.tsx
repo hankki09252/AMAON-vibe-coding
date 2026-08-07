@@ -6,6 +6,7 @@ export type TeamPlayer = {
   id: string;
   number: string;
   name: string;
+  year?: number;
   position: string;
   grade: string;
   height: number;
@@ -28,8 +29,8 @@ type MediaStorageCategory = MediaCategory | "profile";
 type LikeState = { count: number; liked: boolean };
 type TeamEmblem = { key: string; url: string; uploadedAt: string };
 type TeamBanner = { key: string; url: string; uploadedAt: string };
-type PlayerProfileOverride = { playerId: string; position: string; height: number; weight: number; introduction: string; strengths: string; aspiration: string; updatedAt: number };
-type ProfileEditForm = { position: string; height: string; weight: string; introduction: string; strengths: string; aspiration: string };
+type PlayerProfileOverride = { playerId: string; year: number; number: string; grade: string; position: string; height: number; weight: number; introduction: string; strengths: string; aspiration: string; updatedAt: number };
+type ProfileEditForm = { year: string; number: string; grade: string; position: string; height: string; weight: string; introduction: string; strengths: string; aspiration: string };
 type OriginSchool = { playerId: string; sequence: number; region: string; school: string; year: number; position: string };
 type OriginSchoolForm = { region: string; school: string; year: string; position: string };
 
@@ -91,7 +92,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [profileOverrides, setProfileOverrides] = useState<Record<string, PlayerProfileOverride>>({});
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState<ProfileEditForm>({ position: "", height: "", weight: "", introduction: "", strengths: "", aspiration: "" });
+  const [profileForm, setProfileForm] = useState<ProfileEditForm>({ year: "2026", number: "", grade: "", position: "", height: "", weight: "", introduction: "", strengths: "", aspiration: "" });
   const [originSchools, setOriginSchools] = useState<Record<string, OriginSchool[]>>({});
   const [editingOrigins, setEditingOrigins] = useState(false);
   const [savingOrigins, setSavingOrigins] = useState(false);
@@ -99,7 +100,15 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   function resolvePlayer(player: TeamPlayer): TeamPlayer {
     const override = profileOverrides[player.id];
-    return override ? { ...player, position: override.position, height: override.height, weight: override.weight } : player;
+    return override ? {
+      ...player,
+      year: override.year || player.year || 2026,
+      number: override.number || player.number,
+      grade: override.grade || player.grade,
+      position: override.position,
+      height: override.height,
+      weight: override.weight,
+    } : { ...player, year: player.year || 2026 };
   }
 
   function getProfileUrl(player: TeamPlayer) {
@@ -319,6 +328,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     const current = resolvePlayer(selected);
     const details = profileOverrides[selected.id];
     setProfileForm({
+      year: String(current.year || 2026),
+      number: current.number,
+      grade: current.grade,
       position: current.position,
       height: current.height > 0 ? String(current.height) : "",
       weight: current.weight > 0 ? String(current.weight) : "",
@@ -341,6 +353,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
         body: JSON.stringify({
           teamId: sectionId,
           playerId: selected.id,
+          year: Number(profileForm.year),
+          number: profileForm.number,
+          grade: profileForm.grade,
           position: profileForm.position,
           height: Number(profileForm.height),
           weight: Number(profileForm.weight),
@@ -363,7 +378,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   async function resetProfileEdit() {
     if (!selected || !profileOverrides[selected.id]) return;
-    if (!window.confirm(`${selected.name} 선수의 키·몸무게·포지션을 최초 등록값으로 되돌릴까요?`)) return;
+    if (!window.confirm(`${selected.name} 선수의 연도·등번호·학년을 포함한 모든 정보를 최초 등록값으로 되돌릴까요?`)) return;
     const response = await fetch(`/api/player-profiles?teamId=${encodeURIComponent(sectionId)}&playerId=${encodeURIComponent(selected.id)}`, { method: "DELETE" });
     if (!response.ok) {
       const data = await response.json().catch(() => null) as { error?: string } | null;
@@ -621,12 +636,12 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <article className="gd-card" key={player.id}>
               <button className="gd-card-main" onClick={() => openPlayer(player)}>
                 <div className="gd-portrait">
-                  {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>{monogram}</i></span>}
+                  {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{displayPlayer.number}</b><i>{monogram}</i></span>}
                   <small>{galleryMediaCount ? `MEDIA ${galleryMediaCount}` : "PHOTO READY"}</small>
                 </div>
                 <div className="gd-card-info">
-                  <p>{displayPlayer.position} · {displayPlayer.grade}</p>
-                  <h3><em>{player.number}.</em> {player.name}</h3>
+                  <p>{displayPlayer.position} · {displayPlayer.grade} · {displayPlayer.year}</p>
+                  <h3><em>{displayPlayer.number}.</em> {player.name}</h3>
                   <dl><div><dt>신체</dt><dd>{displayPlayer.height > 0 && displayPlayer.weight > 0 ? `${displayPlayer.height}cm / ${displayPlayer.weight}kg` : "미정"}</dd></div><div><dt>투타</dt><dd>{displayPlayer.batsThrows}</dd></div></dl>
                   <span>프로필 열기 ↗</span>
                 </div>
@@ -650,7 +665,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <div className="gd-team-banner-overlay" />
               <div className="gd-team-banner-brand">
                 <span className="gd-team-banner-emblem">{emblem ? <img src={emblem.url} alt="" /> : monogram}</span>
-                <div><small>PLAYER TEAM</small><strong>{teamLabel}</strong><b>2026 · U-18 BASEBALL</b></div>
+                <div><small>PLAYER TEAM</small><strong>{teamLabel}</strong><b>{selectedDisplay.year} · U-18 BASEBALL</b></div>
               </div>
               {isAdmin && <div className="gd-team-banner-controls">
                 <label className={bannerUploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadTeamBanner} disabled={bannerUploading} /><span>{bannerUploading ? "배너 적용 중…" : teamBanner ? "같은 팀 전체 배너 교체" : "같은 팀 전체에 배너 적용"}</span></label>
@@ -659,7 +674,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             </div>
             <div className="gd-modal-head">
               <div className="gd-modal-number">{selectedDisplay.number}</div>
-              <div className="gd-modal-identity"><p>{teamLabel} · 2026</p><h2>{selectedDisplay.name}</h2><strong>{selectedDisplay.position} · {selectedDisplay.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button>{isAdmin && <button className="gd-profile-edit-button" onClick={beginProfileEdit}>선수 정보 편집</button>}</div>
+              <div className="gd-modal-identity"><p>{teamLabel} · {selectedDisplay.year}</p><h2>{selectedDisplay.name}</h2><strong>{selectedDisplay.position} · {selectedDisplay.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button>{isAdmin && <button className="gd-profile-edit-button" onClick={beginProfileEdit}>선수 정보 편집</button>}</div>
               <section className="gd-origin-panel">
                 <div className="gd-origin-title"><div><small>PLAYER HISTORY</small><h3>출신학교</h3></div>{isAdmin && <button type="button" onClick={beginOriginEdit}>편집</button>}</div>
                 {selectedOrigins.length ? <div className="gd-origin-table">
@@ -688,6 +703,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             </div>
 
             {isAdmin && editingProfile && <div className="gd-profile-editor">
+              <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-year`}>기준 연도</label><input id={`${sectionId}-${selectedDisplay.id}-year`} type="number" min="2000" max="2100" value={profileForm.year} onChange={(event) => setProfileForm((current) => ({ ...current, year: event.target.value }))} /></div>
+              <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-number`}>등번호</label><input id={`${sectionId}-${selectedDisplay.id}-number`} inputMode="numeric" maxLength={3} value={profileForm.number} onChange={(event) => setProfileForm((current) => ({ ...current, number: event.target.value.replace(/\D/g, "").slice(0, 3) }))} /></div>
+              <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-grade`}>학년</label><select id={`${sectionId}-${selectedDisplay.id}-grade`} value={profileForm.grade} onChange={(event) => setProfileForm((current) => ({ ...current, grade: event.target.value }))}><option>1학년</option><option>2학년</option><option>3학년</option><option>졸업</option></select></div>
               <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-position`}>포지션</label><input id={`${sectionId}-${selectedDisplay.id}-position`} value={profileForm.position} maxLength={20} onChange={(event) => setProfileForm((current) => ({ ...current, position: event.target.value }))} /></div>
               <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-height`}>키(cm)</label><input id={`${sectionId}-${selectedDisplay.id}-height`} type="number" min="100" max="230" value={profileForm.height} onChange={(event) => setProfileForm((current) => ({ ...current, height: event.target.value }))} /></div>
               <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-weight`}>몸무게(kg)</label><input id={`${sectionId}-${selectedDisplay.id}-weight`} type="number" min="30" max="200" value={profileForm.weight} onChange={(event) => setProfileForm((current) => ({ ...current, weight: event.target.value }))} /></div>

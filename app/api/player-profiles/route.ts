@@ -20,7 +20,7 @@ function database() {
 function ensureSchema() {
   if (!schemaReady) {
     schemaReady = database().prepare(
-      "CREATE TABLE IF NOT EXISTS player_profile_overrides (team_id TEXT NOT NULL, player_id TEXT NOT NULL, position TEXT NOT NULL, height INTEGER NOT NULL, weight INTEGER NOT NULL, introduction TEXT NOT NULL DEFAULT '', strengths TEXT NOT NULL DEFAULT '', aspiration TEXT NOT NULL DEFAULT '', updated_at INTEGER NOT NULL, updated_by TEXT NOT NULL, PRIMARY KEY (team_id, player_id))",
+      "CREATE TABLE IF NOT EXISTS player_profile_overrides (team_id TEXT NOT NULL, player_id TEXT NOT NULL, roster_year INTEGER NOT NULL DEFAULT 2026, jersey_number TEXT NOT NULL DEFAULT '', grade TEXT NOT NULL DEFAULT '', position TEXT NOT NULL, height INTEGER NOT NULL, weight INTEGER NOT NULL, introduction TEXT NOT NULL DEFAULT '', strengths TEXT NOT NULL DEFAULT '', aspiration TEXT NOT NULL DEFAULT '', updated_at INTEGER NOT NULL, updated_by TEXT NOT NULL, PRIMARY KEY (team_id, player_id))",
     ).run().then(() => undefined);
   }
   return schemaReady;
@@ -40,11 +40,14 @@ export async function GET(request: Request) {
   if (!isTeamId(teamId)) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
   await ensureSchema();
   const result = await database().prepare(
-    "SELECT player_id, position, height, weight, introduction, strengths, aspiration, updated_at FROM player_profile_overrides WHERE team_id = ?",
-  ).bind(teamId).all<{ player_id: string; position: string; height: number; weight: number; introduction: string; strengths: string; aspiration: string; updated_at: number }>();
+    "SELECT player_id, roster_year, jersey_number, grade, position, height, weight, introduction, strengths, aspiration, updated_at FROM player_profile_overrides WHERE team_id = ?",
+  ).bind(teamId).all<{ player_id: string; roster_year: number; jersey_number: string; grade: string; position: string; height: number; weight: number; introduction: string; strengths: string; aspiration: string; updated_at: number }>();
   return Response.json({
     items: result.results.map((item) => ({
       playerId: item.player_id,
+      year: Number(item.roster_year),
+      number: item.jersey_number,
+      grade: item.grade,
       position: item.position,
       height: Number(item.height),
       weight: Number(item.weight),
@@ -58,9 +61,12 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   if (!isAdminRequest(request)) return Response.json({ error: "운영자와 부운영자만 선수 정보를 수정할 수 있습니다." }, { status: 403 });
-  const body = await request.json() as { teamId?: string; playerId?: string; position?: string; height?: number; weight?: number; introduction?: string; strengths?: string; aspiration?: string };
+  const body = await request.json() as { teamId?: string; playerId?: string; year?: number; number?: string; grade?: string; position?: string; height?: number; weight?: number; introduction?: string; strengths?: string; aspiration?: string };
   const teamId = body.teamId ?? "";
   const playerId = body.playerId ?? "";
+  const year = Number(body.year);
+  const number = (body.number ?? "").trim();
+  const grade = (body.grade ?? "").trim();
   const position = (body.position ?? "").trim();
   const height = Number(body.height);
   const weight = Number(body.weight);
@@ -68,6 +74,9 @@ export async function PUT(request: Request) {
   const strengths = (body.strengths ?? "").trim();
   const aspiration = (body.aspiration ?? "").trim();
   if (!isTeamId(teamId) || !isPlayerId(playerId)) return Response.json({ error: "선수 또는 학교 정보가 올바르지 않습니다." }, { status: 400 });
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return Response.json({ error: "기준 연도는 2000~2100년 사이로 입력해 주세요." }, { status: 400 });
+  if (!/^\d{1,3}$/.test(number)) return Response.json({ error: "등번호는 숫자 1~3자리로 입력해 주세요." }, { status: 400 });
+  if (!/^(1학년|2학년|3학년|졸업)$/.test(grade)) return Response.json({ error: "학년을 올바르게 선택해 주세요." }, { status: 400 });
   if (position.length < 1 || position.length > 20) return Response.json({ error: "포지션은 1~20자로 입력해 주세요." }, { status: 400 });
   if (!Number.isInteger(height) || height < 100 || height > 230) return Response.json({ error: "키는 100~230cm 사이의 정수로 입력해 주세요." }, { status: 400 });
   if (!Number.isInteger(weight) || weight < 30 || weight > 200) return Response.json({ error: "몸무게는 30~200kg 사이의 정수로 입력해 주세요." }, { status: 400 });
@@ -78,9 +87,9 @@ export async function PUT(request: Request) {
   const updatedAt = Date.now();
   const updatedBy = request.headers.get("oai-authenticated-user-email")?.trim().toLowerCase() ?? "admin";
   await database().prepare(
-    "INSERT INTO player_profile_overrides (team_id, player_id, position, height, weight, introduction, strengths, aspiration, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(team_id, player_id) DO UPDATE SET position = excluded.position, height = excluded.height, weight = excluded.weight, introduction = excluded.introduction, strengths = excluded.strengths, aspiration = excluded.aspiration, updated_at = excluded.updated_at, updated_by = excluded.updated_by",
-  ).bind(teamId, playerId, position, height, weight, introduction, strengths, aspiration, updatedAt, updatedBy).run();
-  return Response.json({ playerId, position, height, weight, introduction, strengths, aspiration, updatedAt });
+    "INSERT INTO player_profile_overrides (team_id, player_id, roster_year, jersey_number, grade, position, height, weight, introduction, strengths, aspiration, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(team_id, player_id) DO UPDATE SET roster_year = excluded.roster_year, jersey_number = excluded.jersey_number, grade = excluded.grade, position = excluded.position, height = excluded.height, weight = excluded.weight, introduction = excluded.introduction, strengths = excluded.strengths, aspiration = excluded.aspiration, updated_at = excluded.updated_at, updated_by = excluded.updated_by",
+  ).bind(teamId, playerId, year, number, grade, position, height, weight, introduction, strengths, aspiration, updatedAt, updatedBy).run();
+  return Response.json({ playerId, year, number, grade, position, height, weight, introduction, strengths, aspiration, updatedAt });
 }
 
 export async function DELETE(request: Request) {

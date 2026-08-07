@@ -26,6 +26,9 @@ export const playerProfileOverrides = sqliteTable(
   {
     teamId: text("team_id").notNull(),
     playerId: text("player_id").notNull(),
+    year: integer("roster_year").notNull().default(2026),
+    number: text("jersey_number").notNull().default(""),
+    grade: text("grade").notNull().default(""),
     position: text("position").notNull(),
     height: integer("height").notNull(),
     weight: integer("weight").notNull(),
