@@ -40,7 +40,7 @@ const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: str
   { id: "pitching", label: "투구영상", shortLabel: "PITCHING" },
 ];
 
-const gdPlayers: TeamPlayer[] = [
+export const gdPlayers: TeamPlayer[] = [
   { id: "13", number: "13", name: "기재혁", position: "외야수", grade: "1학년", height: 182, weight: 80, batsThrows: "우투우타" },
   { id: "21", number: "21", name: "김건수", position: "투수", grade: "2학년", height: 187, weight: 92, batsThrows: "좌투좌타" },
   { id: "28", number: "28", name: "김재준", position: "투수", grade: "3학년", height: 175, weight: 82, batsThrows: "우투우타" },

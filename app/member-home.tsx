@@ -3,11 +3,11 @@
 // The signed-in member experience. Authentication is enforced by app/page.tsx.
 
 import { FormEvent, useMemo, useState } from "react";
-import GdRoster from "./gd-roster";
-import GyeonggiRoster from "./gyeonggi-roster";
-import GyeongsangRoster from "./gyeongsang-roster";
-import KyungdongRoster from "./kyungdong-roster";
-import GangneungRoster from "./gangneung-roster";
+import GdRoster, { gdPlayers } from "./gd-roster";
+import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
+import GyeongsangRoster, { players as gyeongsangPlayers } from "./gyeongsang-roster";
+import KyungdongRoster, { players as kyungdongPlayers } from "./kyungdong-roster";
+import GangneungRoster, { players as gangneungPlayers } from "./gangneung-roster";
 
 type School = {
   name: string;
@@ -177,6 +177,14 @@ const rosterSectionBySchool: Record<string, string> = {
   "강릉고": "gangneung-roster",
 };
 
+const playerSearchIndex = [
+  ...gdPlayers.map((player) => ({ player, school: "GD챌린저스BC(U-18)", sectionId: "gd-roster" })),
+  ...gyeonggiPlayers.map((player) => ({ player, school: "경기고", sectionId: "gyeonggi-roster" })),
+  ...gyeongsangPlayers.map((player) => ({ player, school: "경기상업고", sectionId: "gyeongsang-roster" })),
+  ...kyungdongPlayers.map((player) => ({ player, school: "경동고", sectionId: "kyungdong-roster" })),
+  ...gangneungPlayers.map((player) => ({ player, school: "강릉고", sectionId: "gangneung-roster" })),
+];
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("전체");
@@ -194,6 +202,12 @@ export default function Home() {
     });
   }, [query, region]);
 
+  const matchingPlayers = useMemo(() => {
+    const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
+    if (!keyword) return [];
+    return playerSearchIndex.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase().includes(keyword)).slice(0, 8);
+  }, [query]);
+
   function jumpToSection(sectionId: string) {
     const target = document.getElementById(sectionId);
     if (!target) return;
@@ -204,9 +218,25 @@ export default function Home() {
     requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = previousScrollBehavior; });
   }
 
+  function openSearchedPlayer(result: (typeof playerSearchIndex)[number]) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("team", result.sectionId);
+    url.searchParams.set("player", result.player.id);
+    url.hash = result.sectionId;
+    window.location.assign(url.toString());
+  }
+
   function searchSchool(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
+    const exactPlayers = playerSearchIndex.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase() === keyword);
+    const playerMatch = exactPlayers.length === 1 ? exactPlayers[0] : exactPlayers.length === 0 && matchingPlayers.length === 1 ? matchingPlayers[0] : null;
+    if (playerMatch) {
+      openSearchedPlayer(playerMatch);
+      return;
+    }
+    if (exactPlayers.length > 1 || matchingPlayers.length > 1) return;
+
     const exactMatch = schools.find((school) => school.name.replace(/\s+/g, "").toLowerCase() === keyword);
     const match = exactMatch ?? (filteredSchools.length === 1 ? filteredSchools[0] : null);
 
@@ -246,16 +276,29 @@ export default function Home() {
           <p className="kicker"><span /> AMATEUR BASEBALL ON AIR</p>
           <h1><span className="hero-title-line">야구의 모든 순간,</span><br /><em>지금 ON.</em></h1>
           <p className="hero-lead">학교와 선수, 기록과 영상을 한곳에서.<br />고교야구의 모든 순간을 선명하게 남깁니다.</p>
-          <form className="hero-search" onSubmit={searchSchool}>
-            <span aria-hidden="true">⌕</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="학교명, 지역, 감독 검색"
-              aria-label="학교명, 지역, 감독 검색"
-            />
-            <button type="submit">검색</button>
-          </form>
+          <div className="hero-search-wrap">
+            <form className="hero-search" onSubmit={searchSchool}>
+              <span aria-hidden="true">⌕</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="학교명 또는 선수명 검색"
+                aria-label="학교명 또는 선수명 검색"
+              />
+              <button type="submit">검색</button>
+            </form>
+            {matchingPlayers.length > 0 && (
+              <div className="hero-search-results" aria-label="선수 검색 결과">
+                {matchingPlayers.map((result) => (
+                  <button type="button" key={`${result.sectionId}-${result.player.id}`} onClick={() => openSearchedPlayer(result)}>
+                    <strong>{result.player.name}</strong>
+                    <span>{result.school} · {result.player.position} · {result.player.grade}</span>
+                    <em>{result.player.number}</em>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="hero-counts" aria-label="서비스 현황 예시">
             <div><strong>103</strong><span>등록 학교</span></div>
             <div><strong>3,842</strong><span>선수 프로필</span></div>

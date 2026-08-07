@@ -2,7 +2,7 @@
 
 import { TeamPlayer, TeamRoster } from "./gd-roster";
 
-const players: TeamPlayer[] = [
+export const players: TeamPlayer[] = [
   { id: "gs-54", number: "54", name: "강로건", position: "투수", grade: "3학년", height: 190, weight: 97, batsThrows: "좌투좌타" },
   { id: "gs-24", number: "24", name: "강우진", position: "내야수", grade: "1학년", height: 170, weight: 65, batsThrows: "우투우타" },
   { id: "gs-18", number: "18", name: "고경민", position: "투수", grade: "3학년", height: 182, weight: 87, batsThrows: "우투우타" },
