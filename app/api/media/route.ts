@@ -19,8 +19,8 @@ type MultipartUpload = {
 };
 
 type MediaBucket = {
-  list(options: { prefix: string; limit: number }): Promise<{ objects: Array<{ key: string; uploaded: Date; httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }> }>;
-  get(key: string): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string }; size: number; writeHttpMetadata(headers: Headers): void } | null>;
+  list(options: { prefix: string; limit: number; include?: Array<"httpMetadata" | "customMetadata"> }): Promise<{ objects: Array<{ key: string; uploaded: Date; httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }> }>;
+  get(key: string, options?: { range?: Headers }): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string }; size: number; range?: { offset: number; length: number }; writeHttpMetadata(headers: Headers): void } | null>;
   put(key: string, body: ReadableStream, options: { httpMetadata: { contentType: string }; customMetadata: Record<string, string> }): Promise<unknown>;
   createMultipartUpload(key: string, options: { httpMetadata: { contentType: string }; customMetadata: Record<string, string> }): Promise<MultipartUpload>;
   resumeMultipartUpload(key: string, uploadId: string): MultipartUpload;
@@ -43,33 +43,63 @@ function safeExtension(fileName: string) {
   return fileName.includes(".") ? fileName.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8) : "bin";
 }
 
+function contentTypeFromKey(key: string) {
+  const extension = key.split(".").pop()?.toLowerCase();
+  if (extension === "mp4") return "video/mp4";
+  if (extension === "mov") return "video/quicktime";
+  if (extension === "webm") return "video/webm";
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  return "application/octet-stream";
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const key = url.searchParams.get("key");
 
   if (key) {
     if (!key.startsWith("gd/")) return Response.json({ error: "잘못된 파일 경로입니다." }, { status: 400 });
-    const object = await bucket().get(key);
+    const hasRange = request.headers.has("range");
+    const object = await bucket().get(key, hasRange ? { range: request.headers } : undefined);
     if (!object) return Response.json({ error: "파일을 찾을 수 없습니다." }, { status: 404 });
     const headers = new Headers();
     object.writeHttpMetadata(headers);
+    if (!headers.has("content-type")) headers.set("content-type", contentTypeFromKey(key));
     headers.set("cache-control", "public, max-age=3600");
+    headers.set("accept-ranges", "bytes");
+    if (hasRange && object.range) {
+      const end = object.range.offset + object.range.length - 1;
+      headers.set("content-range", `bytes ${object.range.offset}-${end}/${object.size}`);
+      headers.set("content-length", String(object.range.length));
+      return new Response(object.body, { status: 206, headers });
+    }
     headers.set("content-length", String(object.size));
     return new Response(object.body, { headers });
   }
 
   const playerId = url.searchParams.get("playerId");
   if (playerId && !isAllowedPlayerId(playerId)) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
-  const result = await bucket().list({ prefix: playerId ? `gd/${playerId}/` : "gd/", limit: 1000 });
+  const result = await bucket().list({
+    prefix: playerId ? `gd/${playerId}/` : "gd/",
+    limit: 1000,
+    include: ["httpMetadata", "customMetadata"],
+  });
   const items = result.objects.map((object) => {
-    const contentType = object.httpMetadata?.contentType ?? object.customMetadata?.contentType ?? "application/octet-stream";
+    const [, pathPlayerId, pathCategory] = object.key.split("/");
+    const contentType = object.httpMetadata?.contentType ?? object.customMetadata?.contentType ?? contentTypeFromKey(object.key);
+    const category = allowedCategories.has(object.customMetadata?.category ?? "")
+      ? object.customMetadata?.category
+      : allowedCategories.has(pathCategory ?? "")
+        ? pathCategory
+        : contentType.startsWith("image/") ? "photo" : "pitching";
     return {
       key: object.key,
-      playerId: object.customMetadata?.playerId ?? object.key.split("/")[1],
-      type: contentType.startsWith("video/") ? "video" : "image",
+      playerId: object.customMetadata?.playerId ?? pathPlayerId,
+      type: category === "photo" ? "image" : "video",
       contentType,
       uploadedAt: object.uploaded.toISOString(),
-      category: object.customMetadata?.category ?? (contentType.startsWith("image/") ? "photo" : "pitching"),
+      category,
       url: `/api/media?key=${encodeURIComponent(object.key)}`,
     };
   });
