@@ -2,7 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
-type GdPlayer = {
+export type TeamPlayer = {
   id: string;
   number: string;
   name: string;
@@ -32,7 +32,7 @@ const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: str
   { id: "pitching", label: "투구영상", shortLabel: "PITCHING" },
 ];
 
-const gdPlayers: GdPlayer[] = [
+const gdPlayers: TeamPlayer[] = [
   { id: "13", number: "13", name: "기재혁", position: "외야수", grade: "1학년", height: 182, weight: 80, batsThrows: "우투우타" },
   { id: "21", number: "21", name: "김건수", position: "투수", grade: "2학년", height: 187, weight: 92, batsThrows: "좌투좌타" },
   { id: "28", number: "28", name: "김재준", position: "투수", grade: "3학년", height: 175, weight: 82, batsThrows: "우투우타" },
@@ -55,8 +55,18 @@ const gdPlayers: GdPlayer[] = [
   { id: "12", number: "12", name: "최효범", position: "포수", grade: "2학년", height: 180, weight: 80, batsThrows: "우투우타" },
 ];
 
-export default function GdRoster() {
-  const [selected, setSelected] = useState<GdPlayer | null>(null);
+type TeamRosterProps = {
+  sectionId: string;
+  kicker: string;
+  title: string;
+  subtitle: string;
+  teamLabel: string;
+  monogram: string;
+  players: TeamPlayer[];
+};
+
+export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, monogram, players }: TeamRosterProps) {
+  const [selected, setSelected] = useState<TeamPlayer | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -115,7 +125,7 @@ export default function GdRoster() {
     }
   }
 
-  async function uploadPlayerPhoto(player: GdPlayer, event: ChangeEvent<HTMLInputElement>) {
+  async function uploadPlayerPhoto(player: TeamPlayer, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     setUploadingPlayerId(player.id);
@@ -145,18 +155,18 @@ export default function GdRoster() {
   const activeCategory = mediaCategories.find((category) => category.id === selectedCategory) ?? mediaCategories[0];
 
   return (
-    <section className="gd-section" id="gd-roster">
+    <section className="gd-section" id={sectionId}>
       <div className="gd-heading">
         <div>
-          <p className="kicker"><span /> GD CHALLENGERS · U-18</p>
-          <h2>GD챌린저스 선수단</h2>
-          <p>2026 등록 선수 20명 · 감독 송구홍</p>
+          <p className="kicker"><span /> {kicker}</p>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
         </div>
-        <div className="gd-summary"><strong>20</strong><span>PLAYER PROFILES</span></div>
+        <div className="gd-summary"><strong>{players.length}</strong><span>PLAYER PROFILES</span></div>
       </div>
 
       <div className="gd-grid">
-        {gdPlayers.map((player) => {
+        {players.map((player) => {
           const playerMedia = mediaByPlayer.get(player.id) ?? [];
           const portrait = playerMedia
             .filter((item) => item.type === "image" && item.category === "photo")
@@ -165,7 +175,7 @@ export default function GdRoster() {
             <article className="gd-card" key={player.id}>
               <button className="gd-card-main" onClick={() => { setSelected(player); setSelectedCategory("photo"); setNotice(""); }}>
                 <div className="gd-portrait">
-                  {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>GD</i></span>}
+                  {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>{monogram}</i></span>}
                   <small>{playerMedia.length ? `MEDIA ${playerMedia.length}` : "PHOTO READY"}</small>
                 </div>
                 <div className="gd-card-info">
@@ -191,7 +201,7 @@ export default function GdRoster() {
             <button className="modal-close" onClick={() => setSelected(null)} aria-label="닫기">×</button>
             <div className="gd-modal-head">
               <div className="gd-modal-number">{selected.number}</div>
-              <div><p>GD CHALLENGERS · 2026</p><h2>{selected.name}</h2><strong>{selected.position} · {selected.grade}</strong></div>
+              <div><p>{teamLabel} · 2026</p><h2>{selected.name}</h2><strong>{selected.position} · {selected.grade}</strong></div>
             </div>
             <div className="gd-profile-stats">
               <div><span>HEIGHT</span><strong>{selected.height}<small>cm</small></strong></div>
@@ -218,4 +228,8 @@ export default function GdRoster() {
       )}
     </section>
   );
+}
+
+export default function GdRoster() {
+  return <TeamRoster sectionId="gd-roster" kicker="GD CHALLENGERS · U-18" title="GD챌린저스 선수단" subtitle="2026 등록 선수 20명 · 감독 송구홍" teamLabel="GD CHALLENGERS" monogram="GD" players={gdPlayers} />;
 }

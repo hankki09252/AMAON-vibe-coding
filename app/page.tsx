@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import GdRoster from "./gd-roster";
+import GyeonggiRoster from "./gyeonggi-roster";
 
 type School = {
   name: string;
@@ -255,8 +256,8 @@ export default function Home() {
             <article className="school-row" key={school.name}>
               <span className="school-index">{String(index + 1).padStart(2, "0")}</span>
               <div className="school-emblem" aria-hidden="true">{school.name.slice(0, 1)}</div>
-              {school.name === "GD챌린저스BC(U-18)" ? (
-                <button className="school-name school-name-link" onClick={() => document.getElementById("gd-roster")?.scrollIntoView({ behavior: "smooth" })}>
+              {school.name === "GD챌린저스BC(U-18)" || school.name === "경기고" ? (
+                <button className="school-name school-name-link" onClick={() => document.getElementById(school.name === "경기고" ? "gyeonggi-roster" : "gd-roster")?.scrollIntoView({ behavior: "smooth" })}>
                   <h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p>
                 </button>
               ) : <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>}
@@ -269,6 +270,7 @@ export default function Home() {
       </section>
 
       <GdRoster />
+      <GyeonggiRoster />
 
       <section className="player-section" id="players">
         <div className="section-title light">
