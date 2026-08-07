@@ -320,8 +320,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     const details = profileOverrides[selected.id];
     setProfileForm({
       position: current.position,
-      height: String(current.height),
-      weight: String(current.weight),
+      height: current.height > 0 ? String(current.height) : "",
+      weight: current.weight > 0 ? String(current.weight) : "",
       introduction: details?.introduction ?? "",
       strengths: details?.strengths ?? "",
       aspiration: details?.aspiration ?? "",
@@ -627,7 +627,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
                 <div className="gd-card-info">
                   <p>{displayPlayer.position} · {displayPlayer.grade}</p>
                   <h3><em>{player.number}.</em> {player.name}</h3>
-                  <dl><div><dt>신체</dt><dd>{displayPlayer.height}cm / {displayPlayer.weight}kg</dd></div><div><dt>투타</dt><dd>{displayPlayer.batsThrows}</dd></div></dl>
+                  <dl><div><dt>신체</dt><dd>{displayPlayer.height > 0 && displayPlayer.weight > 0 ? `${displayPlayer.height}cm / ${displayPlayer.weight}kg` : "미정"}</dd></div><div><dt>투타</dt><dd>{displayPlayer.batsThrows}</dd></div></dl>
                   <span>프로필 열기 ↗</span>
                 </div>
               </button>
@@ -682,8 +682,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <div className="gd-origin-editor-actions"><button type="button" onClick={() => void saveOriginSchools()} disabled={savingOrigins}>{savingOrigins ? "저장 중…" : "출신학교 저장"}</button><button type="button" className="cancel" onClick={() => setEditingOrigins(false)} disabled={savingOrigins}>취소</button></div>
             </div>}
             <div className="gd-profile-stats">
-              <div><span>HEIGHT</span><strong>{selectedDisplay.height}<small>cm</small></strong></div>
-              <div><span>WEIGHT</span><strong>{selectedDisplay.weight}<small>kg</small></strong></div>
+              <div><span>HEIGHT</span><strong>{selectedDisplay.height > 0 ? <>{selectedDisplay.height}<small>cm</small></> : "미정"}</strong></div>
+              <div><span>WEIGHT</span><strong>{selectedDisplay.weight > 0 ? <>{selectedDisplay.weight}<small>kg</small></> : "미정"}</strong></div>
               <div><span>THROW / BAT</span><strong>{selectedDisplay.batsThrows}</strong></div>
             </div>
 
