@@ -8,6 +8,7 @@ import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
 import GyeongsangRoster, { players as gyeongsangPlayers } from "./gyeongsang-roster";
 import KyungdongRoster, { players as kyungdongPlayers } from "./kyungdong-roster";
 import GangneungRoster, { players as gangneungPlayers } from "./gangneung-roster";
+import DeoksuRoster, { players as deoksuPlayers } from "./deoksu-roster";
 
 type School = {
   name: string;
@@ -175,6 +176,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "경기상업고": "gyeongsang-roster",
   "경동고": "kyungdong-roster",
   "강릉고": "gangneung-roster",
+  "덕수고": "deoksu-roster",
 };
 
 const playerSearchIndex = [
@@ -183,6 +185,7 @@ const playerSearchIndex = [
   ...gyeongsangPlayers.map((player) => ({ player, school: "경기상업고", sectionId: "gyeongsang-roster" })),
   ...kyungdongPlayers.map((player) => ({ player, school: "경동고", sectionId: "kyungdong-roster" })),
   ...gangneungPlayers.map((player) => ({ player, school: "강릉고", sectionId: "gangneung-roster" })),
+  ...deoksuPlayers.map((player) => ({ player, school: "덕수고", sectionId: "deoksu-roster" })),
 ];
 
 export default function Home() {
@@ -350,6 +353,7 @@ export default function Home() {
       <GyeongsangRoster />
       <KyungdongRoster />
       <GangneungRoster />
+      <DeoksuRoster />
 
       <section className="player-section" id="players">
         <div className="section-title light">

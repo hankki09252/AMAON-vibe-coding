@@ -1,0 +1,55 @@
+"use client";
+
+import { TeamPlayer, TeamRoster } from "./gd-roster";
+
+export const players: TeamPlayer[] = [
+  { id: "ds-45", number: "45", name: "권혁준", position: "투수", grade: "2학년", height: 184, weight: 85, batsThrows: "미지정" },
+  { id: "ds-17", number: "17", name: "김규민", position: "투수", grade: "3학년", height: 185, weight: 87, batsThrows: "우투우타" },
+  { id: "ds-12", number: "12", name: "김대승", position: "투수", grade: "3학년", height: 192, weight: 95, batsThrows: "미지정" },
+  { id: "ds-50", number: "50", name: "김민우", position: "투수", grade: "1학년", height: 178, weight: 67, batsThrows: "우투우타" },
+  { id: "ds-19", number: "19", name: "김영빈", position: "투수", grade: "1학년", height: 184, weight: 87, batsThrows: "좌투좌타" },
+  { id: "ds-47", number: "47", name: "김윤오", position: "투수", grade: "2학년", height: 186, weight: 83, batsThrows: "우투우타" },
+  { id: "ds-59", number: "59", name: "김준수", position: "투수", grade: "1학년", height: 181, weight: 82, batsThrows: "좌투좌타" },
+  { id: "ds-41", number: "41", name: "김현재", position: "투수", grade: "1학년", height: 183, weight: 80, batsThrows: "우투우타" },
+  { id: "ds-26", number: "26", name: "류규연", position: "내야수", grade: "1학년", height: 173, weight: 64, batsThrows: "우투좌타" },
+  { id: "ds-61", number: "61", name: "류호빈", position: "투수", grade: "1학년", height: 178, weight: 75, batsThrows: "우투우타" },
+  { id: "ds-18", number: "18", name: "류호연", position: "투수", grade: "3학년", height: 184, weight: 85, batsThrows: "우투우타" },
+  { id: "ds-20", number: "20", name: "박건우", position: "투수", grade: "1학년", height: 186, weight: 73, batsThrows: "우투우타" },
+  { id: "ds-1", number: "1", name: "박종혁", position: "외야수", grade: "3학년", height: 183, weight: 82, batsThrows: "우투좌타" },
+  { id: "ds-11", number: "11", name: "박현민", position: "미지정", grade: "3학년", height: 192, weight: 93, batsThrows: "미지정" },
+  { id: "ds-42", number: "42", name: "설재민", position: "포수", grade: "3학년", height: 184, weight: 86, batsThrows: "우투우타" },
+  { id: "ds-23", number: "23", name: "심건우", position: "내야수", grade: "1학년", height: 184, weight: 73, batsThrows: "우투우타" },
+  { id: "ds-55", number: "55", name: "양영우", position: "외야수", grade: "1학년", height: 181, weight: 81, batsThrows: "우투우타" },
+  { id: "ds-6", number: "6", name: "엄준상", position: "내야수", grade: "3학년", height: 185, weight: 85, batsThrows: "우투우타" },
+  { id: "ds-3", number: "3", name: "우동주", position: "투수", grade: "2학년", height: 179, weight: 82, batsThrows: "우투우타" },
+  { id: "ds-yuminhyeok", number: "미정", name: "유민혁", position: "미지정", grade: "1학년", height: 188, weight: 100, batsThrows: "우투우타" },
+  { id: "ds-2", number: "2", name: "윤정찬", position: "포수", grade: "1학년", height: 185, weight: 85, batsThrows: "우투우타" },
+  { id: "ds-51", number: "51", name: "이건후", position: "외야수", grade: "2학년", height: 189, weight: 88, batsThrows: "우투우타" },
+  { id: "ds-24", number: "24", name: "이서준", position: "외야수", grade: "1학년", height: 181, weight: 74, batsThrows: "좌투좌타" },
+  { id: "ds-54", number: "54", name: "이성윤", position: "포수", grade: "1학년", height: 176, weight: 80, batsThrows: "우투우타" },
+  { id: "ds-16", number: "16", name: "이윤재", position: "내야수", grade: "2학년", height: 186, weight: 78, batsThrows: "우투우타" },
+  { id: "ds-27", number: "27", name: "이윤준", position: "투수", grade: "1학년", height: 181, weight: 76, batsThrows: "우투좌타" },
+  { id: "ds-15", number: "15", name: "이재혁", position: "외야수", grade: "1학년", height: 185, weight: 86, batsThrows: "좌투좌타" },
+  { id: "ds-5", number: "5", name: "이주혁", position: "외야수", grade: "1학년", height: 180, weight: 79, batsThrows: "우투우타" },
+  { id: "ds-10", number: "10", name: "이휘영", position: "투수", grade: "2학년", height: 185, weight: 83, batsThrows: "좌투좌타" },
+  { id: "ds-8", number: "8", name: "장민재", position: "내야수", grade: "1학년", height: 178, weight: 76, batsThrows: "우투좌타" },
+  { id: "ds-32", number: "32", name: "장태윤", position: "포수", grade: "2학년", height: 178, weight: 85, batsThrows: "우투우타" },
+  { id: "ds-56", number: "56", name: "전시우", position: "투수", grade: "2학년", height: 181, weight: 85, batsThrows: "우투우타" },
+  { id: "ds-jeonwoohwan", number: "미정", name: "전우환", position: "내야수", grade: "1학년", height: 178, weight: 70, batsThrows: "우투우타" },
+  { id: "ds-21", number: "21", name: "정규혁", position: "투수", grade: "2학년", height: 185, weight: 90, batsThrows: "우투우타" },
+  { id: "ds-28", number: "28", name: "정주영", position: "투수", grade: "2학년", height: 185, weight: 86, batsThrows: "우투우타" },
+  { id: "ds-49", number: "49", name: "정지우", position: "투수", grade: "2학년", height: 204, weight: 110, batsThrows: "우투우타" },
+  { id: "ds-37", number: "37", name: "정지호", position: "미지정", grade: "1학년", height: 184, weight: 84, batsThrows: "우투우타" },
+  { id: "ds-31", number: "31", name: "조원빈", position: "외야수", grade: "2학년", height: 178, weight: 72, batsThrows: "좌투좌타" },
+  { id: "ds-9", number: "9", name: "진준혁", position: "외야수", grade: "1학년", height: 181, weight: 84, batsThrows: "우투우타" },
+  { id: "ds-57", number: "57", name: "최우완", position: "내야수", grade: "3학년", height: 175, weight: 70, batsThrows: "우투좌타" },
+  { id: "ds-52", number: "52", name: "최혁", position: "2루수", grade: "1학년", height: 175, weight: 67, batsThrows: "우투좌타" },
+  { id: "ds-29", number: "29", name: "최희성", position: "미지정", grade: "3학년", height: 186, weight: 87, batsThrows: "미지정" },
+  { id: "ds-53", number: "53", name: "한태원", position: "내야수", grade: "2학년", height: 179, weight: 76, batsThrows: "우투좌타" },
+  { id: "ds-14", number: "14", name: "홍주용", position: "내야수", grade: "2학년", height: 183, weight: 75, batsThrows: "우투좌타" },
+  { id: "ds-7", number: "7", name: "황성현", position: "외야수", grade: "3학년", height: 188, weight: 110, batsThrows: "우투우타" },
+];
+
+export default function DeoksuRoster() {
+  return <TeamRoster sectionId="deoksu-roster" kicker="DEOKSU HIGH SCHOOL · U-18" title="덕수고 선수단" subtitle="2026 등록 선수 45명 · 감독 정윤진" teamLabel="덕수고" monogram="DS" players={players} />;
+}
