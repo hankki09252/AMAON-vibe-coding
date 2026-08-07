@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { isAdminRequest } from "../../admin";
+import { isAdminRequest, isAuthenticatedRequest } from "../../admin";
 
 const allowedPlayerIds = new Set(["1", "2", "5", "7", "9", "10", "11", "12", "13", "16", "17", "18", "19", "21", "23", "25", "28", "32", "36", "40"]);
 const allowedGyeonggiPlayerIds = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "54", "55", "57", "59", "60", "61", "65", "69", "seogwangeun"].map((id) => `gg-${id}`));
@@ -57,6 +57,7 @@ function contentTypeFromKey(key: string) {
 }
 
 export async function GET(request: Request) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "회원 로그인 후 이용할 수 있습니다." }, { status: 401 });
   const url = new URL(request.url);
   const key = url.searchParams.get("key");
 

@@ -17,3 +17,10 @@ export function adminRole(request: Request) {
 export function isAdminRequest(request: Request) {
   return adminRole(request) !== null;
 }
+
+export function isAuthenticatedRequest(request: Request) {
+  return Boolean(
+    request.headers.get("oai-authenticated-user-id") &&
+    request.headers.get("oai-authenticated-user-email"),
+  );
+}

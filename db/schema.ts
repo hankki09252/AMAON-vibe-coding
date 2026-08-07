@@ -12,3 +12,11 @@ export const mediaLikes = sqliteTable(
     index("idx_media_likes_media_key").on(table.mediaKey),
   ],
 );
+
+export const siteMembers = sqliteTable("site_members", {
+  userId: text("user_id").primaryKey(),
+  email: text("email").notNull(),
+  displayName: text("display_name").notNull(),
+  joinedAt: integer("joined_at").notNull(),
+  lastSeenAt: integer("last_seen_at").notNull(),
+});
