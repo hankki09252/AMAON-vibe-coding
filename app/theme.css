@@ -143,8 +143,10 @@ footer p, footer small { color: #777; }
 .gd-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
 .gd-card { min-width: 0; padding: 0; border: 1px solid #292929; background: #121212; color: white; text-align: left; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; }
 .gd-card:hover { transform: translateY(-5px); border-color: var(--brand-orange); box-shadow: 7px 7px 0 var(--brand-orange); }
-.gd-portrait { position: relative; height: 220px; overflow: hidden; background: radial-gradient(circle at 50% 25%, #4b2105, #080808 63%); }
+.gd-portrait { position: relative; height: auto; aspect-ratio: 173 / 225; overflow: hidden; background: radial-gradient(circle at 50% 25%, #4b2105, #080808 63%); }
 .gd-portrait img { width: 100%; height: 100%; object-fit: cover; }
+.gd-source-photo { position: absolute; inset: 0; display: block; overflow: hidden; background: #eef1f4; }
+.gd-source-photo img { position: absolute; left: var(--photo-left); top: var(--photo-top); width: 1137.57%; max-width: none; height: auto; object-fit: unset; }
 .gd-portrait > span { position: absolute; left: 50%; bottom: -22px; width: 66%; height: 205px; transform: translateX(-50%); display: grid; place-content: center; text-align: center; color: var(--brand-orange); background: linear-gradient(155deg, #292929, #080808); clip-path: polygon(20% 0,38% 10%,62% 10%,80% 0,100% 20%,86% 35%,85% 100%,15% 100%,14% 35%,0 20%); }
 .gd-portrait > span b { font-size: 59px; font-style: italic; line-height: .9; }
 .gd-portrait > span i { margin-top: 6px; color: #777; font-size: 10px; letter-spacing: 3px; }
@@ -207,7 +209,7 @@ footer p, footer small { color: #777; }
   .gd-section { padding: 78px 22px; }
   .gd-heading { align-items: start; }
   .gd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .gd-portrait { height: 190px; }
+  .gd-portrait { height: auto; }
   .gd-modal { padding: 30px 22px; }
   .school-row { grid-template-columns: 34px 40px minmax(120px, 1fr) 52px; }
 }
@@ -224,7 +226,7 @@ footer p, footer small { color: #777; }
   .gd-heading h2 { font-size: 39px; letter-spacing: -2.5px; }
   .gd-summary { margin-top: 22px; text-align: left; }
   .gd-grid { grid-template-columns: 1fr; }
-  .gd-portrait { height: 240px; }
+  .gd-portrait { height: auto; }
   .gd-modal-head { align-items: flex-start; }
   .gd-modal-number { width: 80px; height: 84px; font-size: 34px; }
   .gd-modal-head h2 { font-size: 32px; }
