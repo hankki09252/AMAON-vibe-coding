@@ -169,6 +169,14 @@ const players: Player[] = [
 
 const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주", "세종"];
 
+const rosterSectionBySchool: Record<string, string> = {
+  "GD챌린저스BC(U-18)": "gd-roster",
+  "경기고": "gyeonggi-roster",
+  "경기상업고": "gyeongsang-roster",
+  "경동고": "kyungdong-roster",
+  "강릉고": "gangneung-roster",
+};
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("전체");
@@ -185,6 +193,27 @@ export default function Home() {
       return matchesRegion && matchesQuery;
     });
   }, [query, region]);
+
+  function jumpToSection(sectionId: string) {
+    const target = document.getElementById(sectionId);
+    if (!target) return;
+    const previousScrollBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = "auto";
+    window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, left: 0, behavior: "auto" });
+    window.history.replaceState(null, "", `#${sectionId}`);
+    requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = previousScrollBehavior; });
+  }
+
+  function searchSchool(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
+    const exactMatch = schools.find((school) => school.name.replace(/\s+/g, "").toLowerCase() === keyword);
+    const match = exactMatch ?? (filteredSchools.length === 1 ? filteredSchools[0] : null);
+
+    if (match) setRegion(match.region);
+    const sectionId = match ? rosterSectionBySchool[match.name] : undefined;
+    requestAnimationFrame(() => jumpToSection(sectionId ?? "schools"));
+  }
 
   function openJoin() {
     setSubmitted(false);
@@ -217,17 +246,16 @@ export default function Home() {
           <p className="kicker"><span /> AMATEUR BASEBALL ON AIR</p>
           <h1><span className="hero-title-line">야구의 모든 순간,</span><br /><em>지금 ON.</em></h1>
           <p className="hero-lead">학교와 선수, 기록과 영상을 한곳에서.<br />고교야구의 모든 순간을 선명하게 남깁니다.</p>
-          <div className="hero-search">
+          <form className="hero-search" onSubmit={searchSchool}>
             <span aria-hidden="true">⌕</span>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              onFocus={() => document.getElementById("schools")?.scrollIntoView({ behavior: "smooth" })}
               placeholder="학교명, 지역, 감독 검색"
               aria-label="학교명, 지역, 감독 검색"
             />
-            <a href="#schools">검색</a>
-          </div>
+            <button type="submit">검색</button>
+          </form>
           <div className="hero-counts" aria-label="서비스 현황 예시">
             <div><strong>103</strong><span>등록 학교</span></div>
             <div><strong>3,842</strong><span>선수 프로필</span></div>
@@ -261,8 +289,8 @@ export default function Home() {
             <article className="school-row" key={school.name}>
               <span className="school-index">{String(index + 1).padStart(2, "0")}</span>
               <div className="school-emblem" aria-hidden="true">{school.name.slice(0, 1)}</div>
-              {["GD챌린저스BC(U-18)", "경기고", "경기상업고", "경동고", "강릉고"].includes(school.name) ? (
-                <button className="school-name school-name-link" onClick={() => document.getElementById(school.name === "경기고" ? "gyeonggi-roster" : school.name === "경기상업고" ? "gyeongsang-roster" : school.name === "경동고" ? "kyungdong-roster" : school.name === "강릉고" ? "gangneung-roster" : "gd-roster")?.scrollIntoView({ behavior: "smooth" })}>
+              {rosterSectionBySchool[school.name] ? (
+                <button className="school-name school-name-link" onClick={() => jumpToSection(rosterSectionBySchool[school.name])}>
                   <h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p>
                 </button>
               ) : <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>}
