@@ -198,9 +198,9 @@ export default function Home() {
   return (
     <main>
       <header className="topbar">
-        <a className="brand-lockup" href="#top" aria-label="야마ON 홈">
-          <img src="/yamaon-logo.png" alt="" />
-          <span><b>야마ON</b><small>BY 한끼방패</small></span>
+        <a className="brand-lockup" href="#top" aria-label="아마ON 홈">
+          <span className="amaon-mark" aria-hidden="true"><i>●</i><strong>아마<em>ON</em></strong></span>
+          <span><b>아마ON</b><small>BY 한끼방패</small></span>
         </a>
         <nav aria-label="주요 메뉴">
           <a href="#schools">학교 찾기</a>
@@ -239,7 +239,7 @@ export default function Home() {
           <div className="broadcast-corner corner-a" />
           <div className="broadcast-corner corner-b" />
           <span className="on-air"><i /> ON AIR</span>
-          <img className="hero-logo-image" src="/yamaon-logo.png" alt="야마ON by 한끼방패" />
+          <div className="hero-brand-mark" aria-label="아마ON by 한끼방패"><span className="hero-brand-signal">●</span><strong><span>아마</span><em>ON</em></strong><small>BY 한끼방패</small></div>
           <div className="ticker"><b>LIVE</b><span>PLAYER · TEAM · RECORD · FILM · HIGH SCHOOL BASEBALL</span></div>
         </div>
       </section>
@@ -325,7 +325,7 @@ export default function Home() {
       </section>
 
       <footer>
-        <a className="brand-lockup footer-brand" href="#top"><img src="/yamaon-logo.png" alt="" /><span><b>야마ON</b><small>BY 한끼방패</small></span></a>
+        <a className="brand-lockup footer-brand" href="#top"><span className="amaon-mark" aria-hidden="true"><i>●</i><strong>아마<em>ON</em></strong></span><span><b>아마ON</b><small>BY 한끼방패</small></span></a>
         <p>고교야구 선수와 팀의 오늘을 기록합니다.</p>
         <small>© 2026 HANKKI AMATEUR BASEBALL</small>
       </footer>
