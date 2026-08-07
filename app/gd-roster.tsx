@@ -30,6 +30,8 @@ type TeamEmblem = { key: string; url: string; uploadedAt: string };
 type TeamBanner = { key: string; url: string; uploadedAt: string };
 type PlayerProfileOverride = { playerId: string; position: string; height: number; weight: number; updatedAt: number };
 type ProfileEditForm = { position: string; height: string; weight: string };
+type OriginSchool = { playerId: string; sequence: number; region: string; school: string; year: number; position: string };
+type OriginSchoolForm = { region: string; school: string; year: string; position: string };
 
 const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
   { id: "photo", label: "사진", shortLabel: "PHOTO" },
@@ -90,6 +92,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileEditForm>({ position: "", height: "", weight: "" });
+  const [originSchools, setOriginSchools] = useState<Record<string, OriginSchool[]>>({});
+  const [editingOrigins, setEditingOrigins] = useState(false);
+  const [savingOrigins, setSavingOrigins] = useState(false);
+  const [originForm, setOriginForm] = useState<OriginSchoolForm[]>([]);
 
   function resolvePlayer(player: TeamPlayer): TeamPlayer {
     const override = profileOverrides[player.id];
@@ -107,6 +113,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   function openPlayer(player: TeamPlayer) {
     setSelected(player);
     setEditingProfile(false);
+    setEditingOrigins(false);
     setSelectedCategory("photo");
     setNotice("");
     window.history.replaceState(null, "", getProfileUrl(player));
@@ -115,6 +122,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   function closePlayer() {
     setSelected(null);
     setEditingProfile(false);
+    setEditingOrigins(false);
     const url = new URL(window.location.href);
     if (url.searchParams.get("team") === sectionId) {
       url.searchParams.delete("team");
@@ -202,6 +210,19 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
+  async function loadOriginSchools() {
+    try {
+      const response = await fetch(`/api/player-origins?teamId=${encodeURIComponent(sectionId)}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { items: OriginSchool[] };
+      const grouped: Record<string, OriginSchool[]> = {};
+      data.items.forEach((item) => { grouped[item.playerId] = [...(grouped[item.playerId] ?? []), item]; });
+      setOriginSchools(grouped);
+    } catch {
+      // The profile remains available if origin-school history cannot load.
+    }
+  }
+
   useEffect(() => {
     void loadMedia();
     void loadLikes();
@@ -209,7 +230,53 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     void loadTeamEmblem();
     void loadProfileOverrides();
     void loadTeamBanner();
+    void loadOriginSchools();
   }, [sectionId]);
+
+  function beginOriginEdit() {
+    if (!selectedDisplay) return;
+    const current = originSchools[selectedDisplay.id] ?? [];
+    setOriginForm(current.length
+      ? current.map((item) => ({ region: item.region, school: item.school, year: String(item.year), position: item.position }))
+      : [{ region: "", school: "", year: "2026", position: selectedDisplay.position }]);
+    setEditingOrigins(true);
+    setNotice("");
+  }
+
+  function updateOriginRow(index: number, field: keyof OriginSchoolForm, value: string) {
+    setOriginForm((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item));
+  }
+
+  function addOriginRow() {
+    if (!selectedDisplay || originForm.length >= 10) return;
+    setOriginForm((current) => [...current, { region: "", school: "", year: "2026", position: selectedDisplay.position }]);
+  }
+
+  async function saveOriginSchools() {
+    if (!selectedDisplay) return;
+    setSavingOrigins(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/player-origins", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          teamId: sectionId,
+          playerId: selectedDisplay.id,
+          items: originForm.map((item) => ({ ...item, year: Number(item.year) })),
+        }),
+      });
+      const data = await response.json().catch(() => null) as { playerId?: string; items?: Array<Omit<OriginSchool, "playerId">>; error?: string } | null;
+      if (!response.ok || !data?.playerId || !data.items) throw new Error(data?.error ?? "출신학교를 저장하지 못했습니다.");
+      setOriginSchools((current) => ({ ...current, [data.playerId as string]: data.items!.map((item) => ({ ...item, playerId: data.playerId as string })) }));
+      setEditingOrigins(false);
+      setNotice(`${selectedDisplay.name} 선수의 출신학교를 저장했습니다.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "출신학교 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSavingOrigins(false);
+    }
+  }
 
   async function uploadTeamBanner(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -504,6 +571,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const selectedCategoryMedia = selectedMedia.filter((item) => item.category === selectedCategory);
   const activeCategory = mediaCategories.find((category) => category.id === selectedCategory) ?? mediaCategories[0];
   const selectedDisplay = selected ? resolvePlayer(selected) : null;
+  const selectedOrigins = selectedDisplay ? originSchools[selectedDisplay.id] ?? [] : [];
 
   return (
     <section className="gd-section" id={sectionId}>
@@ -580,7 +648,27 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <div className="gd-modal-head">
               <div className="gd-modal-number">{selectedDisplay.number}</div>
               <div className="gd-modal-identity"><p>{teamLabel} · 2026</p><h2>{selectedDisplay.name}</h2><strong>{selectedDisplay.position} · {selectedDisplay.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button>{isAdmin && <button className="gd-profile-edit-button" onClick={beginProfileEdit}>선수 정보 편집</button>}</div>
+              <section className="gd-origin-panel">
+                <div className="gd-origin-title"><div><small>PLAYER HISTORY</small><h3>출신학교</h3></div>{isAdmin && <button type="button" onClick={beginOriginEdit}>편집</button>}</div>
+                {selectedOrigins.length ? <div className="gd-origin-table">
+                  <div className="head"><span>지역</span><span>학교</span><span>연도</span><span>포지션</span></div>
+                  {selectedOrigins.map((item) => <div className="row" key={`${item.sequence}-${item.school}-${item.year}`}><span>{item.region}</span><strong>{item.school}</strong><span>{item.year}</span><span>{item.position}</span></div>)}
+                </div> : <p className="gd-origin-empty">등록된 출신학교가 없습니다.</p>}
+              </section>
             </div>
+
+            {isAdmin && editingOrigins && <div className="gd-origin-editor">
+              <div className="gd-origin-editor-head"><div><small>ADMIN EDIT</small><h3>출신학교 편집</h3></div><button type="button" onClick={addOriginRow} disabled={originForm.length >= 10}>+ 학교 추가</button></div>
+              {originForm.map((item, index) => <div className="gd-origin-editor-row" key={index}>
+                <label>지역<input value={item.region} maxLength={30} placeholder="예: 서울" onChange={(event) => updateOriginRow(index, "region", event.target.value)} /></label>
+                <label>학교명<input value={item.school} maxLength={60} placeholder="예: ○○중학교" onChange={(event) => updateOriginRow(index, "school", event.target.value)} /></label>
+                <label>연도<input type="number" min="1950" max="2100" value={item.year} onChange={(event) => updateOriginRow(index, "year", event.target.value)} /></label>
+                <label>포지션<input value={item.position} maxLength={20} placeholder="예: 외야수" onChange={(event) => updateOriginRow(index, "position", event.target.value)} /></label>
+                <button type="button" className="remove" aria-label={`${index + 1}번째 출신학교 삭제`} onClick={() => setOriginForm((current) => current.filter((_, itemIndex) => itemIndex !== index))}>삭제</button>
+              </div>)}
+              {!originForm.length && <p className="gd-origin-editor-empty">저장하면 기존 출신학교 이력이 모두 삭제됩니다.</p>}
+              <div className="gd-origin-editor-actions"><button type="button" onClick={() => void saveOriginSchools()} disabled={savingOrigins}>{savingOrigins ? "저장 중…" : "출신학교 저장"}</button><button type="button" className="cancel" onClick={() => setEditingOrigins(false)} disabled={savingOrigins}>취소</button></div>
+            </div>}
             <div className="gd-profile-stats">
               <div><span>HEIGHT</span><strong>{selectedDisplay.height}<small>cm</small></strong></div>
               <div><span>WEIGHT</span><strong>{selectedDisplay.weight}<small>kg</small></strong></div>

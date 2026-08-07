@@ -195,6 +195,31 @@ footer p, footer small { color: #777; }
 .gd-modal-head p { margin: 0 0 5px; color: #7a7a7a; font-size: 8px; font-weight: 900; letter-spacing: 1.4px; }
 .gd-modal-head h2 { margin: 0; font-size: 42px; letter-spacing: -2px; }
 .gd-modal-head strong { font-size: 12px; }
+.gd-origin-panel { flex: 0 0 min(46%, 360px); align-self: stretch; margin-left: auto; padding: 15px; border: 1px solid #d4d0c6; background: #fff; }
+.gd-origin-title { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.gd-origin-title small { display: block; color: #999; font-size: 7px; font-weight: 900; letter-spacing: 1.3px; }
+.gd-origin-title h3 { margin: 2px 0 0; font-size: 18px; }
+.gd-origin-title button { padding: 6px 9px; border: 0; background: var(--brand-orange); color: #080808; font-size: 8px; font-weight: 1000; cursor: pointer; }
+.gd-origin-table { border-top: 3px solid #111; }
+.gd-origin-table .head, .gd-origin-table .row { display: grid; grid-template-columns: .65fr 1.45fr .7fr .75fr; gap: 5px; align-items: center; min-height: 30px; padding: 0 4px; border-bottom: 1px solid #e4e1da; font-size: 8px; text-align: center; }
+.gd-origin-table .head { min-height: 25px; background: #f0efeb; color: #777; font-weight: 900; }
+.gd-origin-table .row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; }
+.gd-origin-empty { display: grid; min-height: 61px; place-items: center; margin: 0; border-top: 3px solid #111; background: #f5f4f0; color: #888; font-size: 9px; }
+.gd-origin-editor { margin: 18px 0; padding: 18px; border: 1px solid #d5d5d5; background: #f5f5f5; }
+.gd-origin-editor-head { display: flex; align-items: end; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
+.gd-origin-editor-head small { color: #999; font-size: 7px; font-weight: 900; letter-spacing: 1.4px; }
+.gd-origin-editor-head h3 { margin: 2px 0 0; font-size: 18px; }
+.gd-origin-editor-head button { padding: 8px 10px; border: 0; background: var(--brand-orange); font-size: 9px; font-weight: 1000; cursor: pointer; }
+.gd-origin-editor-head button:disabled { opacity: .5; cursor: not-allowed; }
+.gd-origin-editor-row { display: grid; grid-template-columns: .8fr 1.5fr .65fr .8fr auto; gap: 8px; align-items: end; margin-top: 8px; }
+.gd-origin-editor-row label { display: block; color: #666; font-size: 8px; font-weight: 900; }
+.gd-origin-editor-row input { width: 100%; height: 36px; margin-top: 5px; padding: 0 9px; border: 1px solid #bbb; background: white; color: #111; font: inherit; font-size: 10px; }
+.gd-origin-editor-row .remove { height: 36px; padding: 0 9px; border: 0; background: #333; color: white; font-size: 8px; font-weight: 900; cursor: pointer; }
+.gd-origin-editor-empty { margin: 0; padding: 15px; border: 1px dashed #bbb; color: #777; font-size: 9px; text-align: center; }
+.gd-origin-editor-actions { display: flex; gap: 7px; margin-top: 14px; }
+.gd-origin-editor-actions button { padding: 9px 13px; border: 0; background: #111; color: white; font-size: 9px; font-weight: 1000; cursor: pointer; }
+.gd-origin-editor-actions button:disabled { opacity: .55; cursor: wait; }
+.gd-origin-editor-actions .cancel { background: #777; }
 .gd-share-link { display: block; margin-top: 12px; padding: 8px 11px; border: 1px solid #111; background: transparent; color: #111; font-size: 10px; font-weight: 900; cursor: pointer; }
 .gd-share-link:hover { background: #111; color: #fff; }
 .gd-profile-edit-button { margin-top: 7px; padding: 8px 11px; border: 0; background: var(--brand-orange); color: #090909; font-size: 10px; font-weight: 1000; cursor: pointer; }
@@ -256,6 +281,10 @@ footer p, footer small { color: #777; }
   .gd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gd-portrait { height: auto; }
   .gd-modal { padding: 30px 22px; }
+  .gd-modal-head { flex-wrap: wrap; }
+  .gd-origin-panel { flex-basis: 100%; width: 100%; margin: 2px 0 0; }
+  .gd-origin-editor-row { grid-template-columns: 1fr 1.5fr; }
+  .gd-origin-editor-row .remove { align-self: end; }
   .gd-modal-team-banner { min-height: 230px; margin: -30px -22px 24px; padding: 26px 22px 68px; }
   .gd-team-banner-emblem { width: 64px; height: 64px; }
   .gd-team-banner-brand { max-width: 100%; }
@@ -280,6 +309,7 @@ footer p, footer small { color: #777; }
   .gd-grid { grid-template-columns: 1fr; }
   .gd-portrait { height: auto; }
   .gd-modal-head { align-items: flex-start; }
+  .gd-origin-editor-row { grid-template-columns: 1fr; }
   .gd-modal-number { width: 80px; height: 84px; font-size: 34px; }
   .gd-modal-head h2 { font-size: 32px; }
   .gd-profile-stats { grid-template-columns: 1fr; }

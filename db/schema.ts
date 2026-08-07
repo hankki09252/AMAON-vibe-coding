@@ -34,3 +34,19 @@ export const playerProfileOverrides = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.teamId, table.playerId] })],
 );
+
+export const playerOriginSchools = sqliteTable(
+  "player_origin_schools",
+  {
+    teamId: text("team_id").notNull(),
+    playerId: text("player_id").notNull(),
+    sequence: integer("sequence").notNull(),
+    region: text("region").notNull(),
+    school: text("school").notNull(),
+    year: integer("year").notNull(),
+    position: text("position").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    updatedBy: text("updated_by").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.teamId, table.playerId, table.sequence] })],
+);

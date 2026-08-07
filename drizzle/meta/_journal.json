@@ -22,6 +22,13 @@
       "when": 1786136756904,
       "tag": "0002_previous_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786138955192,
+      "tag": "0003_lethal_wolf_cub",
+      "breakpoints": true
     }
   ]
 }
