@@ -20,10 +20,11 @@ type MediaItem = {
   contentType: string;
   url: string;
   uploadedAt: string;
-  category: MediaCategory;
+  category: MediaStorageCategory;
 };
 
 type MediaCategory = "pitching" | "batting" | "fielding" | "photo";
+type MediaStorageCategory = MediaCategory | "profile";
 type LikeState = { count: number; liked: boolean };
 
 const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
@@ -275,13 +276,17 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     try {
       const form = new FormData();
       form.append("playerId", player.id);
-      form.append("category", "photo");
+      form.append("category", "profile");
       form.append("file", file);
       const response = await fetch("/api/media", { method: "POST", body: form });
       if (!response.ok) {
         const data = await response.json().catch(() => null) as { error?: string } | null;
         throw new Error(data?.error ?? `${file.name} 업로드에 실패했습니다.`);
       }
+      const previousProfiles = (mediaByPlayer.get(player.id) ?? []).filter((item) => item.category === "profile");
+      await Promise.all(previousProfiles.map((item) =>
+        fetch(`/api/media?action=delete&key=${encodeURIComponent(item.key)}`, { method: "DELETE" }).catch(() => null)
+      ));
       await loadMedia();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "사진 업로드 중 오류가 발생했습니다.");
@@ -332,15 +337,17 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       <div className="gd-grid">
         {players.map((player) => {
           const playerMedia = mediaByPlayer.get(player.id) ?? [];
-          const portrait = playerMedia
-            .filter((item) => item.type === "image" && item.category === "photo")
-            .sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt))[0];
+          const newestFirst = (items: MediaItem[]) => [...items].sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt));
+          const profilePortrait = newestFirst(playerMedia.filter((item) => item.type === "image" && item.category === "profile"))[0];
+          const legacyPortrait = newestFirst(playerMedia.filter((item) => item.type === "image" && item.category === "photo"))[0];
+          const portrait = profilePortrait ?? legacyPortrait;
+          const galleryMediaCount = playerMedia.filter((item) => item.category !== "profile").length;
           return (
             <article className="gd-card" key={player.id}>
               <button className="gd-card-main" onClick={() => openPlayer(player)}>
                 <div className="gd-portrait">
                   {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>{monogram}</i></span>}
-                  <small>{playerMedia.length ? `MEDIA ${playerMedia.length}` : "PHOTO READY"}</small>
+                  <small>{galleryMediaCount ? `MEDIA ${galleryMediaCount}` : "PHOTO READY"}</small>
                 </div>
                 <div className="gd-card-info">
                   <p>{player.position} · {player.grade}</p>
@@ -351,7 +358,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               </button>
               {isAdmin && <label className={`gd-card-upload${uploadingPlayerId === player.id ? " disabled" : ""}`}>
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadPlayerPhoto(player, event)} disabled={uploadingPlayerId !== null} />
-                <span>{uploadingPlayerId === player.id ? "사진 올리는 중…" : portrait ? "사진 교체하기" : "+ 선수 사진 직접 올리기"}</span>
+                <span>{uploadingPlayerId === player.id ? "프로필 사진 올리는 중…" : profilePortrait ? "프로필 사진 교체하기" : "+ 프로필 사진 올리기"}</span>
               </label>}
             </article>
           );

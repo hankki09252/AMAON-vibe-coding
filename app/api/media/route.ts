@@ -8,7 +8,8 @@ const allowedKyungdongPlayerIds = new Set(["1", "2", "3", "4", "6", "7", "9", "1
 const maxFileSize = 100 * 1024 * 1024;
 const maxVideoSize = 2 * 1024 * 1024 * 1024;
 const maxPartSize = 60 * 1024 * 1024;
-const allowedCategories = new Set(["pitching", "batting", "fielding", "photo"]);
+const allowedCategories = new Set(["pitching", "batting", "fielding", "photo", "profile"]);
+const imageCategories = new Set(["photo", "profile"]);
 
 type UploadedPart = { partNumber: number; etag: string };
 type MultipartUpload = {
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
     return {
       key: object.key,
       playerId: object.customMetadata?.playerId ?? pathPlayerId,
-      type: category === "photo" ? "image" : "video",
+      type: imageCategories.has(category ?? "") ? "image" : "video",
       contentType,
       uploadedAt: object.uploaded.toISOString(),
       category,
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
     const contentType = body.contentType ?? "";
     const size = Number(body.size ?? 0);
     if (!isAllowedPlayerId(playerId)) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
-    if (!allowedCategories.has(category) || category === "photo") return Response.json({ error: "영상 카테고리를 선택해 주세요." }, { status: 400 });
+    if (!allowedCategories.has(category) || imageCategories.has(category)) return Response.json({ error: "영상 카테고리를 선택해 주세요." }, { status: 400 });
     if (!contentType.startsWith("video/")) return Response.json({ error: "영상 파일만 올릴 수 있습니다." }, { status: 415 });
     if (!Number.isFinite(size) || size <= 0 || size > maxVideoSize) return Response.json({ error: "영상은 최대 2GB까지 올릴 수 있습니다." }, { status: 413 });
     const extension = safeExtension(body.fileName ?? "video.mp4");
@@ -154,8 +155,8 @@ export async function POST(request: Request) {
   if (!allowedCategories.has(category)) return Response.json({ error: "미디어 카테고리를 선택해 주세요." }, { status: 400 });
   if (!(file instanceof File)) return Response.json({ error: "업로드할 파일을 선택해 주세요." }, { status: 400 });
   if (!(file.type.startsWith("image/") || file.type.startsWith("video/"))) return Response.json({ error: "사진 또는 영상 파일만 올릴 수 있습니다." }, { status: 415 });
-  if (category === "photo" && !file.type.startsWith("image/")) return Response.json({ error: "사진 카테고리에는 이미지 파일만 올릴 수 있습니다." }, { status: 415 });
-  if (category !== "photo" && !file.type.startsWith("video/")) return Response.json({ error: "영상 카테고리에는 영상 파일만 올릴 수 있습니다." }, { status: 415 });
+  if (imageCategories.has(category) && !file.type.startsWith("image/")) return Response.json({ error: "사진 카테고리에는 이미지 파일만 올릴 수 있습니다." }, { status: 415 });
+  if (!imageCategories.has(category) && !file.type.startsWith("video/")) return Response.json({ error: "영상 카테고리에는 영상 파일만 올릴 수 있습니다." }, { status: 415 });
   if (file.size > maxFileSize) return Response.json({ error: "파일은 100MB 이하만 올릴 수 있습니다." }, { status: 413 });
 
   const extension = safeExtension(file.name);
