@@ -144,12 +144,12 @@ footer p, footer small { color: #777; }
 .gd-card { min-width: 0; padding: 0; border: 1px solid #292929; background: #121212; color: white; text-align: left; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; }
 .gd-card:hover { transform: translateY(-5px); border-color: var(--brand-orange); box-shadow: 7px 7px 0 var(--brand-orange); }
 .gd-portrait { position: relative; height: auto; aspect-ratio: 173 / 225; overflow: hidden; background: radial-gradient(circle at 50% 25%, #4b2105, #080808 63%); }
-.gd-portrait img { width: 100%; height: 100%; object-fit: cover; }
+.gd-uploaded-portrait { width: 100%; height: 100%; padding: 8px; object-fit: contain; background: #eef1f4; }
 .gd-source-photo { position: absolute; inset: 0; display: block; overflow: hidden; background: #eef1f4; }
 .gd-source-photo img { position: absolute; left: var(--photo-left); top: var(--photo-top); width: 1137.57%; max-width: none; height: auto; object-fit: unset; }
-.gd-portrait > span { position: absolute; left: 50%; bottom: -22px; width: 66%; height: 205px; transform: translateX(-50%); display: grid; place-content: center; text-align: center; color: var(--brand-orange); background: linear-gradient(155deg, #292929, #080808); clip-path: polygon(20% 0,38% 10%,62% 10%,80% 0,100% 20%,86% 35%,85% 100%,15% 100%,14% 35%,0 20%); }
-.gd-portrait > span b { font-size: 59px; font-style: italic; line-height: .9; }
-.gd-portrait > span i { margin-top: 6px; color: #777; font-size: 10px; letter-spacing: 3px; }
+.gd-jersey-placeholder { position: absolute; left: 50%; bottom: -22px; width: 66%; height: 205px; transform: translateX(-50%); display: grid; place-content: center; text-align: center; color: var(--brand-orange); background: linear-gradient(155deg, #292929, #080808); clip-path: polygon(20% 0,38% 10%,62% 10%,80% 0,100% 20%,86% 35%,85% 100%,15% 100%,14% 35%,0 20%); }
+.gd-jersey-placeholder b { font-size: 59px; font-style: italic; line-height: .9; }
+.gd-jersey-placeholder i { margin-top: 6px; color: #777; font-size: 10px; letter-spacing: 3px; }
 .gd-portrait > small { position: absolute; left: 10px; bottom: 10px; padding: 5px 7px; background: var(--brand-orange); color: #050505; font-size: 8px; font-weight: 1000; letter-spacing: .7px; }
 .gd-card-info { padding: 17px; }
 .gd-card-info p { margin: 0; color: #888; font-size: 10px; }

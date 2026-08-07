@@ -146,7 +146,7 @@ export default function GdRoster() {
           return (
             <button className="gd-card" key={player.id} onClick={() => { setSelected(player); setSelectedCategory("photo"); setNotice(""); }}>
               <div className="gd-portrait">
-                {portrait ? <img src={portrait.url} alt={`${player.name} 선수`} /> : player.sourcePhoto ? <ReferencePhoto player={player} /> : <span aria-hidden="true"><b>{player.number}</b><i>GD</i></span>}
+                {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : player.sourcePhoto ? <ReferencePhoto player={player} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>GD</i></span>}
                 <small>{playerMedia.length ? `MEDIA ${playerMedia.length}` : "PHOTO READY"}</small>
               </div>
               <div className="gd-card-info">
