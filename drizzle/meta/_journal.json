@@ -15,6 +15,13 @@
       "when": 1786106527574,
       "tag": "0001_amusing_sally_floyd",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786136756904,
+      "tag": "0002_previous_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

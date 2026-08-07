@@ -20,3 +20,17 @@ export const siteMembers = sqliteTable("site_members", {
   joinedAt: integer("joined_at").notNull(),
   lastSeenAt: integer("last_seen_at").notNull(),
 });
+
+export const playerProfileOverrides = sqliteTable(
+  "player_profile_overrides",
+  {
+    teamId: text("team_id").notNull(),
+    playerId: text("player_id").notNull(),
+    position: text("position").notNull(),
+    height: integer("height").notNull(),
+    weight: integer("weight").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    updatedBy: text("updated_by").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.teamId, table.playerId] })],
+);

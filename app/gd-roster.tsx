@@ -27,6 +27,8 @@ type MediaCategory = "pitching" | "batting" | "fielding" | "photo";
 type MediaStorageCategory = MediaCategory | "profile";
 type LikeState = { count: number; liked: boolean };
 type TeamEmblem = { key: string; url: string; uploadedAt: string };
+type PlayerProfileOverride = { playerId: string; position: string; height: number; weight: number; updatedAt: number };
+type ProfileEditForm = { position: string; height: string; weight: string };
 
 const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
   { id: "photo", label: "사진", shortLabel: "PHOTO" },
@@ -81,6 +83,15 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [isAdmin, setIsAdmin] = useState(false);
   const [emblem, setEmblem] = useState<TeamEmblem | null>(null);
   const [emblemUploading, setEmblemUploading] = useState(false);
+  const [profileOverrides, setProfileOverrides] = useState<Record<string, PlayerProfileOverride>>({});
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState<ProfileEditForm>({ position: "", height: "", weight: "" });
+
+  function resolvePlayer(player: TeamPlayer): TeamPlayer {
+    const override = profileOverrides[player.id];
+    return override ? { ...player, position: override.position, height: override.height, weight: override.weight } : player;
+  }
 
   function getProfileUrl(player: TeamPlayer) {
     const url = new URL(window.location.origin);
@@ -92,6 +103,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   function openPlayer(player: TeamPlayer) {
     setSelected(player);
+    setEditingProfile(false);
     setSelectedCategory("photo");
     setNotice("");
     window.history.replaceState(null, "", getProfileUrl(player));
@@ -99,6 +111,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   function closePlayer() {
     setSelected(null);
+    setEditingProfile(false);
     const url = new URL(window.location.href);
     if (url.searchParams.get("team") === sectionId) {
       url.searchParams.delete("team");
@@ -164,12 +177,78 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
+  async function loadProfileOverrides() {
+    try {
+      const response = await fetch(`/api/player-profiles?teamId=${encodeURIComponent(sectionId)}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { items: PlayerProfileOverride[] };
+      setProfileOverrides(Object.fromEntries(data.items.map((item) => [item.playerId, item])));
+    } catch {
+      // Original roster information remains available if overrides cannot load.
+    }
+  }
+
   useEffect(() => {
     void loadMedia();
     void loadLikes();
     void loadAdminAccess();
     void loadTeamEmblem();
+    void loadProfileOverrides();
   }, [sectionId]);
+
+  function beginProfileEdit() {
+    if (!selected) return;
+    const current = resolvePlayer(selected);
+    setProfileForm({ position: current.position, height: String(current.height), weight: String(current.weight) });
+    setEditingProfile(true);
+    setNotice("");
+  }
+
+  async function saveProfileEdit() {
+    if (!selected) return;
+    setSavingProfile(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/player-profiles", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          teamId: sectionId,
+          playerId: selected.id,
+          position: profileForm.position,
+          height: Number(profileForm.height),
+          weight: Number(profileForm.weight),
+        }),
+      });
+      const data = await response.json().catch(() => null) as PlayerProfileOverride & { error?: string } | null;
+      if (!response.ok || !data) throw new Error(data?.error ?? "선수 정보를 저장하지 못했습니다.");
+      setProfileOverrides((current) => ({ ...current, [selected.id]: data }));
+      setEditingProfile(false);
+      setNotice(`${selected.name} 선수 정보를 수정했습니다.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "선수 정보 수정 중 오류가 발생했습니다.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function resetProfileEdit() {
+    if (!selected || !profileOverrides[selected.id]) return;
+    if (!window.confirm(`${selected.name} 선수의 키·몸무게·포지션을 최초 등록값으로 되돌릴까요?`)) return;
+    const response = await fetch(`/api/player-profiles?teamId=${encodeURIComponent(sectionId)}&playerId=${encodeURIComponent(selected.id)}`, { method: "DELETE" });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null) as { error?: string } | null;
+      setNotice(data?.error ?? "선수 정보를 되돌리지 못했습니다.");
+      return;
+    }
+    setProfileOverrides((current) => {
+      const next = { ...current };
+      delete next[selected.id];
+      return next;
+    });
+    setEditingProfile(false);
+    setNotice(`${selected.name} 선수 정보를 최초 등록값으로 되돌렸습니다.`);
+  }
 
   async function uploadTeamEmblem(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -373,6 +452,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const selectedMedia = selected ? mediaByPlayer.get(selected.id) ?? [] : [];
   const selectedCategoryMedia = selectedMedia.filter((item) => item.category === selectedCategory);
   const activeCategory = mediaCategories.find((category) => category.id === selectedCategory) ?? mediaCategories[0];
+  const selectedDisplay = selected ? resolvePlayer(selected) : null;
 
   return (
     <section className="gd-section" id={sectionId}>
@@ -399,6 +479,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
       <div className="gd-grid">
         {players.map((player) => {
+          const displayPlayer = resolvePlayer(player);
           const playerMedia = mediaByPlayer.get(player.id) ?? [];
           const newestFirst = (items: MediaItem[]) => [...items].sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt));
           const profilePortrait = newestFirst(playerMedia.filter((item) => item.type === "image" && item.category === "profile"))[0];
@@ -413,9 +494,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
                   <small>{galleryMediaCount ? `MEDIA ${galleryMediaCount}` : "PHOTO READY"}</small>
                 </div>
                 <div className="gd-card-info">
-                  <p>{player.position} · {player.grade}</p>
+                  <p>{displayPlayer.position} · {displayPlayer.grade}</p>
                   <h3><em>{player.number}.</em> {player.name}</h3>
-                  <dl><div><dt>신체</dt><dd>{player.height}cm / {player.weight}kg</dd></div><div><dt>투타</dt><dd>{player.batsThrows}</dd></div></dl>
+                  <dl><div><dt>신체</dt><dd>{displayPlayer.height}cm / {displayPlayer.weight}kg</dd></div><div><dt>투타</dt><dd>{displayPlayer.batsThrows}</dd></div></dl>
                   <span>프로필 열기 ↗</span>
                 </div>
               </button>
@@ -429,19 +510,26 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       </div>
       {loading && <p className="gd-loading">업로드된 사진과 영상을 확인하고 있습니다.</p>}
 
-      {selected && (
+      {selectedDisplay && (
         <div className="modal-backdrop" role="presentation" onMouseDown={closePlayer}>
-          <section className="gd-modal" role="dialog" aria-modal="true" aria-label={`${selected.name} 선수 프로필`} onMouseDown={(event) => event.stopPropagation()}>
+          <section className="gd-modal" role="dialog" aria-modal="true" aria-label={`${selectedDisplay.name} 선수 프로필`} onMouseDown={(event) => event.stopPropagation()}>
             <button className="modal-close" onClick={closePlayer} aria-label="닫기">×</button>
             <div className="gd-modal-head">
-              <div className="gd-modal-number">{selected.number}</div>
-              <div className="gd-modal-identity"><p>{teamLabel} · 2026</p><h2>{selected.name}</h2><strong>{selected.position} · {selected.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button></div>
+              <div className="gd-modal-number">{selectedDisplay.number}</div>
+              <div className="gd-modal-identity"><p>{teamLabel} · 2026</p><h2>{selectedDisplay.name}</h2><strong>{selectedDisplay.position} · {selectedDisplay.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button>{isAdmin && <button className="gd-profile-edit-button" onClick={beginProfileEdit}>선수 정보 편집</button>}</div>
             </div>
             <div className="gd-profile-stats">
-              <div><span>HEIGHT</span><strong>{selected.height}<small>cm</small></strong></div>
-              <div><span>WEIGHT</span><strong>{selected.weight}<small>kg</small></strong></div>
-              <div><span>THROW / BAT</span><strong>{selected.batsThrows}</strong></div>
+              <div><span>HEIGHT</span><strong>{selectedDisplay.height}<small>cm</small></strong></div>
+              <div><span>WEIGHT</span><strong>{selectedDisplay.weight}<small>kg</small></strong></div>
+              <div><span>THROW / BAT</span><strong>{selectedDisplay.batsThrows}</strong></div>
             </div>
+
+            {isAdmin && editingProfile && <div className="gd-profile-editor">
+              <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-position`}>포지션</label><input id={`${sectionId}-${selectedDisplay.id}-position`} value={profileForm.position} maxLength={20} onChange={(event) => setProfileForm((current) => ({ ...current, position: event.target.value }))} /></div>
+              <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-height`}>키(cm)</label><input id={`${sectionId}-${selectedDisplay.id}-height`} type="number" min="100" max="230" value={profileForm.height} onChange={(event) => setProfileForm((current) => ({ ...current, height: event.target.value }))} /></div>
+              <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-weight`}>몸무게(kg)</label><input id={`${sectionId}-${selectedDisplay.id}-weight`} type="number" min="30" max="200" value={profileForm.weight} onChange={(event) => setProfileForm((current) => ({ ...current, weight: event.target.value }))} /></div>
+              <div className="gd-profile-editor-actions"><button type="button" onClick={() => void saveProfileEdit()} disabled={savingProfile}>{savingProfile ? "저장 중…" : "변경사항 저장"}</button><button type="button" className="cancel" onClick={() => setEditingProfile(false)} disabled={savingProfile}>취소</button>{profileOverrides[selectedDisplay.id] && <button type="button" className="reset" onClick={() => void resetProfileEdit()} disabled={savingProfile}>최초값으로</button>}</div>
+            </div>}
 
             <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div>{isAdmin ? <label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : `+ ${activeCategory.label} 올리기`}</span></label> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
@@ -455,7 +543,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <div className="gd-media-grid">
               {selectedCategoryMedia.map((item) => {
                 const like = likes[item.key] ?? { count: 0, liked: false };
-                return <figure key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selected.name} 업로드 사진`} /> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
+                return <figure key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} /> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
               })}
               {!selectedCategoryMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 {activeCategory.label}이 없습니다.</strong><p>{selectedCategory === "photo" ? "JPG·PNG·WEBP 사진을 올려주세요." : "MP4·WEBM·MOV 영상을 올려주세요."}</p></div>}
             </div>
