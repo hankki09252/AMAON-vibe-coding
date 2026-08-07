@@ -70,6 +70,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadingPlayerId, setUploadingPlayerId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("photo");
@@ -96,14 +97,79 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     return grouped;
   }, [media]);
 
+  async function uploadMultipartVideo(file: File, playerId: string, category: MediaCategory) {
+    const chunkSize = 50 * 1024 * 1024;
+    const maxVideoSize = 2 * 1024 * 1024 * 1024;
+    if (file.size > maxVideoSize) throw new Error("영상은 최대 2GB까지 올릴 수 있습니다.");
+    const contentType = file.type || (file.name.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4");
+    let key = "";
+    let uploadId = "";
+
+    try {
+      const createResponse = await fetch("/api/media?action=multipart-create", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ playerId, category, fileName: file.name, contentType, size: file.size }),
+      });
+      const created = await createResponse.json().catch(() => null) as { key?: string; uploadId?: string; error?: string } | null;
+      if (!createResponse.ok || !created?.key || !created.uploadId) throw new Error(created?.error ?? "대용량 영상 업로드를 시작하지 못했습니다.");
+      key = created.key;
+      uploadId = created.uploadId;
+
+      const parts: Array<{ partNumber: number; etag: string }> = [];
+      const partCount = Math.ceil(file.size / chunkSize);
+      for (let index = 0; index < partCount; index += 1) {
+        const start = index * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const chunk = file.slice(start, end);
+        let uploadedPart: { partNumber: number; etag: string } | null = null;
+
+        for (let attempt = 1; attempt <= 3 && !uploadedPart; attempt += 1) {
+          const partResponse = await fetch(`/api/media?action=multipart-part&key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}&partNumber=${index + 1}`, {
+            method: "PUT",
+            headers: { "content-type": "application/octet-stream" },
+            body: chunk,
+          });
+          const partData = await partResponse.json().catch(() => null) as { partNumber?: number; etag?: string; error?: string } | null;
+          if (partResponse.ok && partData?.partNumber && partData.etag) uploadedPart = { partNumber: partData.partNumber, etag: partData.etag };
+          else if (attempt === 3) throw new Error(partData?.error ?? `${index + 1}번째 영상 전송에 실패했습니다.`);
+        }
+
+        parts.push(uploadedPart as { partNumber: number; etag: string });
+        setUploadProgress(Math.round((end / file.size) * 95));
+      }
+
+      const completeResponse = await fetch("/api/media?action=multipart-complete", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key, uploadId, parts }),
+      });
+      const completed = await completeResponse.json().catch(() => null) as { error?: string } | null;
+      if (!completeResponse.ok) throw new Error(completed?.error ?? "전송된 영상을 합치지 못했습니다.");
+      setUploadProgress(100);
+    } catch (error) {
+      if (key && uploadId) {
+        void fetch(`/api/media?action=multipart-abort&key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}`, { method: "DELETE" });
+      }
+      throw error;
+    }
+  }
+
   async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
     if (!selected || !event.target.files?.length) return;
     const files = Array.from(event.target.files).slice(0, 10);
     setUploading(true);
+    setUploadProgress(null);
     setNotice("");
 
     try {
       for (const file of files) {
+        const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(file.name);
+        if (selectedCategory !== "photo" && isVideo) {
+          setUploadProgress(0);
+          await uploadMultipartVideo(file, selected.id, selectedCategory);
+          continue;
+        }
         const form = new FormData();
         form.append("playerId", selected.id);
         form.append("category", selectedCategory);
@@ -121,6 +187,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       setNotice(error instanceof Error ? error.message : "업로드 중 오류가 발생했습니다.");
     } finally {
       setUploading(false);
+      setUploadProgress(null);
       event.target.value = "";
     }
   }
@@ -209,7 +276,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <div><span>THROW / BAT</span><strong>{selected.batsThrows}</strong></div>
             </div>
 
-            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div><label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? "업로드 중…" : `+ ${activeCategory.label} 올리기`}</span></label></div>
+            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div><label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : `+ ${activeCategory.label} 올리기`}</span></label></div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
               {mediaCategories.map((category) => (
                 <button key={category.id} className={selectedCategory === category.id ? "active" : ""} onClick={() => { setSelectedCategory(category.id); setNotice(""); }}>
@@ -222,7 +289,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               {selectedCategoryMedia.map((item) => <figure key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selected.name} 업로드 사진`} /> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}</figcaption></figure>)}
               {!selectedCategoryMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 {activeCategory.label}이 없습니다.</strong><p>{selectedCategory === "photo" ? "JPG·PNG·WEBP 사진을 올려주세요." : "MP4·WEBM·MOV 영상을 올려주세요."}</p></div>}
             </div>
-            <p className="gd-rights">선수·보호자 동의와 촬영물 사용 권리가 확인된 파일만 올려주세요. 파일당 최대 100MB입니다.</p>
+            <p className="gd-rights">선수·보호자 동의와 촬영물 사용 권리가 확인된 파일만 올려주세요. 사진은 100MB, 영상은 최대 2GB까지 올릴 수 있습니다.</p>
           </section>
         </div>
       )}
