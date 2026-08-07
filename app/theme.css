@@ -174,6 +174,21 @@ footer p, footer small { color: #777; }
 .gd-card-upload.disabled { color: #777; cursor: wait; pointer-events: none; }
 .gd-loading { margin: 18px 0 0; color: #777; font-size: 10px; text-align: right; }
 .gd-modal { position: relative; width: min(850px, 100%); max-height: calc(100vh - 34px); overflow-y: auto; padding: 38px; background: #f6f4ee; color: #111; border-top: 6px solid var(--brand-orange); box-shadow: 13px 13px 0 #111; }
+.gd-modal-team-banner { position: relative; min-height: 190px; margin: -38px -38px 30px; overflow: hidden; display: flex; align-items: flex-end; padding: 30px 38px; background: radial-gradient(circle at 75% 25%, #7a3108 0, #241207 28%, #080808 68%); color: white; }
+.gd-modal > .modal-close { z-index: 10; color: white; text-shadow: 0 1px 5px #000; }
+.gd-modal-team-banner:before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(125deg, transparent 0 38px, rgba(255,92,0,.12) 39px 41px); }
+.gd-modal-team-banner > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gd-team-banner-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.54) 52%, rgba(0,0,0,.18) 100%); }
+.gd-team-banner-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 16px; min-width: 0; max-width: 58%; }
+.gd-team-banner-emblem { width: 82px; height: 82px; flex: 0 0 auto; display: grid; place-items: center; border: 2px solid var(--brand-orange); background: rgba(0,0,0,.78); color: var(--brand-orange); font-size: 24px; font-weight: 1000; font-style: italic; }
+.gd-team-banner-emblem img { width: 100%; height: 100%; padding: 6px; object-fit: contain; background: white; }
+.gd-team-banner-brand small, .gd-team-banner-brand b { display: block; color: #aaa; font-size: 8px; letter-spacing: 1.8px; }
+.gd-team-banner-brand strong { display: block; margin: 4px 0; color: white; font-size: clamp(24px, 4vw, 39px); line-height: 1; letter-spacing: -1.5px; }
+.gd-team-banner-controls { position: absolute; z-index: 3; right: 20px; bottom: 18px; display: flex; align-items: stretch; }
+.gd-team-banner-controls label, .gd-team-banner-controls button { min-height: 34px; display: grid; place-items: center; padding: 8px 11px; border: 0; background: var(--brand-orange); color: #080808; font: inherit; font-size: 9px; font-weight: 1000; cursor: pointer; }
+.gd-team-banner-controls label.disabled { opacity: .6; pointer-events: none; }
+.gd-team-banner-controls input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.gd-team-banner-controls button { border-left: 1px solid #111; background: #333; color: white; }
 .gd-modal-head { display: flex; align-items: center; gap: 22px; padding-bottom: 24px; border-bottom: 2px solid #111; }
 .gd-modal-identity { flex: 1; min-width: 0; }
 .gd-modal-number { width: 105px; height: 105px; display: grid; place-items: center; flex: 0 0 auto; background: #050505; color: var(--brand-orange); font-size: 45px; font-weight: 1000; font-style: italic; clip-path: polygon(15% 0,100% 0,100% 85%,85% 100%,0 100%,0 15%); }
@@ -241,6 +256,10 @@ footer p, footer small { color: #777; }
   .gd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gd-portrait { height: auto; }
   .gd-modal { padding: 30px 22px; }
+  .gd-modal-team-banner { min-height: 230px; margin: -30px -22px 24px; padding: 26px 22px 68px; }
+  .gd-team-banner-emblem { width: 64px; height: 64px; }
+  .gd-team-banner-brand { max-width: 100%; }
+  .gd-team-banner-controls { left: 22px; right: auto; bottom: 20px; }
   .school-row { grid-template-columns: 34px 40px minmax(120px, 1fr) 52px; }
 }
 

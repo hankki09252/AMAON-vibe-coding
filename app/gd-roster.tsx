@@ -27,6 +27,7 @@ type MediaCategory = "pitching" | "batting" | "fielding" | "photo";
 type MediaStorageCategory = MediaCategory | "profile";
 type LikeState = { count: number; liked: boolean };
 type TeamEmblem = { key: string; url: string; uploadedAt: string };
+type TeamBanner = { key: string; url: string; uploadedAt: string };
 type PlayerProfileOverride = { playerId: string; position: string; height: number; weight: number; updatedAt: number };
 type ProfileEditForm = { position: string; height: string; weight: string };
 
@@ -83,6 +84,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [isAdmin, setIsAdmin] = useState(false);
   const [emblem, setEmblem] = useState<TeamEmblem | null>(null);
   const [emblemUploading, setEmblemUploading] = useState(false);
+  const [teamBanner, setTeamBanner] = useState<TeamBanner | null>(null);
+  const [bannerUploading, setBannerUploading] = useState(false);
   const [profileOverrides, setProfileOverrides] = useState<Record<string, PlayerProfileOverride>>({});
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -188,13 +191,61 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
+  async function loadTeamBanner() {
+    try {
+      const response = await fetch(`/api/team-banners?teamId=${encodeURIComponent(sectionId)}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { banner: TeamBanner | null };
+      setTeamBanner(data.banner);
+    } catch {
+      // The generated team banner remains visible when no image is uploaded.
+    }
+  }
+
   useEffect(() => {
     void loadMedia();
     void loadLikes();
     void loadAdminAccess();
     void loadTeamEmblem();
     void loadProfileOverrides();
+    void loadTeamBanner();
   }, [sectionId]);
+
+  async function uploadTeamBanner(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setBannerUploading(true);
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.append("teamId", sectionId);
+      form.append("file", file);
+      const response = await fetch("/api/team-banners", { method: "POST", body: form });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(data?.error ?? "팀 배너 업로드에 실패했습니다.");
+      }
+      await loadTeamBanner();
+      setNotice(`${teamLabel} 소속 모든 선수에게 팀 배너를 적용했습니다.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "팀 배너 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setBannerUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  async function deleteTeamBanner() {
+    if (!window.confirm(`${teamLabel} 팀 배너를 삭제하고 기본 배너로 되돌릴까요?`)) return;
+    const response = await fetch(`/api/team-banners?teamId=${encodeURIComponent(sectionId)}`, { method: "DELETE" });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null) as { error?: string } | null;
+      setNotice(data?.error ?? "팀 배너를 삭제하지 못했습니다.");
+      return;
+    }
+    setTeamBanner(null);
+    setNotice(`${teamLabel} 팀 배너를 기본 표시로 되돌렸습니다.`);
+  }
 
   function beginProfileEdit() {
     if (!selected) return;
@@ -514,6 +565,18 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
         <div className="modal-backdrop" role="presentation" onMouseDown={closePlayer}>
           <section className="gd-modal" role="dialog" aria-modal="true" aria-label={`${selectedDisplay.name} 선수 프로필`} onMouseDown={(event) => event.stopPropagation()}>
             <button className="modal-close" onClick={closePlayer} aria-label="닫기">×</button>
+            <div className={`gd-modal-team-banner${teamBanner ? " has-image" : ""}`}>
+              {teamBanner && <img src={teamBanner.url} alt={`${teamLabel} 팀 배너`} />}
+              <div className="gd-team-banner-overlay" />
+              <div className="gd-team-banner-brand">
+                <span className="gd-team-banner-emblem">{emblem ? <img src={emblem.url} alt="" /> : monogram}</span>
+                <div><small>PLAYER TEAM</small><strong>{teamLabel}</strong><b>2026 · U-18 BASEBALL</b></div>
+              </div>
+              {isAdmin && <div className="gd-team-banner-controls">
+                <label className={bannerUploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadTeamBanner} disabled={bannerUploading} /><span>{bannerUploading ? "배너 적용 중…" : teamBanner ? "같은 팀 전체 배너 교체" : "같은 팀 전체에 배너 적용"}</span></label>
+                {teamBanner && <button type="button" onClick={() => void deleteTeamBanner()}>기본 배너로</button>}
+              </div>}
+            </div>
             <div className="gd-modal-head">
               <div className="gd-modal-number">{selectedDisplay.number}</div>
               <div className="gd-modal-identity"><p>{teamLabel} · 2026</p><h2>{selectedDisplay.name}</h2><strong>{selectedDisplay.position} · {selectedDisplay.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button>{isAdmin && <button className="gd-profile-edit-button" onClick={beginProfileEdit}>선수 정보 편집</button>}</div>
