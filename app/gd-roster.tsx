@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, CSSProperties, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 type GdPlayer = {
   id: string;
@@ -11,7 +11,6 @@ type GdPlayer = {
   height: number;
   weight: number;
   batsThrows: string;
-  sourcePhoto?: { x: number; y: number };
 };
 
 type MediaItem = {
@@ -36,40 +35,32 @@ const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: str
 const gdPlayers: GdPlayer[] = [
   { id: "13", number: "13", name: "기재혁", position: "외야수", grade: "1학년", height: 182, weight: 80, batsThrows: "우투우타" },
   { id: "21", number: "21", name: "김건수", position: "투수", grade: "2학년", height: 187, weight: 92, batsThrows: "좌투좌타" },
-  { id: "28", number: "28", name: "김재준", position: "투수", grade: "3학년", height: 175, weight: 82, batsThrows: "우투우타", sourcePhoto: { x: 2, y: 264 } },
-  { id: "7", number: "7", name: "김태양", position: "외야수", grade: "3학년", height: 165, weight: 65, batsThrows: "우투우타", sourcePhoto: { x: 374, y: 264 } },
+  { id: "28", number: "28", name: "김재준", position: "투수", grade: "3학년", height: 175, weight: 82, batsThrows: "우투우타" },
+  { id: "7", number: "7", name: "김태양", position: "외야수", grade: "3학년", height: 165, weight: 65, batsThrows: "우투우타" },
   { id: "17", number: "17", name: "나하람", position: "투수", grade: "2학년", height: 181, weight: 84, batsThrows: "우투우타" },
-  { id: "9", number: "9", name: "배석민", position: "내야수", grade: "3학년", height: 176, weight: 70, batsThrows: "우투좌타", sourcePhoto: { x: 1117, y: 264 } },
+  { id: "9", number: "9", name: "배석민", position: "내야수", grade: "3학년", height: 176, weight: 70, batsThrows: "우투좌타" },
   { id: "23", number: "23", name: "서무혁", position: "외야수", grade: "2학년", height: 181, weight: 78, batsThrows: "우투우타" },
-  { id: "10", number: "10", name: "손주환", position: "내야수", grade: "2학년", height: 175, weight: 75, batsThrows: "우투우타", sourcePhoto: { x: 2, y: 521 } },
+  { id: "10", number: "10", name: "손주환", position: "내야수", grade: "2학년", height: 175, weight: 75, batsThrows: "우투우타" },
   { id: "18", number: "18", name: "신지원", position: "투수", grade: "3학년", height: 187, weight: 92, batsThrows: "우투우타" },
-  { id: "11", number: "11", name: "안장근", position: "투수", grade: "2학년", height: 184, weight: 84, batsThrows: "우투우타", sourcePhoto: { x: 745, y: 521 } },
+  { id: "11", number: "11", name: "안장근", position: "투수", grade: "2학년", height: 184, weight: 84, batsThrows: "우투우타" },
   { id: "40", number: "40", name: "용거련", position: "투수", grade: "1학년", height: 176, weight: 80, batsThrows: "우투우타" },
   { id: "5", number: "5", name: "윤도현", position: "포수", grade: "3학년", height: 184, weight: 85, batsThrows: "우투우타" },
-  { id: "36", number: "36", name: "윤현중", position: "외야수", grade: "3학년", height: 175, weight: 73, batsThrows: "우투우타", sourcePhoto: { x: 2, y: 777 } },
-  { id: "16", number: "16", name: "이주영", position: "내야수", grade: "2학년", height: 175, weight: 70, batsThrows: "우투우타", sourcePhoto: { x: 374, y: 777 } },
-  { id: "1", number: "1", name: "임명훈", position: "투수", grade: "3학년", height: 175, weight: 75, batsThrows: "우투우타", sourcePhoto: { x: 745, y: 777 } },
+  { id: "36", number: "36", name: "윤현중", position: "외야수", grade: "3학년", height: 175, weight: 73, batsThrows: "우투우타" },
+  { id: "16", number: "16", name: "이주영", position: "내야수", grade: "2학년", height: 175, weight: 70, batsThrows: "우투우타" },
+  { id: "1", number: "1", name: "임명훈", position: "투수", grade: "3학년", height: 175, weight: 75, batsThrows: "우투우타" },
   { id: "32", number: "32", name: "정건우", position: "포수", grade: "2학년", height: 178, weight: 82, batsThrows: "우투우타" },
   { id: "19", number: "19", name: "조이준", position: "투수", grade: "3학년", height: 189, weight: 106, batsThrows: "우투우타" },
   { id: "25", number: "25", name: "최규호", position: "미지정", grade: "2학년", height: 184, weight: 88, batsThrows: "우투우타" },
   { id: "2", number: "2", name: "최승호", position: "내야수", grade: "2학년", height: 174, weight: 61, batsThrows: "우투우타" },
-  { id: "12", number: "12", name: "최효범", position: "포수", grade: "2학년", height: 180, weight: 80, batsThrows: "우투우타", sourcePhoto: { x: 745, y: 1035 } },
+  { id: "12", number: "12", name: "최효범", position: "포수", grade: "2학년", height: 180, weight: 80, batsThrows: "우투우타" },
 ];
-
-function ReferencePhoto({ player }: { player: GdPlayer }) {
-  if (!player.sourcePhoto) return null;
-  const style = {
-    "--photo-left": `${-(player.sourcePhoto.x / 173) * 100}%`,
-    "--photo-top": `${-(player.sourcePhoto.y / 225) * 100}%`,
-  } as CSSProperties;
-  return <span className="gd-source-photo" style={style}><img src="/gd-roster-reference.png" alt={`${player.name} 선수`} /></span>;
-}
 
 export default function GdRoster() {
   const [selected, setSelected] = useState<GdPlayer | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadingPlayerId, setUploadingPlayerId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("photo");
 
@@ -124,6 +115,31 @@ export default function GdRoster() {
     }
   }
 
+  async function uploadPlayerPhoto(player: GdPlayer, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingPlayerId(player.id);
+    setNotice("");
+
+    try {
+      const form = new FormData();
+      form.append("playerId", player.id);
+      form.append("category", "photo");
+      form.append("file", file);
+      const response = await fetch("/api/media", { method: "POST", body: form });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(data?.error ?? `${file.name} 업로드에 실패했습니다.`);
+      }
+      await loadMedia();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "사진 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploadingPlayerId(null);
+      event.target.value = "";
+    }
+  }
+
   const selectedMedia = selected ? mediaByPlayer.get(selected.id) ?? [] : [];
   const selectedCategoryMedia = selectedMedia.filter((item) => item.category === selectedCategory);
   const activeCategory = mediaCategories.find((category) => category.id === selectedCategory) ?? mediaCategories[0];
@@ -142,20 +158,28 @@ export default function GdRoster() {
       <div className="gd-grid">
         {gdPlayers.map((player) => {
           const playerMedia = mediaByPlayer.get(player.id) ?? [];
-          const portrait = playerMedia.find((item) => item.type === "image");
+          const portrait = playerMedia
+            .filter((item) => item.type === "image" && item.category === "photo")
+            .sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt))[0];
           return (
-            <button className="gd-card" key={player.id} onClick={() => { setSelected(player); setSelectedCategory("photo"); setNotice(""); }}>
-              <div className="gd-portrait">
-                {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : player.sourcePhoto ? <ReferencePhoto player={player} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>GD</i></span>}
-                <small>{playerMedia.length ? `MEDIA ${playerMedia.length}` : "PHOTO READY"}</small>
-              </div>
-              <div className="gd-card-info">
-                <p>{player.position} · {player.grade}</p>
-                <h3><em>{player.number}.</em> {player.name}</h3>
-                <dl><div><dt>신체</dt><dd>{player.height}cm / {player.weight}kg</dd></div><div><dt>투타</dt><dd>{player.batsThrows}</dd></div></dl>
-                <span>프로필 열기 ↗</span>
-              </div>
-            </button>
+            <article className="gd-card" key={player.id}>
+              <button className="gd-card-main" onClick={() => { setSelected(player); setSelectedCategory("photo"); setNotice(""); }}>
+                <div className="gd-portrait">
+                  {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>GD</i></span>}
+                  <small>{playerMedia.length ? `MEDIA ${playerMedia.length}` : "PHOTO READY"}</small>
+                </div>
+                <div className="gd-card-info">
+                  <p>{player.position} · {player.grade}</p>
+                  <h3><em>{player.number}.</em> {player.name}</h3>
+                  <dl><div><dt>신체</dt><dd>{player.height}cm / {player.weight}kg</dd></div><div><dt>투타</dt><dd>{player.batsThrows}</dd></div></dl>
+                  <span>프로필 열기 ↗</span>
+                </div>
+              </button>
+              <label className={`gd-card-upload${uploadingPlayerId === player.id ? " disabled" : ""}`}>
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadPlayerPhoto(player, event)} disabled={uploadingPlayerId !== null} />
+                <span>{uploadingPlayerId === player.id ? "사진 올리는 중…" : portrait ? "사진 교체하기" : "+ 선수 사진 직접 올리기"}</span>
+              </label>
+            </article>
           );
         })}
       </div>
