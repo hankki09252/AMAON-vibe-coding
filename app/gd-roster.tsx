@@ -75,6 +75,42 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [notice, setNotice] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("photo");
 
+  function getProfileUrl(player: TeamPlayer) {
+    const url = new URL(window.location.origin);
+    url.searchParams.set("team", sectionId);
+    url.searchParams.set("player", player.id);
+    url.hash = sectionId;
+    return url.toString();
+  }
+
+  function openPlayer(player: TeamPlayer) {
+    setSelected(player);
+    setSelectedCategory("photo");
+    setNotice("");
+    window.history.replaceState(null, "", getProfileUrl(player));
+  }
+
+  function closePlayer() {
+    setSelected(null);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("team") === sectionId) {
+      url.searchParams.delete("team");
+      url.searchParams.delete("player");
+      url.hash = sectionId;
+      window.history.replaceState(null, "", url);
+    }
+  }
+
+  async function copyProfileLink() {
+    if (!selected) return;
+    try {
+      await navigator.clipboard.writeText(getProfileUrl(selected));
+      setNotice("선수 프로필 링크를 복사했습니다. 인스타그램 프로필에 붙여 넣어주세요.");
+    } catch {
+      setNotice("링크를 복사하지 못했습니다. 주소창의 링크를 직접 복사해 주세요.");
+    }
+  }
+
   async function loadMedia() {
     setLoading(true);
     try {
@@ -90,6 +126,16 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   }
 
   useEffect(() => { void loadMedia(); }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("team") !== sectionId) return;
+    const linkedPlayer = players.find((player) => player.id === params.get("player"));
+    if (linkedPlayer) {
+      setSelected(linkedPlayer);
+      setSelectedCategory("photo");
+    }
+  }, [players, sectionId]);
 
   const mediaByPlayer = useMemo(() => {
     const grouped = new Map<string, MediaItem[]>();
@@ -240,7 +286,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             .sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt))[0];
           return (
             <article className="gd-card" key={player.id}>
-              <button className="gd-card-main" onClick={() => { setSelected(player); setSelectedCategory("photo"); setNotice(""); }}>
+              <button className="gd-card-main" onClick={() => openPlayer(player)}>
                 <div className="gd-portrait">
                   {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{player.number}</b><i>{monogram}</i></span>}
                   <small>{playerMedia.length ? `MEDIA ${playerMedia.length}` : "PHOTO READY"}</small>
@@ -263,12 +309,12 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       {loading && <p className="gd-loading">업로드된 사진과 영상을 확인하고 있습니다.</p>}
 
       {selected && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setSelected(null)}>
+        <div className="modal-backdrop" role="presentation" onMouseDown={closePlayer}>
           <section className="gd-modal" role="dialog" aria-modal="true" aria-label={`${selected.name} 선수 프로필`} onMouseDown={(event) => event.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelected(null)} aria-label="닫기">×</button>
+            <button className="modal-close" onClick={closePlayer} aria-label="닫기">×</button>
             <div className="gd-modal-head">
               <div className="gd-modal-number">{selected.number}</div>
-              <div><p>{teamLabel} · 2026</p><h2>{selected.name}</h2><strong>{selected.position} · {selected.grade}</strong></div>
+              <div className="gd-modal-identity"><p>{teamLabel} · 2026</p><h2>{selected.name}</h2><strong>{selected.position} · {selected.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button></div>
             </div>
             <div className="gd-profile-stats">
               <div><span>HEIGHT</span><strong>{selected.height}<small>cm</small></strong></div>
