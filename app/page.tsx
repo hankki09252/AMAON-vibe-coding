@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import GdRoster from "./gd-roster";
 import GyeonggiRoster from "./gyeonggi-roster";
 import GyeongsangRoster from "./gyeongsang-roster";
+import KyungdongRoster from "./kyungdong-roster";
 
 type School = {
   name: string;
@@ -257,8 +258,8 @@ export default function Home() {
             <article className="school-row" key={school.name}>
               <span className="school-index">{String(index + 1).padStart(2, "0")}</span>
               <div className="school-emblem" aria-hidden="true">{school.name.slice(0, 1)}</div>
-              {["GD챌린저스BC(U-18)", "경기고", "경기상업고"].includes(school.name) ? (
-                <button className="school-name school-name-link" onClick={() => document.getElementById(school.name === "경기고" ? "gyeonggi-roster" : school.name === "경기상업고" ? "gyeongsang-roster" : "gd-roster")?.scrollIntoView({ behavior: "smooth" })}>
+              {["GD챌린저스BC(U-18)", "경기고", "경기상업고", "경동고"].includes(school.name) ? (
+                <button className="school-name school-name-link" onClick={() => document.getElementById(school.name === "경기고" ? "gyeonggi-roster" : school.name === "경기상업고" ? "gyeongsang-roster" : school.name === "경동고" ? "kyungdong-roster" : "gd-roster")?.scrollIntoView({ behavior: "smooth" })}>
                   <h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p>
                 </button>
               ) : <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>}
@@ -273,6 +274,7 @@ export default function Home() {
       <GdRoster />
       <GyeonggiRoster />
       <GyeongsangRoster />
+      <KyungdongRoster />
 
       <section className="player-section" id="players">
         <div className="section-title light">

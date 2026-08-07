@@ -3,6 +3,7 @@ import { env } from "cloudflare:workers";
 const allowedPlayerIds = new Set(["1", "2", "5", "7", "9", "10", "11", "12", "13", "16", "17", "18", "19", "21", "23", "25", "28", "32", "36", "40"]);
 const allowedGyeonggiPlayerIds = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "54", "55", "57", "59", "60", "61", "65", "69", "seogwangeun"].map((id) => `gg-${id}`));
 const allowedGyeongsangPlayerIds = new Set(["1", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "29", "30", "31", "32", "33", "35", "36", "37", "38", "41", "42", "43", "44", "45", "46", "47", "49", "50", "51", "52", "54", "55", "56", "61", "gujunmo", "seokjunho", "antaeuk"].map((id) => `gs-${id}`));
+const allowedKyungdongPlayerIds = new Set(["1", "2", "3", "4", "6", "7", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "44", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "61", "63", "hongjiwoo"].map((id) => `kd-${id}`));
 const maxFileSize = 100 * 1024 * 1024;
 const allowedCategories = new Set(["pitching", "batting", "fielding", "photo"]);
 
@@ -17,7 +18,7 @@ function bucket(): MediaBucket {
 }
 
 function isAllowedPlayerId(playerId: string) {
-  return allowedPlayerIds.has(playerId) || allowedGyeonggiPlayerIds.has(playerId) || allowedGyeongsangPlayerIds.has(playerId);
+  return allowedPlayerIds.has(playerId) || allowedGyeonggiPlayerIds.has(playerId) || allowedGyeongsangPlayerIds.has(playerId) || allowedKyungdongPlayerIds.has(playerId);
 }
 
 export async function GET(request: Request) {
