@@ -28,8 +28,8 @@ type MediaStorageCategory = MediaCategory | "profile";
 type LikeState = { count: number; liked: boolean };
 type TeamEmblem = { key: string; url: string; uploadedAt: string };
 type TeamBanner = { key: string; url: string; uploadedAt: string };
-type PlayerProfileOverride = { playerId: string; position: string; height: number; weight: number; updatedAt: number };
-type ProfileEditForm = { position: string; height: string; weight: string };
+type PlayerProfileOverride = { playerId: string; position: string; height: number; weight: number; introduction: string; strengths: string; aspiration: string; updatedAt: number };
+type ProfileEditForm = { position: string; height: string; weight: string; introduction: string; strengths: string; aspiration: string };
 type OriginSchool = { playerId: string; sequence: number; region: string; school: string; year: number; position: string };
 type OriginSchoolForm = { region: string; school: string; year: string; position: string };
 
@@ -91,7 +91,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [profileOverrides, setProfileOverrides] = useState<Record<string, PlayerProfileOverride>>({});
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState<ProfileEditForm>({ position: "", height: "", weight: "" });
+  const [profileForm, setProfileForm] = useState<ProfileEditForm>({ position: "", height: "", weight: "", introduction: "", strengths: "", aspiration: "" });
   const [originSchools, setOriginSchools] = useState<Record<string, OriginSchool[]>>({});
   const [editingOrigins, setEditingOrigins] = useState(false);
   const [savingOrigins, setSavingOrigins] = useState(false);
@@ -317,7 +317,15 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   function beginProfileEdit() {
     if (!selected) return;
     const current = resolvePlayer(selected);
-    setProfileForm({ position: current.position, height: String(current.height), weight: String(current.weight) });
+    const details = profileOverrides[selected.id];
+    setProfileForm({
+      position: current.position,
+      height: String(current.height),
+      weight: String(current.weight),
+      introduction: details?.introduction ?? "",
+      strengths: details?.strengths ?? "",
+      aspiration: details?.aspiration ?? "",
+    });
     setEditingProfile(true);
     setNotice("");
   }
@@ -336,6 +344,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
           position: profileForm.position,
           height: Number(profileForm.height),
           weight: Number(profileForm.weight),
+          introduction: profileForm.introduction,
+          strengths: profileForm.strengths,
+          aspiration: profileForm.aspiration,
         }),
       });
       const data = await response.json().catch(() => null) as PlayerProfileOverride & { error?: string } | null;
@@ -572,6 +583,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const activeCategory = mediaCategories.find((category) => category.id === selectedCategory) ?? mediaCategories[0];
   const selectedDisplay = selected ? resolvePlayer(selected) : null;
   const selectedOrigins = selectedDisplay ? originSchools[selectedDisplay.id] ?? [] : [];
+  const selectedDetails = selectedDisplay ? profileOverrides[selectedDisplay.id] : undefined;
 
   return (
     <section className="gd-section" id={sectionId}>
@@ -679,8 +691,17 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-position`}>포지션</label><input id={`${sectionId}-${selectedDisplay.id}-position`} value={profileForm.position} maxLength={20} onChange={(event) => setProfileForm((current) => ({ ...current, position: event.target.value }))} /></div>
               <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-height`}>키(cm)</label><input id={`${sectionId}-${selectedDisplay.id}-height`} type="number" min="100" max="230" value={profileForm.height} onChange={(event) => setProfileForm((current) => ({ ...current, height: event.target.value }))} /></div>
               <div><label htmlFor={`${sectionId}-${selectedDisplay.id}-weight`}>몸무게(kg)</label><input id={`${sectionId}-${selectedDisplay.id}-weight`} type="number" min="30" max="200" value={profileForm.weight} onChange={(event) => setProfileForm((current) => ({ ...current, weight: event.target.value }))} /></div>
+              <div className="story-field"><label htmlFor={`${sectionId}-${selectedDisplay.id}-introduction`}>자기소개 <small>{profileForm.introduction.length}/500</small></label><textarea id={`${sectionId}-${selectedDisplay.id}-introduction`} value={profileForm.introduction} maxLength={500} rows={4} placeholder="선수의 성격, 야구를 시작한 계기, 플레이 스타일 등을 소개해 주세요." onChange={(event) => setProfileForm((current) => ({ ...current, introduction: event.target.value }))} /></div>
+              <div className="story-field"><label htmlFor={`${sectionId}-${selectedDisplay.id}-strengths`}>나의 장점 <small>{profileForm.strengths.length}/300</small></label><textarea id={`${sectionId}-${selectedDisplay.id}-strengths`} value={profileForm.strengths} maxLength={300} rows={3} placeholder="주루, 장타력, 제구력, 수비 범위 등 선수의 강점을 적어주세요." onChange={(event) => setProfileForm((current) => ({ ...current, strengths: event.target.value }))} /></div>
+              <div className="story-field"><label htmlFor={`${sectionId}-${selectedDisplay.id}-aspiration`}>목표와 포부 <small>{profileForm.aspiration.length}/300</small></label><textarea id={`${sectionId}-${selectedDisplay.id}-aspiration`} value={profileForm.aspiration} maxLength={300} rows={3} placeholder="앞으로 이루고 싶은 목표와 각오를 적어주세요." onChange={(event) => setProfileForm((current) => ({ ...current, aspiration: event.target.value }))} /></div>
               <div className="gd-profile-editor-actions"><button type="button" onClick={() => void saveProfileEdit()} disabled={savingProfile}>{savingProfile ? "저장 중…" : "변경사항 저장"}</button><button type="button" className="cancel" onClick={() => setEditingProfile(false)} disabled={savingProfile}>취소</button>{profileOverrides[selectedDisplay.id] && <button type="button" className="reset" onClick={() => void resetProfileEdit()} disabled={savingProfile}>최초값으로</button>}</div>
             </div>}
+
+            <section className="gd-player-story">
+              <article className="introduction"><span>01 · ABOUT ME</span><h3>자기소개</h3><p>{selectedDetails?.introduction || "선수 자기소개가 준비 중입니다."}</p></article>
+              <article><span>02 · MY STRENGTH</span><h3>나의 장점</h3><p>{selectedDetails?.strengths || "선수의 장점이 준비 중입니다."}</p></article>
+              <article><span>03 · MY GOAL</span><h3>목표와 포부</h3><p>{selectedDetails?.aspiration || "선수의 목표와 포부가 준비 중입니다."}</p></article>
+            </section>
 
             <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div>{isAdmin ? <label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : `+ ${activeCategory.label} 올리기`}</span></label> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
