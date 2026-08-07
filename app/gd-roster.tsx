@@ -26,6 +26,7 @@ type MediaItem = {
 type MediaCategory = "pitching" | "batting" | "fielding" | "photo";
 type MediaStorageCategory = MediaCategory | "profile";
 type LikeState = { count: number; liked: boolean };
+type TeamEmblem = { key: string; url: string; uploadedAt: string };
 
 const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
   { id: "photo", label: "사진", shortLabel: "PHOTO" },
@@ -78,6 +79,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("photo");
   const [likes, setLikes] = useState<Record<string, LikeState>>({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [emblem, setEmblem] = useState<TeamEmblem | null>(null);
+  const [emblemUploading, setEmblemUploading] = useState(false);
 
   function getProfileUrl(player: TeamPlayer) {
     const url = new URL(window.location.origin);
@@ -150,11 +153,59 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
+  async function loadTeamEmblem() {
+    try {
+      const response = await fetch(`/api/team-emblems?teamId=${encodeURIComponent(sectionId)}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { emblem: TeamEmblem | null };
+      setEmblem(data.emblem);
+    } catch {
+      // The monogram remains visible when no uploaded emblem is available.
+    }
+  }
+
   useEffect(() => {
     void loadMedia();
     void loadLikes();
     void loadAdminAccess();
-  }, []);
+    void loadTeamEmblem();
+  }, [sectionId]);
+
+  async function uploadTeamEmblem(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setEmblemUploading(true);
+    setNotice("");
+    try {
+      const form = new FormData();
+      form.append("teamId", sectionId);
+      form.append("file", file);
+      const response = await fetch("/api/team-emblems", { method: "POST", body: form });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(data?.error ?? "엠블럼 업로드에 실패했습니다.");
+      }
+      await loadTeamEmblem();
+      setNotice(`${teamLabel} 엠블럼을 변경했습니다.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "엠블럼 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setEmblemUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  async function deleteTeamEmblem() {
+    if (!window.confirm(`${teamLabel} 엠블럼을 삭제하고 기본 학교 약자로 되돌릴까요?`)) return;
+    const response = await fetch(`/api/team-emblems?teamId=${encodeURIComponent(sectionId)}`, { method: "DELETE" });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null) as { error?: string } | null;
+      setNotice(data?.error ?? "엠블럼을 삭제하지 못했습니다.");
+      return;
+    }
+    setEmblem(null);
+    setNotice(`${teamLabel} 엠블럼을 기본 표시로 되돌렸습니다.`);
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -326,10 +377,22 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   return (
     <section className="gd-section" id={sectionId}>
       <div className="gd-heading">
-        <div>
-          <p className="kicker"><span /> {kicker}</p>
-          <h2>{title}</h2>
-          <p>{subtitle}</p>
+        <div className="gd-heading-main">
+          <div className="gd-team-emblem">
+            {emblem ? <img src={emblem.url} alt={`${teamLabel} 엠블럼`} /> : <strong>{monogram}</strong>}
+            {isAdmin && <div className="gd-emblem-controls">
+              <label className={emblemUploading ? "disabled" : ""}>
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadTeamEmblem} disabled={emblemUploading} />
+                <span>{emblemUploading ? "올리는 중…" : emblem ? "엠블럼 교체" : "엠블럼 추가"}</span>
+              </label>
+              {emblem && <button type="button" onClick={() => void deleteTeamEmblem()}>삭제</button>}
+            </div>}
+          </div>
+          <div>
+            <p className="kicker"><span /> {kicker}</p>
+            <h2>{title}</h2>
+            <p>{subtitle}</p>
+          </div>
         </div>
         <div className="gd-summary"><strong>{players.length}</strong><span>PLAYER PROFILES</span></div>
       </div>
