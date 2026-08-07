@@ -186,6 +186,7 @@ footer p, footer small { color: #777; }
 .gd-media-head label.disabled { opacity: .55; cursor: wait; }
 .gd-media-head input { display: none; }
 .gd-media-head label span { display: block; padding: 12px 15px; background: var(--brand-orange); color: #050505; font-size: 10px; font-weight: 1000; }
+.gd-admin-note { flex: 0 0 auto; padding: 9px 11px; border: 1px solid #bbb; color: #777; font-size: 9px; font-weight: 800; }
 .gd-media-categories { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 18px; }
 .gd-media-categories button { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; border: 1px solid #bbb; background: transparent; color: #555; font-size: 10px; font-weight: 900; cursor: pointer; }
 .gd-media-categories button small { min-width: 20px; height: 20px; display: grid; place-items: center; background: #dedbd2; color: #555; font-size: 9px; }
@@ -196,6 +197,10 @@ footer p, footer small { color: #777; }
 .gd-media-grid figure { position: relative; display: flex; align-items: center; justify-content: center; margin: 0; min-height: 0; overflow: hidden; background: #111; }
 .gd-media-grid img, .gd-media-grid video { display: block; width: 100%; height: auto; max-width: 100%; object-fit: contain; background: #111; }
 .gd-media-grid figcaption { position: absolute; left: 8px; bottom: 8px; padding: 5px 7px; background: var(--brand-orange); color: #050505; font-size: 8px; font-weight: 1000; }
+.gd-media-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+.gd-media-actions button { min-height: 31px; padding: 6px 9px; border: 0; background: rgba(255,255,255,.92); color: #222; font-size: 11px; font-weight: 1000; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.gd-media-actions button.liked { background: var(--brand-orange); color: #050505; }
+.gd-media-actions button.delete { background: rgba(10,10,10,.86); color: #fff; font-size: 9px; }
 .gd-media-empty { grid-column: 1 / -1; min-height: 175px; display: grid; place-content: center; text-align: center; border: 1px dashed #aaa; color: #777; }
 .gd-media-empty span { color: var(--brand-orange); font-size: 35px; line-height: 1; }
 .gd-media-empty strong { margin-top: 7px; color: #333; font-size: 13px; }

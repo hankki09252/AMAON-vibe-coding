@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { isAdminRequest } from "../../admin";
 
 const allowedPlayerIds = new Set(["1", "2", "5", "7", "9", "10", "11", "12", "13", "16", "17", "18", "19", "21", "23", "25", "28", "32", "36", "40"]);
 const allowedGyeonggiPlayerIds = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "54", "55", "57", "59", "60", "61", "65", "69", "seogwangeun"].map((id) => `gg-${id}`));
@@ -22,6 +23,7 @@ type MediaBucket = {
   list(options: { prefix: string; limit: number; include?: Array<"httpMetadata" | "customMetadata"> }): Promise<{ objects: Array<{ key: string; uploaded: Date; httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }> }>;
   get(key: string, options?: { range?: Headers }): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string }; size: number; range?: { offset: number; length: number }; writeHttpMetadata(headers: Headers): void } | null>;
   put(key: string, body: ReadableStream, options: { httpMetadata: { contentType: string }; customMetadata: Record<string, string> }): Promise<unknown>;
+  delete(key: string): Promise<void>;
   createMultipartUpload(key: string, options: { httpMetadata: { contentType: string }; customMetadata: Record<string, string> }): Promise<MultipartUpload>;
   resumeMultipartUpload(key: string, uploadId: string): MultipartUpload;
 };
@@ -107,6 +109,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isAdminRequest(request)) return Response.json({ error: "관리자만 사진과 영상을 올릴 수 있습니다." }, { status: 403 });
   const url = new URL(request.url);
   const action = url.searchParams.get("action");
 
@@ -164,6 +167,7 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  if (!isAdminRequest(request)) return Response.json({ error: "관리자만 사진과 영상을 수정할 수 있습니다." }, { status: 403 });
   const url = new URL(request.url);
   if (url.searchParams.get("action") !== "multipart-part") return Response.json({ error: "잘못된 업로드 요청입니다." }, { status: 400 });
   const key = url.searchParams.get("key") ?? "";
@@ -182,7 +186,14 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isAdminRequest(request)) return Response.json({ error: "관리자만 사진과 영상을 삭제할 수 있습니다." }, { status: 403 });
   const url = new URL(request.url);
+  if (url.searchParams.get("action") === "delete") {
+    const key = url.searchParams.get("key") ?? "";
+    if (!isAllowedMediaKey(key)) return Response.json({ error: "올바르지 않은 파일입니다." }, { status: 400 });
+    await bucket().delete(key);
+    return new Response(null, { status: 204 });
+  }
   if (url.searchParams.get("action") !== "multipart-abort") return Response.json({ error: "잘못된 취소 요청입니다." }, { status: 400 });
   const key = url.searchParams.get("key") ?? "";
   const uploadId = url.searchParams.get("uploadId") ?? "";

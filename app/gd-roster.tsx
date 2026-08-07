@@ -24,6 +24,7 @@ type MediaItem = {
 };
 
 type MediaCategory = "pitching" | "batting" | "fielding" | "photo";
+type LikeState = { count: number; liked: boolean };
 
 const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
   { id: "photo", label: "사진", shortLabel: "PHOTO" },
@@ -74,6 +75,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [uploadingPlayerId, setUploadingPlayerId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("photo");
+  const [likes, setLikes] = useState<Record<string, LikeState>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
   function getProfileUrl(player: TeamPlayer) {
     const url = new URL(window.location.origin);
@@ -125,7 +128,32 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
-  useEffect(() => { void loadMedia(); }, []);
+  async function loadLikes() {
+    try {
+      const response = await fetch("/api/likes", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { items: Array<{ key: string; count: number; liked: boolean }> };
+      setLikes(Object.fromEntries(data.items.map((item) => [item.key, { count: item.count, liked: item.liked }])));
+    } catch {
+      // Likes are optional display data; media remains available if this request fails.
+    }
+  }
+
+  async function loadAdminAccess() {
+    try {
+      const response = await fetch("/api/admin", { cache: "no-store" });
+      const data = await response.json() as { isAdmin?: boolean };
+      setIsAdmin(Boolean(response.ok && data.isAdmin));
+    } catch {
+      setIsAdmin(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadMedia();
+    void loadLikes();
+    void loadAdminAccess();
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -263,6 +291,29 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
+  async function toggleLike(item: MediaItem) {
+    const response = await fetch("/api/likes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key: item.key }),
+    });
+    if (!response.ok) return;
+    const data = await response.json() as { key: string; count: number; liked: boolean };
+    setLikes((current) => ({ ...current, [data.key]: { count: data.count, liked: data.liked } }));
+  }
+
+  async function deleteMedia(item: MediaItem) {
+    if (!window.confirm("이 사진 또는 영상을 삭제할까요? 삭제하면 복구할 수 없습니다.")) return;
+    const response = await fetch(`/api/media?action=delete&key=${encodeURIComponent(item.key)}`, { method: "DELETE" });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null) as { error?: string } | null;
+      setNotice(data?.error ?? "삭제하지 못했습니다.");
+      return;
+    }
+    setMedia((current) => current.filter((mediaItem) => mediaItem.key !== item.key));
+    setNotice("사진 또는 영상을 삭제했습니다.");
+  }
+
   const selectedMedia = selected ? mediaByPlayer.get(selected.id) ?? [] : [];
   const selectedCategoryMedia = selectedMedia.filter((item) => item.category === selectedCategory);
   const activeCategory = mediaCategories.find((category) => category.id === selectedCategory) ?? mediaCategories[0];
@@ -298,10 +349,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
                   <span>프로필 열기 ↗</span>
                 </div>
               </button>
-              <label className={`gd-card-upload${uploadingPlayerId === player.id ? " disabled" : ""}`}>
+              {isAdmin && <label className={`gd-card-upload${uploadingPlayerId === player.id ? " disabled" : ""}`}>
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadPlayerPhoto(player, event)} disabled={uploadingPlayerId !== null} />
                 <span>{uploadingPlayerId === player.id ? "사진 올리는 중…" : portrait ? "사진 교체하기" : "+ 선수 사진 직접 올리기"}</span>
-              </label>
+              </label>}
             </article>
           );
         })}
@@ -322,7 +373,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <div><span>THROW / BAT</span><strong>{selected.batsThrows}</strong></div>
             </div>
 
-            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div><label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : `+ ${activeCategory.label} 올리기`}</span></label></div>
+            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div>{isAdmin ? <label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : `+ ${activeCategory.label} 올리기`}</span></label> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
               {mediaCategories.map((category) => (
                 <button key={category.id} className={selectedCategory === category.id ? "active" : ""} onClick={() => { setSelectedCategory(category.id); setNotice(""); }}>
@@ -332,7 +383,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             </div>
             {notice && <p className="gd-notice">{notice}</p>}
             <div className="gd-media-grid">
-              {selectedCategoryMedia.map((item) => <figure key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selected.name} 업로드 사진`} /> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}</figcaption></figure>)}
+              {selectedCategoryMedia.map((item) => {
+                const like = likes[item.key] ?? { count: 0, liked: false };
+                return <figure key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selected.name} 업로드 사진`} /> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
+              })}
               {!selectedCategoryMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 {activeCategory.label}이 없습니다.</strong><p>{selectedCategory === "photo" ? "JPG·PNG·WEBP 사진을 올려주세요." : "MP4·WEBM·MOV 영상을 올려주세요."}</p></div>}
             </div>
             <p className="gd-rights">선수·보호자 동의와 촬영물 사용 권리가 확인된 파일만 올려주세요. 사진은 100MB, 영상은 최대 2GB까지 올릴 수 있습니다.</p>
