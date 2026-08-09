@@ -75,7 +75,7 @@ export async function PUT(request: Request) {
   const aspiration = (body.aspiration ?? "").trim();
   if (!isTeamId(teamId) || !isPlayerId(playerId)) return Response.json({ error: "선수 또는 학교 정보가 올바르지 않습니다." }, { status: 400 });
   if (!Number.isInteger(year) || year < 2000 || year > 2100) return Response.json({ error: "기준 연도는 2000~2100년 사이로 입력해 주세요." }, { status: 400 });
-  if (!/^\d{1,3}$/.test(number)) return Response.json({ error: "등번호는 숫자 1~3자리로 입력해 주세요." }, { status: 400 });
+  if (!/^(?:\d{1,3}|미정)$/.test(number)) return Response.json({ error: "등번호는 숫자 1~3자리 또는 미정으로 입력해 주세요." }, { status: 400 });
   if (!/^(1학년|2학년|3학년|졸업)$/.test(grade)) return Response.json({ error: "학년을 올바르게 선택해 주세요." }, { status: 400 });
   if (position.length < 1 || position.length > 20) return Response.json({ error: "포지션은 1~20자로 입력해 주세요." }, { status: 400 });
   if (!Number.isInteger(height) || height < 100 || height > 230) return Response.json({ error: "키는 100~230cm 사이의 정수로 입력해 주세요." }, { status: 400 });
