@@ -13,6 +13,7 @@ import MyeongjiRoster, { players as myeongjiPlayers } from "./myeongji-roster";
 import BaemyeongRoster, { players as baemyeongPlayers } from "./baemyeong-roster";
 import BaekjaeRoster, { players as baekjaePlayers } from "./baekjae-roster";
 import SeoulHgRoster, { players as seoulHgPlayers } from "./seoul-hg-roster";
+import SeoulHkRoster, { players as seoulHkPlayers } from "./seoul-hk-roster";
 
 type School = {
   name: string;
@@ -185,6 +186,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "배명고": "baemyeong-roster",
   "배재고": "baekjae-roster",
   "서울HG야구단(U-18)": "seoul-hg-roster",
+  "서울HK야구단(U-18)": "seoul-hk-roster",
 };
 
 const playerSearchIndex = [
@@ -198,6 +200,7 @@ const playerSearchIndex = [
   ...baemyeongPlayers.map((player) => ({ player, school: "배명고", sectionId: "baemyeong-roster" })),
   ...baekjaePlayers.map((player) => ({ player, school: "배재고", sectionId: "baekjae-roster" })),
   ...seoulHgPlayers.map((player) => ({ player, school: "서울HG야구단(U-18)", sectionId: "seoul-hg-roster" })),
+  ...seoulHkPlayers.map((player) => ({ player, school: "서울HK야구단(U-18)", sectionId: "seoul-hk-roster" })),
 ];
 
 export default function Home() {
@@ -370,6 +373,7 @@ export default function Home() {
       <BaemyeongRoster />
       <BaekjaeRoster />
       <SeoulHgRoster />
+      <SeoulHkRoster />
 
       <section className="player-section" id="players">
         <div className="section-title light">
