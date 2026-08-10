@@ -348,3 +348,14 @@ footer p, footer small { color: #777; }
   .gd-media-grid { grid-template-columns: 1fr; }
   .school-row { grid-template-columns: 30px 1fr 47px; }
 }
+.pwa-install-button {
+  border-color: #ff6200;
+  color: #ff6200;
+}
+
+@media (max-width: 760px) {
+  .pwa-install-button {
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+}

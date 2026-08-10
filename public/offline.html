@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ff6200" />
+    <title>아마ON · 오프라인</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #050505; color: #fff; font-family: Arial, "Noto Sans KR", sans-serif; }
+      main { width: min(88vw, 440px); text-align: center; }
+      img { width: 132px; height: 132px; border-radius: 24px; }
+      h1 { margin: 24px 0 12px; font-size: 32px; }
+      h1 em { color: #ff6200; font-style: normal; }
+      p { color: #b7b7b7; line-height: 1.65; }
+      button { margin-top: 18px; border: 0; padding: 14px 24px; background: #ff6200; color: #050505; font-weight: 900; font-size: 16px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="아마ON" />
+      <h1>아마<em>ON</em></h1>
+      <p>현재 인터넷 연결이 없습니다.<br />연결 상태를 확인한 뒤 다시 시도해 주세요.</p>
+      <button type="button" onclick="location.reload()">다시 연결</button>
+    </main>
+  </body>
+</html>

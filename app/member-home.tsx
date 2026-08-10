@@ -16,6 +16,7 @@ import SeoulHgRoster, { players as seoulHgPlayers } from "./seoul-hg-roster";
 import SeoulHkRoster, { players as seoulHkPlayers } from "./seoul-hk-roster";
 import SeoulRoster, { players as seoulPlayers } from "./seoul-roster";
 import SeoulDongsanRoster, { players as seoulDongsanPlayers } from "./seoul-dongsan-roster";
+import PwaInstallButton from "./pwa-install-button";
 
 type School = {
   name: string;
@@ -292,6 +293,7 @@ export default function Home() {
           <a href="#players">선수 프로필</a>
           <a href="#how">등록 안내</a>
         </nav>
+        <PwaInstallButton />
         <button className="outline-button" onClick={openJoin}>프로필 등록</button>
       </header>
 
