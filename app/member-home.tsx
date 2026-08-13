@@ -18,6 +18,7 @@ import SeoulRoster, { players as seoulPlayers } from "./seoul-roster";
 import SeoulDongsanRoster, { players as seoulDongsanPlayers } from "./seoul-dongsan-roster";
 import SeoulDesignRoster, { players as seoulDesignPlayers } from "./seoul-design-roster";
 import SeoulItRoster, { players as seoulItPlayers } from "./seoul-it-roster";
+import SeoulAutoRoster, { players as seoulAutoPlayers } from "./seoul-auto-roster";
 import PwaInstallButton from "./pwa-install-button";
 
 type School = {
@@ -54,7 +55,7 @@ const schools: School[] = [
   { name: "서울동산고", region: "서울", players: 45, coach: "곽동성" },
   { name: "서울디자인고", region: "서울", players: 42, coach: "이호" },
   { name: "서울아이티고BC", region: "서울", players: 22, coach: "조용준" },
-  { name: "서울자동차고", region: "서울", players: 30, coach: "이우종" },
+  { name: "서울자동차고", region: "서울", players: 32, coach: "이우종" },
   { name: "서울컨벤션고", region: "서울", players: 53, coach: "유영원" },
   { name: "선린인터넷고", region: "서울", players: 46, coach: "박덕희" },
   { name: "성남고", region: "서울", players: 60, coach: "박혁" },
@@ -196,6 +197,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "서울동산고": "seoul-dongsan-roster",
   "서울디자인고": "seoul-design-roster",
   "서울아이티고BC": "seoul-it-roster",
+  "서울자동차고": "seoul-auto-roster",
 };
 
 const playerSearchIndex = [
@@ -214,6 +216,7 @@ const playerSearchIndex = [
   ...seoulDongsanPlayers.map((player) => ({ player, school: "서울동산고", sectionId: "seoul-dongsan-roster" })),
   ...seoulDesignPlayers.map((player) => ({ player, school: "서울디자인고", sectionId: "seoul-design-roster" })),
   ...seoulItPlayers.map((player) => ({ player, school: "서울아이티고BC", sectionId: "seoul-it-roster" })),
+  ...seoulAutoPlayers.map((player) => ({ player, school: "서울자동차고", sectionId: "seoul-auto-roster" })),
 ];
 
 export default function Home() {
@@ -392,6 +395,7 @@ export default function Home() {
       <SeoulDongsanRoster />
       <SeoulDesignRoster />
       <SeoulItRoster />
+      <SeoulAutoRoster />
 
       <section className="player-section" id="players">
         <div className="section-title light">
