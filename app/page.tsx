@@ -1,6 +1,5 @@
 import MemberHome from "./member-home";
-import { requireChatGPTUser } from "./chatgpt-auth";
-import { registerMember } from "./members";
+import { requireAmaonUser } from "./auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +16,7 @@ function memberReturnTo(params: SearchParams) {
 }
 
 async function SignedInHome({ returnTo }: { returnTo: string }) {
-  const user = await requireChatGPTUser(returnTo);
-  await registerMember(user);
+  await requireAmaonUser(returnTo);
   return <MemberHome />;
 }
 

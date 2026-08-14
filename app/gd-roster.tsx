@@ -1,6 +1,8 @@
 "use client";
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import * as tus from "tus-js-client";
+import { createSupabaseBrowserClient } from "./supabase/browser";
 
 export type TeamPlayer = {
   id: string;
@@ -446,62 +448,42 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     return grouped;
   }, [media]);
 
-  async function uploadMultipartVideo(file: File, playerId: string, category: MediaCategory) {
-    const chunkSize = 50 * 1024 * 1024;
+  async function uploadSupabaseFile(file: File, playerId: string, category: MediaStorageCategory) {
     const maxVideoSize = 2 * 1024 * 1024 * 1024;
-    if (file.size > maxVideoSize) throw new Error("영상은 최대 2GB까지 올릴 수 있습니다.");
+    const maxImageSize = 30 * 1024 * 1024;
+    const isImage = category === "photo" || category === "profile";
+    if (file.size > (isImage ? maxImageSize : maxVideoSize)) throw new Error(isImage ? "사진은 최대 30MB까지 올릴 수 있습니다." : "영상은 최대 2GB까지 올릴 수 있습니다.");
     const contentType = file.type || (file.name.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4");
-    let key = "";
-    let uploadId = "";
-
-    try {
-      const createResponse = await fetch("/api/media?action=multipart-create", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ playerId, category, fileName: file.name, contentType, size: file.size }),
+    const extension = (file.name.split(".").pop() || (isImage ? "jpg" : "mp4")).replace(/[^a-zA-Z0-9]/g, "").slice(0, 8);
+    const key = `gd/${playerId}/${category}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const supabase = createSupabaseBrowserClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
+    const endpoint = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/upload/resumable`;
+    await new Promise<void>((resolve, reject) => {
+      const upload = new tus.Upload(file, {
+        endpoint,
+        retryDelays: [0, 1000, 3000, 5000, 10000],
+        headers: { authorization: `Bearer ${session.access_token}`, apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        chunkSize: 6 * 1024 * 1024,
+        metadata: { bucketName: "media", objectName: key, contentType },
+        onError: reject,
+        onProgress: (uploaded, total) => setUploadProgress(Math.round((uploaded / total) * 95)),
+        onSuccess: () => resolve(),
       });
-      const created = await createResponse.json().catch(() => null) as { key?: string; uploadId?: string; error?: string } | null;
-      if (!createResponse.ok || !created?.key || !created.uploadId) throw new Error(created?.error ?? "대용량 영상 업로드를 시작하지 못했습니다.");
-      key = created.key;
-      uploadId = created.uploadId;
-
-      const parts: Array<{ partNumber: number; etag: string }> = [];
-      const partCount = Math.ceil(file.size / chunkSize);
-      for (let index = 0; index < partCount; index += 1) {
-        const start = index * chunkSize;
-        const end = Math.min(start + chunkSize, file.size);
-        const chunk = file.slice(start, end);
-        let uploadedPart: { partNumber: number; etag: string } | null = null;
-
-        for (let attempt = 1; attempt <= 3 && !uploadedPart; attempt += 1) {
-          const partResponse = await fetch(`/api/media?action=multipart-part&key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}&partNumber=${index + 1}`, {
-            method: "PUT",
-            headers: { "content-type": "application/octet-stream" },
-            body: chunk,
-          });
-          const partData = await partResponse.json().catch(() => null) as { partNumber?: number; etag?: string; error?: string } | null;
-          if (partResponse.ok && partData?.partNumber && partData.etag) uploadedPart = { partNumber: partData.partNumber, etag: partData.etag };
-          else if (attempt === 3) throw new Error(partData?.error ?? `${index + 1}번째 영상 전송에 실패했습니다.`);
-        }
-
-        parts.push(uploadedPart as { partNumber: number; etag: string });
-        setUploadProgress(Math.round((end / file.size) * 95));
-      }
-
-      const completeResponse = await fetch("/api/media?action=multipart-complete", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ key, uploadId, parts }),
-      });
-      const completed = await completeResponse.json().catch(() => null) as { error?: string } | null;
-      if (!completeResponse.ok) throw new Error(completed?.error ?? "전송된 영상을 합치지 못했습니다.");
-      setUploadProgress(100);
-    } catch (error) {
-      if (key && uploadId) {
-        void fetch(`/api/media?action=multipart-abort&key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}`, { method: "DELETE" });
-      }
-      throw error;
+      upload.findPreviousUploads().then((previous) => {
+        if (previous[0]) upload.resumeFromPreviousUpload(previous[0]);
+        upload.start();
+      }).catch(reject);
+    });
+    const registered = await fetch("/api/media", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key, playerId, category, contentType }) });
+    if (!registered.ok) {
+      const data = await registered.json().catch(() => null) as { error?: string } | null;
+      throw new Error(data?.error || "업로드 파일을 등록하지 못했습니다.");
     }
+    setUploadProgress(100);
   }
 
   async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -514,20 +496,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     try {
       for (const file of files) {
         const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(file.name);
-        if (selectedCategory !== "photo" && isVideo) {
+        if ((selectedCategory === "photo" && !isVideo) || (selectedCategory !== "photo" && isVideo)) {
           setUploadProgress(0);
-          await uploadMultipartVideo(file, selected.id, selectedCategory);
-          continue;
-        }
-        const form = new FormData();
-        form.append("playerId", selected.id);
-        form.append("category", selectedCategory);
-        form.append("file", file);
-        const response = await fetch("/api/media", { method: "POST", body: form });
-        if (!response.ok) {
-          const data = await response.json().catch(() => null) as { error?: string } | null;
-          throw new Error(data?.error ?? `${file.name} 업로드에 실패했습니다.`);
-        }
+          await uploadSupabaseFile(file, selected.id, selectedCategory);
+        } else throw new Error("선택한 카테고리와 파일 형식이 맞지 않습니다.");
       }
       const categoryLabel = mediaCategories.find((category) => category.id === selectedCategory)?.label;
       setNotice(`${categoryLabel}에 ${files.length}개 파일을 업로드했습니다.`);
@@ -548,15 +520,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     setNotice("");
 
     try {
-      const form = new FormData();
-      form.append("playerId", player.id);
-      form.append("category", "profile");
-      form.append("file", file);
-      const response = await fetch("/api/media", { method: "POST", body: form });
-      if (!response.ok) {
-        const data = await response.json().catch(() => null) as { error?: string } | null;
-        throw new Error(data?.error ?? `${file.name} 업로드에 실패했습니다.`);
-      }
+      setUploadProgress(0);
+      await uploadSupabaseFile(file, player.id, "profile");
       const previousProfiles = (mediaByPlayer.get(player.id) ?? []).filter((item) => item.category === "profile");
       await Promise.all(previousProfiles.map((item) =>
         fetch(`/api/media?action=delete&key=${encodeURIComponent(item.key)}`, { method: "DELETE" }).catch(() => null)
