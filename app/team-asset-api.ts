@@ -23,8 +23,28 @@ const restoredEmblemTeams = new Set([
   "sunrin-roster",
 ]);
 
+const restoredBannerTeams = new Set([
+  "baekjae-roster",
+  "baemyeong-roster",
+  "deoksu-roster",
+  "gd-roster",
+  "gyeonggi-roster",
+  "gyeongsang-roster",
+  "kyungdong-roster",
+  "seongnam-roster",
+  "seoul-auto-roster",
+  "seoul-convention-roster",
+  "seoul-design-roster",
+  "seoul-dongsan-roster",
+  "seoul-hg-roster",
+  "seoul-hk-roster",
+  "seoul-it-roster",
+  "seoul-roster",
+  "sunrin-roster",
+]);
+
 function restoredAsset(kind: "banner" | "emblem", teamId: string) {
-  const exists = kind === "emblem" ? restoredEmblemTeams.has(teamId) : teamId === "gd-roster";
+  const exists = kind === "emblem" ? restoredEmblemTeams.has(teamId) : restoredBannerTeams.has(teamId);
   if (!exists) return null;
   return {
     key: `restored/${teamId}/${kind}.png`,
