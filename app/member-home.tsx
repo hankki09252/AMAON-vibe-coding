@@ -23,6 +23,7 @@ import SeoulConventionRoster, { players as seoulConventionPlayers } from "./seou
 import SunrinRoster, { players as sunrinPlayers } from "./sunrin-roster";
 import SeongnamRoster, { players as seongnamPlayers } from "./seongnam-roster";
 import SemyeongRoster, { players as semyeongPlayers } from "./semyeong-roster";
+import GyeonggiAviationRoster, { players as gyeonggiAviationPlayers } from "./gyeonggi-aviation-roster";
 import PwaInstallButton from "./pwa-install-button";
 
 type School = {
@@ -206,6 +207,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "선린인터넷고": "sunrin-roster",
   "성남고": "seongnam-roster",
   "세명컴퓨터고야구단": "semyeong-roster",
+  "경기항공고": "gyeonggi-aviation-roster",
 };
 
 const playerSearchIndex = [
@@ -229,6 +231,7 @@ const playerSearchIndex = [
   ...sunrinPlayers.map((player) => ({ player, school: "선린인터넷고", sectionId: "sunrin-roster" })),
   ...seongnamPlayers.map((player) => ({ player, school: "성남고", sectionId: "seongnam-roster" })),
   ...semyeongPlayers.map((player) => ({ player, school: "세명컴퓨터고야구단", sectionId: "semyeong-roster" })),
+  ...gyeonggiAviationPlayers.map((player) => ({ player, school: "경기항공고", sectionId: "gyeonggi-aviation-roster" })),
 ];
 
 export default function Home() {
@@ -412,6 +415,7 @@ export default function Home() {
       <SunrinRoster />
       <SeongnamRoster />
       <SemyeongRoster />
+      <GyeonggiAviationRoster />
 
       <section className="player-section" id="players">
         <div className="section-title light">
