@@ -1,6 +1,38 @@
 import { apiAdmin, apiUser, validTeamId } from "./api-auth";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
+const restoredEmblemTeams = new Set([
+  "baekjae-roster",
+  "baemyeong-roster",
+  "deoksu-roster",
+  "gangneung-roster",
+  "gd-roster",
+  "gyeonggi-roster",
+  "gyeongsang-roster",
+  "kyungdong-roster",
+  "semyeong-roster",
+  "seongnam-roster",
+  "seoul-auto-roster",
+  "seoul-convention-roster",
+  "seoul-design-roster",
+  "seoul-dongsan-roster",
+  "seoul-hg-roster",
+  "seoul-hk-roster",
+  "seoul-it-roster",
+  "seoul-roster",
+  "sunrin-roster",
+]);
+
+function restoredAsset(kind: "banner" | "emblem", teamId: string) {
+  const exists = kind === "emblem" ? restoredEmblemTeams.has(teamId) : teamId === "gd-roster";
+  if (!exists) return null;
+  return {
+    key: `restored/${teamId}/${kind}.png`,
+    url: `/team-${kind}s/${teamId}.png`,
+    uploadedAt: "2026-08-15T00:00:00.000Z",
+  };
+}
+
 export function createTeamAssetHandlers(kind: "banner" | "emblem") {
   const maxSize = kind === "banner" ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
   const label = kind === "banner" ? "팀 배너" : "팀 엠블럼";
@@ -13,7 +45,7 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
     const db = createSupabaseAdminClient();
     const { data } = await db.storage.from("media").list(pathPrefix(teamId), { limit: 20, sortBy: { column: "created_at", order: "desc" } });
     const object = data?.[0];
-    if (!object) return Response.json({ [kind]: null }, { headers: { "cache-control": "no-store" } });
+    if (!object) return Response.json({ [kind]: restoredAsset(kind, teamId) }, { headers: { "cache-control": "no-store" } });
     const key = `${pathPrefix(teamId)}${object.name}`;
     const { data: signed } = await db.storage.from("media").createSignedUrl(key, 3600);
     return Response.json({ [kind]: { key, url: signed?.signedUrl || "", uploadedAt: object.created_at } }, { headers: { "cache-control": "no-store" } });
