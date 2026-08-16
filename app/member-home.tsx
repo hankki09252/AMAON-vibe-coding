@@ -485,14 +485,23 @@ export default function Home() {
         <div className="directory-head"><span>TEAM / REGION</span><span>ROSTER</span></div>
         <div className="school-list">
           {filteredSchools.length ? filteredSchools.map((school, index) => (
-            <article className="school-row" key={school.name}>
+            <article
+              className="school-row"
+              key={school.name}
+              role="button"
+              tabIndex={0}
+              aria-label={`${school.name} 선수단 보기`}
+              onClick={() => jumpToSection(rosterSectionBySchool[school.name] ?? "players")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  jumpToSection(rosterSectionBySchool[school.name] ?? "players");
+                }
+              }}
+            >
               <span className="school-index">{String(index + 1).padStart(2, "0")}</span>
               <div className="school-emblem" aria-hidden="true">{school.name.slice(0, 1)}</div>
-              {rosterSectionBySchool[school.name] ? (
-                <button className="school-name school-name-link" onClick={() => jumpToSection(rosterSectionBySchool[school.name])}>
-                  <h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p>
-                </button>
-              ) : <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>}
+              <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>
               {school.featured && <span className="verified">✓ 정보 확인</span>}
               <div className="roster"><strong>{school.players}</strong><span>명</span></div>
             </article>

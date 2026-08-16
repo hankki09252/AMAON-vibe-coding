@@ -97,9 +97,10 @@ body { background: var(--brand-black); color: #111; }
 .filters button { border: 1px solid #999; color: #333; font-weight: 800; transform: skew(-5deg); }
 .filters button.active { background: #050505; border-color: var(--brand-orange); color: var(--brand-orange); }
 .school-list { border-top: 4px solid #050505; }
-.school-row { border-bottom-color: #bbb; }
+.school-row { border-bottom-color: #bbb; cursor: pointer; outline: none; }
 .school-row:hover { background: #111; color: white; box-shadow: inset 5px 0 0 var(--brand-orange); }
 .school-row:hover p, .school-row:hover .roster span, .school-row:hover .school-index { color: #aaa; }
+.school-row:focus-visible { outline: 3px solid var(--brand-orange); outline-offset: 3px; }
 .school-emblem { border-radius: 3px; background: #050505; color: var(--brand-orange); transform: rotate(45deg); }
 .school-emblem::first-letter { transform: rotate(-45deg); }
 .verified { background: #111; color: var(--brand-orange); border-left: 3px solid var(--brand-orange); }
