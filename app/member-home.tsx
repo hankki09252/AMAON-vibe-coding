@@ -26,6 +26,7 @@ import SemyeongRoster, { players as semyeongPlayers } from "./semyeong-roster";
 import GyeonggiAviationRoster, { players as gyeonggiAviationPlayers } from "./gyeonggi-aviation-roster";
 import GyeongminItRoster, { players as gyeongminItPlayers } from "./gyeongmin-it-roster";
 import GimpoScienceRoster, { players as gimpoSciencePlayers } from "./gimpo-science-roster";
+import RaonRoster, { players as raonPlayers } from "./raon-roster";
 import PwaInstallButton from "./pwa-install-button";
 
 type School = {
@@ -78,7 +79,7 @@ const schools: School[] = [
   { name: "경기항공고", region: "경기", players: 43, coach: "이동수" },
   { name: "경민IT고", region: "경기", players: 28, coach: "김종석" },
   { name: "김포과학기술고", region: "경기", players: 30, coach: "김희상" },
-  { name: "라온고", region: "경기", players: 49, coach: "강봉수" },
+  { name: "라온고", region: "경기", players: 70, coach: "강봉수" },
   { name: "백송고", region: "경기", players: 32, coach: "박종호" },
   { name: "부원고야구단", region: "경기", players: 30, coach: "김상현" },
   { name: "비봉고", region: "경기", players: 39, coach: "신현철" },
@@ -214,6 +215,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "경기항공고": "gyeonggi-aviation-roster",
   "경민IT고": "gyeongmin-it-roster",
   "김포과학기술고": "gimpo-science-roster",
+  "라온고": "raon-roster",
 };
 
 const playerSearchIndex = [
@@ -240,6 +242,7 @@ const playerSearchIndex = [
   ...gyeonggiAviationPlayers.map((player) => ({ player, school: "경기항공고", sectionId: "gyeonggi-aviation-roster" })),
   ...gyeongminItPlayers.map((player) => ({ player, school: "경민IT고", sectionId: "gyeongmin-it-roster" })),
   ...gimpoSciencePlayers.map((player) => ({ player, school: "김포과학기술고", sectionId: "gimpo-science-roster" })),
+  ...raonPlayers.map((player) => ({ player, school: "라온고", sectionId: "raon-roster" })),
 ];
 
 export default function Home() {
@@ -536,6 +539,7 @@ export default function Home() {
         <GyeonggiAviationRoster />
         <GyeongminItRoster />
         <GimpoScienceRoster />
+        <RaonRoster />
       </>}
 
       <section className="player-section" id="players">
