@@ -29,6 +29,7 @@ import GimpoScienceRoster, { players as gimpoSciencePlayers } from "./gimpo-scie
 import RaonRoster, { players as raonPlayers } from "./raon-roster";
 import BaeksongRoster, { players as baeksongPlayers } from "./baeksong-roster";
 import BuwonRoster, { players as buwonPlayers } from "./buwon-roster";
+import BibongRoster, { players as bibongPlayers } from "./bibong-roster";
 import PwaInstallButton from "./pwa-install-button";
 import VideoRankings from "./video-rankings";
 
@@ -221,6 +222,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "라온고": "raon-roster",
   "백송고": "baeksong-roster",
   "부원고야구단": "buwon-roster",
+  "비봉고": "bibong-roster",
 };
 
 const playerSearchIndex = [
@@ -250,6 +252,7 @@ const playerSearchIndex = [
   ...raonPlayers.map((player) => ({ player, school: "라온고", sectionId: "raon-roster" })),
   ...baeksongPlayers.map((player) => ({ player, school: "백송고", sectionId: "baeksong-roster" })),
   ...buwonPlayers.map((player) => ({ player, school: "부원고야구단", sectionId: "buwon-roster" })),
+  ...bibongPlayers.map((player) => ({ player, school: "비봉고", sectionId: "bibong-roster" })),
 ];
 
 export default function Home() {
@@ -551,6 +554,7 @@ export default function Home() {
         <RaonRoster />
         <BaeksongRoster />
         <BuwonRoster />
+        <BibongRoster />
       </>}
 
       <section className="player-section" id="players">
