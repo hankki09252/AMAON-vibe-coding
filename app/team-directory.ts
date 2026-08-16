@@ -27,6 +27,7 @@ export const managedTeamOptions = [
   { id: "buwon-roster", label: "부원고야구단" },
   { id: "bibong-roster", label: "비봉고" },
   { id: "sangwoo-roster", label: "상우고야구단" },
+  { id: "sewon-roster", label: "세원고" },
 ] as const;
 
 export const managedTeamLabel = Object.fromEntries(
