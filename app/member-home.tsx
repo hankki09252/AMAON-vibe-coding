@@ -2,7 +2,7 @@
 
 // The signed-in member experience. Authentication is enforced by app/page.tsx.
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import GdRoster, { gdPlayers } from "./gd-roster";
 import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
 import GyeongsangRoster, { players as gyeongsangPlayers } from "./gyeongsang-roster";
@@ -185,6 +185,8 @@ const players: Player[] = [
 ];
 
 const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주", "세종"];
+const defaultVisibleRegions = ["경기", "인천"];
+const schoolRegionByName = Object.fromEntries(schools.map((school) => [school.name, school.region]));
 
 const rosterSectionBySchool: Record<string, string> = {
   "GD챌린저스BC(U-18)": "gd-roster",
@@ -241,21 +243,65 @@ export default function Home() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [role, setRole] = useState("선수 본인");
+  const [visibleRegions, setVisibleRegions] = useState(defaultVisibleRegions);
+  const [regionDraft, setRegionDraft] = useState(defaultVisibleRegions);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [regionSettingsOpen, setRegionSettingsOpen] = useState(false);
+  const [savingRegions, setSavingRegions] = useState(false);
+  const [regionNotice, setRegionNotice] = useState("");
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/region-visibility", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
+      fetch("/api/admin", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
+    ]).then(([visibility, admin]) => {
+      if (Array.isArray(visibility?.visibleRegions) && visibility.visibleRegions.length) {
+        setVisibleRegions(visibility.visibleRegions);
+        setRegionDraft(visibility.visibleRegions);
+      }
+      setIsAdmin(Boolean(admin?.isAdmin));
+    }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (region !== "전체" && !visibleRegions.includes(region)) setRegion("전체");
+  }, [region, visibleRegions]);
+
+  const publishedSchools = useMemo(
+    () => schools.filter((school) => visibleRegions.includes(school.region)),
+    [visibleRegions],
+  );
+  const availableRegions = useMemo(
+    () => ["전체", ...regions.slice(1).filter((item) => visibleRegions.includes(item))],
+    [visibleRegions],
+  );
+  const publishedPlayerSearchIndex = useMemo(
+    () => playerSearchIndex.filter((item) => visibleRegions.includes(schoolRegionByName[item.school])),
+    [visibleRegions],
+  );
+  const publishedPlayerCount = useMemo(
+    () => publishedSchools.reduce((total, school) => total + school.players, 0),
+    [publishedSchools],
+  );
+  const publishedSamplePlayers = useMemo(
+    () => players.filter((player) => visibleRegions.includes(schoolRegionByName[player.school])),
+    [visibleRegions],
+  );
 
   const filteredSchools = useMemo(() => {
     const keyword = query.trim().toLowerCase();
-    return schools.filter((school) => {
+    return publishedSchools.filter((school) => {
       const matchesRegion = region === "전체" || school.region === region;
       const matchesQuery = !keyword || `${school.name} ${school.region} ${school.coach}`.toLowerCase().includes(keyword);
       return matchesRegion && matchesQuery;
     });
-  }, [query, region]);
+  }, [publishedSchools, query, region]);
 
   const matchingPlayers = useMemo(() => {
     const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
     if (!keyword) return [];
-    return playerSearchIndex.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase().includes(keyword)).slice(0, 8);
-  }, [query]);
+    return publishedPlayerSearchIndex.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase().includes(keyword)).slice(0, 8);
+  }, [publishedPlayerSearchIndex, query]);
 
   function jumpToSection(sectionId: string) {
     const target = document.getElementById(sectionId);
@@ -278,7 +324,7 @@ export default function Home() {
   function searchSchool(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
-    const exactPlayers = playerSearchIndex.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase() === keyword);
+    const exactPlayers = publishedPlayerSearchIndex.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase() === keyword);
     const playerMatch = exactPlayers.length === 1 ? exactPlayers[0] : exactPlayers.length === 0 && matchingPlayers.length === 1 ? matchingPlayers[0] : null;
     if (playerMatch) {
       openSearchedPlayer(playerMatch);
@@ -286,7 +332,7 @@ export default function Home() {
     }
     if (exactPlayers.length > 1 || matchingPlayers.length > 1) return;
 
-    const exactMatch = schools.find((school) => school.name.replace(/\s+/g, "").toLowerCase() === keyword);
+    const exactMatch = publishedSchools.find((school) => school.name.replace(/\s+/g, "").toLowerCase() === keyword);
     const match = exactMatch ?? (filteredSchools.length === 1 ? filteredSchools[0] : null);
 
     if (match) setRegion(match.region);
@@ -304,6 +350,36 @@ export default function Home() {
     setSubmitted(true);
   }
 
+  function toggleRegionDraft(item: string) {
+    setRegionNotice("");
+    setRegionDraft((current) => current.includes(item) ? current.filter((regionName) => regionName !== item) : [...current, item]);
+  }
+
+  async function saveRegionVisibility() {
+    if (!regionDraft.length) {
+      setRegionNotice("공개할 지역을 한 곳 이상 선택해 주세요.");
+      return;
+    }
+    setSavingRegions(true);
+    setRegionNotice("");
+    try {
+      const response = await fetch("/api/region-visibility", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibleRegions: regionDraft }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "설정을 저장하지 못했습니다.");
+      setVisibleRegions(result.visibleRegions);
+      setRegionDraft(result.visibleRegions);
+      setRegionNotice("공개 지역 설정을 저장했습니다.");
+    } catch (error) {
+      setRegionNotice(error instanceof Error ? error.message : "설정을 저장하지 못했습니다.");
+    } finally {
+      setSavingRegions(false);
+    }
+  }
+
   return (
     <main>
       <header className="topbar">
@@ -313,7 +389,7 @@ export default function Home() {
         </a>
         <nav aria-label="주요 메뉴">
           <a href="#schools">학교 찾기</a>
-          <a href="#gd-roster">GD 선수단</a>
+          <a href="#schools">경기·인천 학교</a>
           <a href="#players">선수 프로필</a>
           <a href="#how">등록 안내</a>
         </nav>
@@ -349,10 +425,10 @@ export default function Home() {
               </div>
             )}
           </div>
-          <div className="hero-counts" aria-label="서비스 현황 예시">
-            <div><strong>103</strong><span>등록 학교</span></div>
-            <div><strong>3,842</strong><span>선수 프로필</span></div>
-            <div><strong>12,406</strong><span>경기 영상</span></div>
+          <div className="hero-counts" aria-label="현재 공개 현황">
+            <div><strong>{publishedSchools.length}</strong><span>공개 학교</span></div>
+            <div><strong>{publishedPlayerCount.toLocaleString()}</strong><span>등록 선수</span></div>
+            <div><strong>{visibleRegions.length}</strong><span>공개 지역</span></div>
           </div>
         </div>
 
@@ -371,8 +447,32 @@ export default function Home() {
           <div><p className="kicker dark"><span /> TEAM DIRECTORY</p><h2>학교별로 찾기</h2></div>
           <p>2026 고교야구 등록팀을 지역별로 살펴보세요.</p>
         </div>
+        {isAdmin && (
+          <div className="region-admin">
+            <button type="button" className="region-admin-toggle" onClick={() => { setRegionSettingsOpen((open) => !open); setRegionDraft(visibleRegions); setRegionNotice(""); }}>
+              지역 공개 설정 {regionSettingsOpen ? "닫기" : "열기"}
+            </button>
+            {regionSettingsOpen && (
+              <div className="region-settings" aria-label="지역 공개 설정">
+                <div><strong>서비스에 공개할 지역</strong><span>숨긴 지역은 학교 목록·검색·선수 프로필에서 표시되지 않습니다.</span></div>
+                <div className="region-settings-grid">
+                  {regions.slice(1).map((item) => (
+                    <label key={item} className={regionDraft.includes(item) ? "active" : ""}>
+                      <input type="checkbox" checked={regionDraft.includes(item)} onChange={() => toggleRegionDraft(item)} />
+                      <span>{item}</span><small>{regionDraft.includes(item) ? "공개" : "숨김"}</small>
+                    </label>
+                  ))}
+                </div>
+                <div className="region-settings-actions">
+                  <button type="button" onClick={saveRegionVisibility} disabled={savingRegions}>{savingRegions ? "저장 중…" : "설정 저장"}</button>
+                  {regionNotice && <p>{regionNotice}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div className="filters" aria-label="지역 필터">
-          {regions.map((item) => (
+          {availableRegions.map((item) => (
             <button key={item} className={region === item ? "active" : ""} onClick={() => setRegion(item)}>{item}</button>
           ))}
         </div>
@@ -395,27 +495,29 @@ export default function Home() {
         <p className="data-note">학교·선수 수는 제공하신 2026년 자료를 바탕으로 구성한 시안 데이터입니다.</p>
       </section>
 
-      <GdRoster />
-      <GyeonggiRoster />
-      <GyeongsangRoster />
-      <KyungdongRoster />
-      <GangneungRoster />
-      <DeoksuRoster />
-      <MyeongjiRoster />
-      <BaemyeongRoster />
-      <BaekjaeRoster />
-      <SeoulHgRoster />
-      <SeoulHkRoster />
-      <SeoulRoster />
-      <SeoulDongsanRoster />
-      <SeoulDesignRoster />
-      <SeoulItRoster />
-      <SeoulAutoRoster />
-      <SeoulConventionRoster />
-      <SunrinRoster />
-      <SeongnamRoster />
-      <SemyeongRoster />
-      <GyeonggiAviationRoster />
+      {visibleRegions.includes("서울") && <>
+        <GdRoster />
+        <GyeonggiRoster />
+        <GyeongsangRoster />
+        <KyungdongRoster />
+        <DeoksuRoster />
+        <MyeongjiRoster />
+        <BaemyeongRoster />
+        <BaekjaeRoster />
+        <SeoulHgRoster />
+        <SeoulHkRoster />
+        <SeoulRoster />
+        <SeoulDongsanRoster />
+        <SeoulDesignRoster />
+        <SeoulItRoster />
+        <SeoulAutoRoster />
+        <SeoulConventionRoster />
+        <SunrinRoster />
+        <SeongnamRoster />
+        <SemyeongRoster />
+      </>}
+      {visibleRegions.includes("강원") && <GangneungRoster />}
+      {visibleRegions.includes("경기") && <GyeonggiAviationRoster />}
 
       <section className="player-section" id="players">
         <div className="section-title light">
@@ -423,7 +525,7 @@ export default function Home() {
           <p>숫자, 영상, 성장 과정까지 한 장의 프로필로 보여줍니다.</p>
         </div>
         <div className="player-grid">
-          {players.map((player, index) => (
+          {publishedSamplePlayers.map((player, index) => (
             <button className={`player-card ${player.tone}`} key={player.name} onClick={() => setSelectedPlayer(player)}>
               <div className="player-card-top"><span>0{index + 1}</span><small>샘플 프로필</small></div>
               <div className="player-figure"><span>{player.number}</span></div>
