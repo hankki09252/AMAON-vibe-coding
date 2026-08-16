@@ -30,6 +30,7 @@ import RaonRoster, { players as raonPlayers } from "./raon-roster";
 import BaeksongRoster, { players as baeksongPlayers } from "./baeksong-roster";
 import BuwonRoster, { players as buwonPlayers } from "./buwon-roster";
 import BibongRoster, { players as bibongPlayers } from "./bibong-roster";
+import SangwooRoster, { players as sangwooPlayers } from "./sangwoo-roster";
 import PwaInstallButton from "./pwa-install-button";
 import VideoRankings from "./video-rankings";
 
@@ -223,6 +224,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "백송고": "baeksong-roster",
   "부원고야구단": "buwon-roster",
   "비봉고": "bibong-roster",
+  "상우고야구단": "sangwoo-roster",
 };
 const schoolByRosterSection = Object.fromEntries(Object.entries(rosterSectionBySchool).map(([school, sectionId]) => [sectionId, school]));
 
@@ -254,6 +256,7 @@ const playerSearchIndex = [
   ...baeksongPlayers.map((player) => ({ player, school: "백송고", sectionId: "baeksong-roster" })),
   ...buwonPlayers.map((player) => ({ player, school: "부원고야구단", sectionId: "buwon-roster" })),
   ...bibongPlayers.map((player) => ({ player, school: "비봉고", sectionId: "bibong-roster" })),
+  ...sangwooPlayers.map((player) => ({ player, school: "상우고야구단", sectionId: "sangwoo-roster" })),
 ];
 
 export default function Home() {
@@ -589,6 +592,7 @@ export default function Home() {
         <BaeksongRoster />
         <BuwonRoster />
         <BibongRoster />
+        <SangwooRoster />
       </>}
 
       <section className="player-section" id="players">
