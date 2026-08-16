@@ -27,6 +27,7 @@ import GyeonggiAviationRoster, { players as gyeonggiAviationPlayers } from "./gy
 import GyeongminItRoster, { players as gyeongminItPlayers } from "./gyeongmin-it-roster";
 import GimpoScienceRoster, { players as gimpoSciencePlayers } from "./gimpo-science-roster";
 import RaonRoster, { players as raonPlayers } from "./raon-roster";
+import BaeksongRoster, { players as baeksongPlayers } from "./baeksong-roster";
 import PwaInstallButton from "./pwa-install-button";
 
 type School = {
@@ -80,7 +81,7 @@ const schools: School[] = [
   { name: "경민IT고", region: "경기", players: 28, coach: "김종석" },
   { name: "김포과학기술고", region: "경기", players: 30, coach: "김희상" },
   { name: "라온고", region: "경기", players: 70, coach: "강봉수" },
-  { name: "백송고", region: "경기", players: 32, coach: "박종호" },
+  { name: "백송고", region: "경기", players: 51, coach: "박종호" },
   { name: "부원고야구단", region: "경기", players: 30, coach: "김상현" },
   { name: "비봉고", region: "경기", players: 39, coach: "신현철" },
   { name: "상우고야구단", region: "경기", players: 30, coach: "신명철" },
@@ -216,6 +217,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "경민IT고": "gyeongmin-it-roster",
   "김포과학기술고": "gimpo-science-roster",
   "라온고": "raon-roster",
+  "백송고": "baeksong-roster",
 };
 
 const playerSearchIndex = [
@@ -243,6 +245,7 @@ const playerSearchIndex = [
   ...gyeongminItPlayers.map((player) => ({ player, school: "경민IT고", sectionId: "gyeongmin-it-roster" })),
   ...gimpoSciencePlayers.map((player) => ({ player, school: "김포과학기술고", sectionId: "gimpo-science-roster" })),
   ...raonPlayers.map((player) => ({ player, school: "라온고", sectionId: "raon-roster" })),
+  ...baeksongPlayers.map((player) => ({ player, school: "백송고", sectionId: "baeksong-roster" })),
 ];
 
 export default function Home() {
@@ -540,6 +543,7 @@ export default function Home() {
         <GyeongminItRoster />
         <GimpoScienceRoster />
         <RaonRoster />
+        <BaeksongRoster />
       </>}
 
       <section className="player-section" id="players">
