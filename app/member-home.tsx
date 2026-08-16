@@ -25,6 +25,7 @@ import SeongnamRoster, { players as seongnamPlayers } from "./seongnam-roster";
 import SemyeongRoster, { players as semyeongPlayers } from "./semyeong-roster";
 import GyeonggiAviationRoster, { players as gyeonggiAviationPlayers } from "./gyeonggi-aviation-roster";
 import GyeongminItRoster, { players as gyeongminItPlayers } from "./gyeongmin-it-roster";
+import GimpoScienceRoster, { players as gimpoSciencePlayers } from "./gimpo-science-roster";
 import PwaInstallButton from "./pwa-install-button";
 
 type School = {
@@ -212,6 +213,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "세명컴퓨터고야구단": "semyeong-roster",
   "경기항공고": "gyeonggi-aviation-roster",
   "경민IT고": "gyeongmin-it-roster",
+  "김포과학기술고": "gimpo-science-roster",
 };
 
 const playerSearchIndex = [
@@ -237,6 +239,7 @@ const playerSearchIndex = [
   ...semyeongPlayers.map((player) => ({ player, school: "세명컴퓨터고야구단", sectionId: "semyeong-roster" })),
   ...gyeonggiAviationPlayers.map((player) => ({ player, school: "경기항공고", sectionId: "gyeonggi-aviation-roster" })),
   ...gyeongminItPlayers.map((player) => ({ player, school: "경민IT고", sectionId: "gyeongmin-it-roster" })),
+  ...gimpoSciencePlayers.map((player) => ({ player, school: "김포과학기술고", sectionId: "gimpo-science-roster" })),
 ];
 
 export default function Home() {
@@ -523,6 +526,7 @@ export default function Home() {
       {visibleRegions.includes("경기") && <>
         <GyeonggiAviationRoster />
         <GyeongminItRoster />
+        <GimpoScienceRoster />
       </>}
 
       <section className="player-section" id="players">
