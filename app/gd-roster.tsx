@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import { createSupabaseBrowserClient } from "./supabase/browser";
 
@@ -99,6 +99,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [editingOrigins, setEditingOrigins] = useState(false);
   const [savingOrigins, setSavingOrigins] = useState(false);
   const [originForm, setOriginForm] = useState<OriginSchoolForm[]>([]);
+  const [mediaFeedOpen, setMediaFeedOpen] = useState(false);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const mediaFeedRef = useRef<HTMLDivElement>(null);
+  const mediaVideoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
   function resolvePlayer(player: TeamPlayer): TeamPlayer {
     const override = profileOverrides[player.id];
@@ -131,6 +135,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   }
 
   function closePlayer() {
+    setMediaFeedOpen(false);
     setSelected(null);
     setEditingProfile(false);
     setEditingOrigins(false);
@@ -555,6 +560,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       return;
     }
     setMedia((current) => current.filter((mediaItem) => mediaItem.key !== item.key));
+    if (selectedCategoryMedia.length <= 1) setMediaFeedOpen(false);
+    else setActiveMediaIndex((current) => Math.min(current, selectedCategoryMedia.length - 2));
     setNotice("사진 또는 영상을 삭제했습니다.");
   }
 
@@ -564,6 +571,42 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const selectedDisplay = selected ? resolvePlayer(selected) : null;
   const selectedOrigins = selectedDisplay ? originSchools[selectedDisplay.id] ?? [] : [];
   const selectedDetails = selectedDisplay ? profileOverrides[selectedDisplay.id] : undefined;
+
+  function openMediaFeed() {
+    if (!selectedCategoryMedia.length) return;
+    setActiveMediaIndex(0);
+    setMediaFeedOpen(true);
+  }
+
+  function moveMediaFeed(direction: -1 | 1) {
+    const nextIndex = Math.min(Math.max(activeMediaIndex + direction, 0), selectedCategoryMedia.length - 1);
+    mediaFeedRef.current?.scrollTo({ top: nextIndex * mediaFeedRef.current.clientHeight, behavior: "smooth" });
+    setActiveMediaIndex(nextIndex);
+  }
+
+  useEffect(() => {
+    if (!mediaFeedOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMediaFeedOpen(false);
+      if (event.key === "ArrowDown") moveMediaFeed(1);
+      if (event.key === "ArrowUp") moveMediaFeed(-1);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mediaFeedOpen, activeMediaIndex, selectedCategoryMedia.length]);
+
+  useEffect(() => {
+    mediaVideoRefs.current.forEach((video, index) => {
+      if (!video) return;
+      if (mediaFeedOpen && index === activeMediaIndex) void video.play().catch(() => undefined);
+      else video.pause();
+    });
+  }, [activeMediaIndex, mediaFeedOpen, selectedCategory, selectedCategoryMedia.length]);
 
   return (
     <section className="gd-section" id={sectionId}>
@@ -686,7 +729,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <article><span>03 · MY GOAL</span><h3>목표와 포부</h3><p>{selectedDetails?.aspiration || "선수의 목표와 포부가 준비 중입니다."}</p></article>
             </section>
 
-            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택하면 해당 항목만 모아서 볼 수 있습니다.</p></div>{isAdmin ? <label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : `+ ${activeCategory.label} 올리기`}</span></label> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div>
+            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택한 뒤 전체화면에서 위아래로 넘겨볼 수 있습니다.</p></div><div className="gd-media-head-actions"><button type="button" className="gd-feed-open" onClick={openMediaFeed} disabled={!selectedCategoryMedia.length}>릴스처럼 보기 <span>↕</span></button>{isAdmin ? <label className={uploading ? "disabled" : ""}><input type="file" accept={selectedCategory === "photo" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm,video/quicktime"} multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : `+ ${activeCategory.label} 올리기`}</span></label> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div></div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
               {mediaCategories.map((category) => (
                 <button key={category.id} className={selectedCategory === category.id ? "active" : ""} onClick={() => { setSelectedCategory(category.id); setNotice(""); }}>
@@ -705,6 +748,24 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <p className="gd-rights">선수·보호자 동의와 촬영물 사용 권리가 확인된 파일만 올려주세요. 사진은 100MB, 영상은 최대 2GB까지 올릴 수 있습니다.</p>
           </section>
         </div>
+      )}
+      {mediaFeedOpen && selectedDisplay && selectedCategoryMedia.length > 0 && (
+        <section className="gd-media-feed" role="dialog" aria-modal="true" aria-label={`${selectedDisplay.name} ${activeCategory.label} 전체화면 보기`}>
+          <div className="gd-media-feed-top"><div><small>{teamLabel}</small><strong>{selectedDisplay.name} · {activeCategory.label}</strong></div><span>{activeMediaIndex + 1} / {selectedCategoryMedia.length}</span></div>
+          <button type="button" className="gd-media-feed-close" onClick={() => setMediaFeedOpen(false)} aria-label="전체화면 미디어 닫기">×</button>
+          <div className="gd-media-feed-scroll" ref={mediaFeedRef} onScroll={(event) => setActiveMediaIndex(Math.min(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight), selectedCategoryMedia.length - 1))}>
+            {selectedCategoryMedia.map((item, index) => {
+              const like = likes[item.key] ?? { count: 0, liked: false };
+              return <article className="gd-media-feed-slide" key={item.key} aria-label={`${index + 1}번째 미디어`}>
+                <div className="gd-media-feed-stage">
+                  {item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} /> : <video ref={(node) => { mediaVideoRefs.current[index] = node; }} src={item.url} controls playsInline muted loop preload={Math.abs(index - activeMediaIndex) <= 1 ? "metadata" : "none"} />}
+                </div>
+                <div className="gd-media-feed-meta"><div><small>{activeCategory.shortLabel}</small><strong>{selectedDisplay.number}. {selectedDisplay.name}</strong><span>{teamLabel}</span></div><div className="gd-media-feed-actions"><button type="button" className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button type="button" className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></div>
+              </article>;
+            })}
+          </div>
+          {selectedCategoryMedia.length > 1 && <div className="gd-media-feed-nav"><button type="button" onClick={() => moveMediaFeed(-1)} disabled={activeMediaIndex === 0} aria-label="이전 미디어">↑</button><button type="button" onClick={() => moveMediaFeed(1)} disabled={activeMediaIndex === selectedCategoryMedia.length - 1} aria-label="다음 미디어">↓</button></div>}
+        </section>
       )}
     </section>
   );
