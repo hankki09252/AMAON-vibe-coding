@@ -1,0 +1,33 @@
+export const managedTeamOptions = [
+  { id: "gd-roster", label: "GD챌린저스BC(U-18)" },
+  { id: "gyeonggi-roster", label: "경기고" },
+  { id: "gyeongsang-roster", label: "경기상업고" },
+  { id: "kyungdong-roster", label: "경동고" },
+  { id: "gangneung-roster", label: "강릉고" },
+  { id: "deoksu-roster", label: "덕수고" },
+  { id: "myeongji-roster", label: "명지BC(U-18)" },
+  { id: "baemyeong-roster", label: "배명고" },
+  { id: "baekjae-roster", label: "배재고" },
+  { id: "seoul-hg-roster", label: "서울HG야구단(U-18)" },
+  { id: "seoul-hk-roster", label: "서울HK야구단(U-18)" },
+  { id: "seoul-roster", label: "서울고" },
+  { id: "seoul-dongsan-roster", label: "서울동산고" },
+  { id: "seoul-design-roster", label: "서울디자인고" },
+  { id: "seoul-it-roster", label: "서울아이티고BC" },
+  { id: "seoul-auto-roster", label: "서울자동차고" },
+  { id: "seoul-convention-roster", label: "서울컨벤션고" },
+  { id: "sunrin-roster", label: "선린인터넷고" },
+  { id: "seongnam-roster", label: "성남고" },
+  { id: "semyeong-roster", label: "세명컴퓨터고야구단" },
+  { id: "gyeonggi-aviation-roster", label: "경기항공고" },
+  { id: "gyeongmin-it-roster", label: "경민IT고" },
+  { id: "gimpo-science-roster", label: "김포과학기술고" },
+  { id: "raon-roster", label: "라온고" },
+  { id: "baeksong-roster", label: "백송고" },
+  { id: "buwon-roster", label: "부원고야구단" },
+  { id: "bibong-roster", label: "비봉고" },
+] as const;
+
+export const managedTeamLabel = Object.fromEntries(
+  managedTeamOptions.map((team) => [team.id, team.label]),
+) as Record<string, string>;

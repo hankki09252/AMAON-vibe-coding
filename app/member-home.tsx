@@ -3,7 +3,7 @@
 // The signed-in member experience. Authentication is enforced by app/page.tsx.
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import GdRoster, { gdPlayers } from "./gd-roster";
+import GdRoster, { gdPlayers, type ManagedRosterPlayer } from "./gd-roster";
 import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
 import GyeongsangRoster, { players as gyeongsangPlayers } from "./gyeongsang-roster";
 import KyungdongRoster, { players as kyungdongPlayers } from "./kyungdong-roster";
@@ -224,6 +224,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "부원고야구단": "buwon-roster",
   "비봉고": "bibong-roster",
 };
+const schoolByRosterSection = Object.fromEntries(Object.entries(rosterSectionBySchool).map(([school, sectionId]) => [sectionId, school]));
 
 const playerSearchIndex = [
   ...gdPlayers.map((player) => ({ player, school: "GD챌린저스BC(U-18)", sectionId: "gd-roster" })),
@@ -268,18 +269,34 @@ export default function Home() {
   const [regionSettingsOpen, setRegionSettingsOpen] = useState(false);
   const [savingRegions, setSavingRegions] = useState(false);
   const [regionNotice, setRegionNotice] = useState("");
+  const [managedRosterPlayers, setManagedRosterPlayers] = useState<ManagedRosterPlayer[]>([]);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/region-visibility", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
       fetch("/api/admin", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
-    ]).then(([visibility, admin]) => {
+      fetch("/api/roster-players", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
+    ]).then(([visibility, admin, rosterManagement]) => {
       if (Array.isArray(visibility?.visibleRegions) && visibility.visibleRegions.length) {
         setVisibleRegions(visibility.visibleRegions);
         setRegionDraft(visibility.visibleRegions);
       }
       setIsAdmin(Boolean(admin?.isAdmin));
+      if (Array.isArray(rosterManagement?.items)) setManagedRosterPlayers(rosterManagement.items);
     }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    function syncRosterChange(event: Event) {
+      const item = (event as CustomEvent<ManagedRosterPlayer>).detail;
+      if (!item?.playerId) return;
+      setManagedRosterPlayers((current) => [
+        ...current.filter((change) => change.playerId !== item.playerId),
+        item,
+      ]);
+    }
+    window.addEventListener("amaon:roster-changed", syncRosterChange);
+    return () => window.removeEventListener("amaon:roster-changed", syncRosterChange);
   }, []);
 
   useEffect(() => {
@@ -294,13 +311,30 @@ export default function Home() {
     () => ["전체", ...regions.slice(1).filter((item) => visibleRegions.includes(item))],
     [visibleRegions],
   );
+  const currentPlayerSearchIndex = useMemo(() => {
+    const changes = new Map(managedRosterPlayers.map((item) => [item.playerId, item]));
+    const merged = playerSearchIndex.flatMap((item) => {
+      const change = changes.get(item.player.id);
+      if (!change) return [item];
+      if (change.hidden || change.teamId !== item.sectionId) return [];
+      return [{ player: change.player, school: schoolByRosterSection[change.teamId] || item.school, sectionId: change.teamId }];
+    });
+    const existing = new Set(merged.map((item) => item.player.id));
+    managedRosterPlayers.forEach((change) => {
+      if (!change.hidden && !existing.has(change.playerId) && schoolByRosterSection[change.teamId]) {
+        merged.push({ player: change.player, school: schoolByRosterSection[change.teamId], sectionId: change.teamId });
+        existing.add(change.playerId);
+      }
+    });
+    return merged;
+  }, [managedRosterPlayers]);
   const publishedPlayerSearchIndex = useMemo(
-    () => playerSearchIndex.filter((item) => visibleRegions.includes(schoolRegionByName[item.school])),
-    [visibleRegions],
+    () => currentPlayerSearchIndex.filter((item) => visibleRegions.includes(schoolRegionByName[item.school])),
+    [currentPlayerSearchIndex, visibleRegions],
   );
   const publishedPlayerCount = useMemo(
-    () => publishedSchools.reduce((total, school) => total + school.players, 0),
-    [publishedSchools],
+    () => publishedPlayerSearchIndex.length,
+    [publishedPlayerSearchIndex],
   );
   const publishedSamplePlayers = useMemo(
     () => players.filter((player) => visibleRegions.includes(schoolRegionByName[player.school])),
@@ -332,7 +366,7 @@ export default function Home() {
     requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = previousScrollBehavior; });
   }
 
-  function openSearchedPlayer(result: (typeof playerSearchIndex)[number]) {
+  function openSearchedPlayer(result: (typeof currentPlayerSearchIndex)[number]) {
     const url = new URL(window.location.href);
     url.searchParams.set("team", result.sectionId);
     url.searchParams.set("player", result.player.id);

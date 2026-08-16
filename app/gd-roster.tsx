@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import { createSupabaseBrowserClient } from "./supabase/browser";
+import { managedTeamOptions } from "./team-directory";
 
 export type TeamPlayer = {
   id: string;
@@ -35,6 +36,8 @@ type PlayerProfileOverride = { playerId: string; year: number; number: string; g
 type ProfileEditForm = { year: string; number: string; grade: string; position: string; height: string; weight: string; introduction: string; strengths: string; aspiration: string };
 type OriginSchool = { playerId: string; sequence: number; region: string; school: string; year: number; position: string };
 type OriginSchoolForm = { region: string; school: string; year: string; position: string };
+export type ManagedRosterPlayer = { playerId: string; originTeamId: string; teamId: string; hidden: boolean; created: boolean; player: TeamPlayer; updatedAt: string; updatedBy: string };
+type NewPlayerForm = { number: string; name: string; year: string; position: string; grade: string; height: string; weight: string; batsThrows: string };
 
 const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: string }> = [
   { id: "photo", label: "사진", shortLabel: "PHOTO" },
@@ -101,6 +104,12 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [originForm, setOriginForm] = useState<OriginSchoolForm[]>([]);
   const [mediaFeedOpen, setMediaFeedOpen] = useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [rosterChanges, setRosterChanges] = useState<ManagedRosterPlayer[]>([]);
+  const [rosterManagerOpen, setRosterManagerOpen] = useState(false);
+  const [newPlayerOpen, setNewPlayerOpen] = useState(false);
+  const [rosterSaving, setRosterSaving] = useState(false);
+  const [transferTeamId, setTransferTeamId] = useState("");
+  const [newPlayerForm, setNewPlayerForm] = useState<NewPlayerForm>({ number: "", name: "", year: "2026", position: "미지정", grade: "1학년", height: "170", weight: "65", batsThrows: "우투우타" });
   const mediaFeedRef = useRef<HTMLDivElement>(null);
   const mediaVideoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
@@ -127,6 +136,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   function openPlayer(player: TeamPlayer) {
     setSelected(player);
+    setTransferTeamId("");
     setEditingProfile(false);
     setEditingOrigins(false);
     setSelectedCategory("photo");
@@ -239,6 +249,17 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
+  async function loadRosterChanges() {
+    try {
+      const response = await fetch("/api/roster-players", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { items: ManagedRosterPlayer[] };
+      setRosterChanges(data.items || []);
+    } catch {
+      // The original roster remains available if management settings cannot load.
+    }
+  }
+
   useEffect(() => {
     void loadMedia();
     void loadLikes();
@@ -247,6 +268,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     void loadProfileOverrides();
     void loadTeamBanner();
     void loadOriginSchools();
+    void loadRosterChanges();
   }, [sectionId]);
 
   function beginOriginEdit() {
@@ -437,15 +459,148 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     setNotice(`${teamLabel} 엠블럼을 기본 표시로 되돌렸습니다.`);
   }
 
+  const displayPlayers = useMemo(() => {
+    const changesByPlayer = new Map(rosterChanges.map((item) => [item.playerId, item]));
+    const visible = players.flatMap((player) => {
+      const change = changesByPlayer.get(player.id);
+      if (change && (change.hidden || change.teamId !== sectionId)) return [];
+      return [change?.player ?? player];
+    });
+    const existing = new Set(visible.map((player) => player.id));
+    rosterChanges.forEach((change) => {
+      if (change.teamId === sectionId && !change.hidden && !existing.has(change.playerId)) {
+        visible.push(change.player);
+        existing.add(change.playerId);
+      }
+    });
+    return visible;
+  }, [players, rosterChanges, sectionId]);
+
+  const managedHere = rosterChanges.filter((item) => item.teamId === sectionId || item.originTeamId === sectionId);
+  const hiddenPlayers = managedHere.filter((item) => item.hidden && item.teamId === sectionId);
+  const transferredPlayers = managedHere.filter((item) => item.teamId !== sectionId);
+
+  function rosterChangeFor(playerId: string) {
+    return rosterChanges.find((item) => item.playerId === playerId);
+  }
+
+  async function saveRosterChange(item: ManagedRosterPlayer, fromTeamId: string, successMessage: string) {
+    setRosterSaving(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/roster-players", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...item, fromTeamId }),
+      });
+      const data = await response.json().catch(() => null) as { item?: ManagedRosterPlayer; error?: string } | null;
+      if (!response.ok || !data?.item) throw new Error(data?.error || "선수 변경사항을 저장하지 못했습니다.");
+      setRosterChanges((current) => [...current.filter((change) => change.playerId !== data.item!.playerId), data.item!]);
+      window.dispatchEvent(new CustomEvent("amaon:roster-changed", { detail: data.item }));
+      setNotice(successMessage);
+      return data.item;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "선수 변경 중 오류가 발생했습니다.");
+      return null;
+    } finally {
+      setRosterSaving(false);
+    }
+  }
+
+  async function createPlayer() {
+    setRosterSaving(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/roster-players", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          teamId: sectionId,
+          player: {
+            ...newPlayerForm,
+            year: Number(newPlayerForm.year),
+            height: Number(newPlayerForm.height),
+            weight: Number(newPlayerForm.weight),
+          },
+        }),
+      });
+      const data = await response.json().catch(() => null) as { item?: ManagedRosterPlayer; error?: string } | null;
+      if (!response.ok || !data?.item) throw new Error(data?.error || "새 선수를 추가하지 못했습니다.");
+      setRosterChanges((current) => [...current, data.item!]);
+      window.dispatchEvent(new CustomEvent("amaon:roster-changed", { detail: data.item }));
+      setNewPlayerOpen(false);
+      setNewPlayerForm({ number: "", name: "", year: "2026", position: "미지정", grade: "1학년", height: "170", weight: "65", batsThrows: "우투우타" });
+      setNotice(`${data.item.player.name} 선수를 ${teamLabel}에 추가했습니다.`);
+      openPlayer(data.item.player);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "새 선수 추가 중 오류가 발생했습니다.");
+    } finally {
+      setRosterSaving(false);
+    }
+  }
+
+  async function hideSelectedPlayer() {
+    if (!selectedDisplay || !window.confirm(`${selectedDisplay.name} 선수를 명단에서 숨길까요? 사진·영상·프로필 데이터는 삭제되지 않습니다.`)) return;
+    const current = rosterChangeFor(selectedDisplay.id);
+    const saved = await saveRosterChange({
+      playerId: selectedDisplay.id,
+      originTeamId: current?.originTeamId || sectionId,
+      teamId: sectionId,
+      hidden: true,
+      created: current?.created || false,
+      player: selectedDisplay,
+      updatedAt: "",
+      updatedBy: "",
+    }, sectionId, `${selectedDisplay.name} 선수를 숨겼습니다. 선수 관리에서 복구할 수 있습니다.`);
+    if (saved) closePlayer();
+  }
+
+  async function restorePlayer(item: ManagedRosterPlayer) {
+    await saveRosterChange({ ...item, hidden: false }, item.teamId, `${item.player.name} 선수를 명단에 다시 표시했습니다.`);
+  }
+
+  async function transferSelectedPlayer() {
+    if (!selectedDisplay || !transferTeamId || transferTeamId === sectionId) return;
+    const destination = managedTeamOptions.find((team) => team.id === transferTeamId);
+    if (!destination || !window.confirm(`${selectedDisplay.name} 선수의 소속을 ${destination.label}(으)로 옮길까요? 사진·영상·좋아요·프로필 정보는 그대로 유지됩니다.`)) return;
+    const current = rosterChangeFor(selectedDisplay.id);
+    const saved = await saveRosterChange({
+      playerId: selectedDisplay.id,
+      originTeamId: current?.originTeamId || sectionId,
+      teamId: transferTeamId,
+      hidden: false,
+      created: current?.created || false,
+      player: selectedDisplay,
+      updatedAt: "",
+      updatedBy: "",
+    }, sectionId, `${selectedDisplay.name} 선수를 ${destination.label}(으)로 전학 처리했습니다.`);
+    if (saved) {
+      const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set("team", transferTeamId);
+      targetUrl.searchParams.set("player", selectedDisplay.id);
+      targetUrl.hash = transferTeamId;
+      window.location.assign(targetUrl.toString());
+    }
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("team") !== sectionId) return;
-    const linkedPlayer = players.find((player) => player.id === params.get("player"));
+    const playerId = params.get("player");
+    const linkedPlayer = displayPlayers.find((player) => player.id === playerId);
     if (linkedPlayer) {
       setSelected(linkedPlayer);
       setSelectedCategory("photo");
+      return;
     }
-  }, [players, sectionId]);
+    const movedPlayer = rosterChanges.find((item) => item.playerId === playerId && !item.hidden && item.teamId !== sectionId);
+    if (movedPlayer) {
+      const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set("team", movedPlayer.teamId);
+      targetUrl.hash = movedPlayer.teamId;
+      window.location.replace(targetUrl.toString());
+    }
+  }, [displayPlayers, rosterChanges, sectionId]);
 
   const mediaByPlayer = useMemo(() => {
     const grouped = new Map<string, MediaItem[]>();
@@ -646,14 +801,37 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
           <div>
             <p className="kicker"><span /> {kicker}</p>
             <h2>{title}</h2>
-            <p>{subtitle}</p>
+            <p>{subtitle.replace(/등록 선수 \d+명/, `등록 선수 ${displayPlayers.length}명`)}</p>
           </div>
         </div>
-        <div className="gd-summary"><strong>{players.length}</strong><span>PLAYER PROFILES</span></div>
+        <div className="gd-summary"><strong>{displayPlayers.length}</strong><span>PLAYER PROFILES</span></div>
       </div>
 
+      {isAdmin && <div className="gd-roster-admin">
+        <div className="gd-roster-admin-actions">
+          <button type="button" onClick={() => setNewPlayerOpen((open) => !open)}>+ 새 선수 추가</button>
+          <button type="button" className="secondary" onClick={() => setRosterManagerOpen((open) => !open)}>선수 관리 {hiddenPlayers.length ? `· 숨김 ${hiddenPlayers.length}` : ""}</button>
+        </div>
+        {newPlayerOpen && <div className="gd-new-player-form">
+          <label>선수 이름<input value={newPlayerForm.name} maxLength={30} onChange={(event) => setNewPlayerForm((current) => ({ ...current, name: event.target.value }))} /></label>
+          <label>등번호<input value={newPlayerForm.number} maxLength={3} placeholder="미정 가능" onChange={(event) => setNewPlayerForm((current) => ({ ...current, number: event.target.value }))} /></label>
+          <label>기준 연도<input type="number" min="2000" max="2100" value={newPlayerForm.year} onChange={(event) => setNewPlayerForm((current) => ({ ...current, year: event.target.value }))} /></label>
+          <label>학년<select value={newPlayerForm.grade} onChange={(event) => setNewPlayerForm((current) => ({ ...current, grade: event.target.value }))}><option>1학년</option><option>2학년</option><option>3학년</option><option>졸업</option></select></label>
+          <label>포지션<input value={newPlayerForm.position} maxLength={20} onChange={(event) => setNewPlayerForm((current) => ({ ...current, position: event.target.value }))} /></label>
+          <label>키(cm)<input type="number" min="100" max="230" value={newPlayerForm.height} onChange={(event) => setNewPlayerForm((current) => ({ ...current, height: event.target.value }))} /></label>
+          <label>몸무게(kg)<input type="number" min="30" max="200" value={newPlayerForm.weight} onChange={(event) => setNewPlayerForm((current) => ({ ...current, weight: event.target.value }))} /></label>
+          <label>투타<input value={newPlayerForm.batsThrows} maxLength={20} placeholder="예: 우투우타" onChange={(event) => setNewPlayerForm((current) => ({ ...current, batsThrows: event.target.value }))} /></label>
+          <div><button type="button" onClick={() => void createPlayer()} disabled={rosterSaving}>{rosterSaving ? "저장 중…" : "선수 생성"}</button><button type="button" className="cancel" onClick={() => setNewPlayerOpen(false)} disabled={rosterSaving}>취소</button></div>
+        </div>}
+        {rosterManagerOpen && <div className="gd-roster-manager">
+          <div><strong>숨긴 선수</strong><span>탈퇴·활동 중단 선수의 모든 데이터는 보관됩니다.</span></div>
+          {hiddenPlayers.length ? hiddenPlayers.map((item) => <p key={item.playerId}><span><b>{item.player.name}</b> · {item.player.grade} · {item.player.position}</span><button type="button" onClick={() => void restorePlayer(item)} disabled={rosterSaving}>명단에 복구</button></p>) : <p className="empty-row">숨긴 선수가 없습니다.</p>}
+          {transferredPlayers.length > 0 && <><div><strong>전학 처리한 선수</strong><span>새 학교 명단과 기존 프로필에서 확인할 수 있습니다.</span></div>{transferredPlayers.map((item) => <p key={item.playerId}><span><b>{item.player.name}</b> → {managedTeamOptions.find((team) => team.id === item.teamId)?.label || item.teamId}</span></p>)}</>}
+        </div>}
+      </div>}
+
       <div className="gd-grid">
-        {players.map((player) => {
+        {displayPlayers.map((player) => {
           const displayPlayer = resolvePlayer(player);
           const playerMedia = mediaByPlayer.get(player.id) ?? [];
           const newestFirst = (items: MediaItem[]) => [...items].sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt));
@@ -712,6 +890,13 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
                 </div> : <p className="gd-origin-empty">등록된 출신학교가 없습니다.</p>}
               </section>
             </div>
+
+            {isAdmin && <div className="gd-player-management">
+              <div><small>ADMIN · PLAYER STATUS</small><h3>선수 소속·활동 관리</h3><p>전학은 사진·영상·좋아요·프로필을 유지한 채 새 학교로 옮깁니다. 숨김은 데이터를 삭제하지 않습니다.</p></div>
+              <label>전학할 학교<select value={transferTeamId} onChange={(event) => setTransferTeamId(event.target.value)}><option value="">학교 선택</option>{managedTeamOptions.filter((team) => team.id !== sectionId).map((team) => <option key={team.id} value={team.id}>{team.label}</option>)}</select></label>
+              <button type="button" onClick={() => void transferSelectedPlayer()} disabled={rosterSaving || !transferTeamId}>전학 처리</button>
+              <button type="button" className="hide" onClick={() => void hideSelectedPlayer()} disabled={rosterSaving}>선수 숨기기</button>
+            </div>}
 
             {isAdmin && editingOrigins && <div className="gd-origin-editor">
               <div className="gd-origin-editor-head"><div><small>ADMIN EDIT</small><h3>출신학교 편집</h3></div><button type="button" onClick={addOriginRow} disabled={originForm.length >= 10}>+ 학교 추가</button></div>
