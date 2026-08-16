@@ -549,6 +549,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     if (!response.ok) return;
     const data = await response.json() as { key: string; count: number; liked: boolean };
     setLikes((current) => ({ ...current, [data.key]: { count: data.count, liked: data.liked } }));
+    window.dispatchEvent(new CustomEvent("amaon:likes-changed"));
   }
 
   async function deleteMedia(item: MediaItem) {
@@ -607,6 +608,26 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       else video.pause();
     });
   }, [activeMediaIndex, mediaFeedOpen, selectedCategory, selectedCategoryMedia.length]);
+
+  useEffect(() => {
+    if (!media.length) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("team") !== sectionId || params.get("player") !== selected?.id) return;
+    const mediaKey = params.get("media");
+    if (!mediaKey) return;
+    const target = media.find((item) => item.key === mediaKey && item.playerId === selected.id && item.type === "video");
+    if (!target || target.category === "profile" || target.category === "photo") return;
+    const categoryItems = (mediaByPlayer.get(selected.id) ?? []).filter((item) => item.category === target.category);
+    const targetIndex = categoryItems.findIndex((item) => item.key === target.key);
+    setSelectedCategory(target.category);
+    setActiveMediaIndex(Math.max(targetIndex, 0));
+    setMediaFeedOpen(true);
+    params.delete("media");
+    const url = new URL(window.location.href);
+    url.search = params.toString();
+    url.hash = sectionId;
+    window.history.replaceState(null, "", url);
+  }, [media, mediaByPlayer, sectionId, selected]);
 
   return (
     <section className="gd-section" id={sectionId}>

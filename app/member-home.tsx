@@ -29,6 +29,7 @@ import GimpoScienceRoster, { players as gimpoSciencePlayers } from "./gimpo-scie
 import RaonRoster, { players as raonPlayers } from "./raon-roster";
 import BaeksongRoster, { players as baeksongPlayers } from "./baeksong-roster";
 import PwaInstallButton from "./pwa-install-button";
+import VideoRankings from "./video-rankings";
 
 type School = {
   name: string;
@@ -453,6 +454,8 @@ export default function Home() {
           <div className="ticker"><b>LIVE</b><span>PLAYER · TEAM · RECORD · FILM · HIGH SCHOOL BASEBALL</span></div>
         </div>
       </section>
+
+      <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} />
 
       <section className="school-section" id="schools">
         <div className="section-title">
