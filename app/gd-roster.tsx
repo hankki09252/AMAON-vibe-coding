@@ -209,6 +209,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       if (!response.ok) return;
       const data = await response.json() as { emblem: TeamEmblem | null };
       setEmblem(data.emblem);
+      window.dispatchEvent(new CustomEvent("amaon:team-asset-changed", { detail: { teamId: sectionId, kind: "emblem", url: data.emblem?.url || "" } }));
     } catch {
       // The monogram remains visible when no uploaded emblem is available.
     }
@@ -231,6 +232,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       if (!response.ok) return;
       const data = await response.json() as { banner: TeamBanner | null };
       setTeamBanner(data.banner);
+      window.dispatchEvent(new CustomEvent("amaon:team-asset-changed", { detail: { teamId: sectionId, kind: "banner", url: data.banner?.url || "" } }));
     } catch {
       // The generated team banner remains visible when no image is uploaded.
     }
@@ -349,6 +351,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       return;
     }
     setTeamBanner(null);
+    window.dispatchEvent(new CustomEvent("amaon:team-asset-changed", { detail: { teamId: sectionId, kind: "banner", url: "" } }));
     setNotice(`${teamLabel} 팀 배너를 기본 표시로 되돌렸습니다.`);
   }
 
@@ -456,6 +459,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       return;
     }
     setEmblem(null);
+    window.dispatchEvent(new CustomEvent("amaon:team-asset-changed", { detail: { teamId: sectionId, kind: "emblem", url: "" } }));
     setNotice(`${teamLabel} 엠블럼을 기본 표시로 되돌렸습니다.`);
   }
 

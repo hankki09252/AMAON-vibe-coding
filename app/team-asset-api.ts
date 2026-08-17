@@ -60,15 +60,30 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
 
   async function GET(request: Request) {
     if (!await apiUser()) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
-    const teamId = new URL(request.url).searchParams.get("teamId") || "";
-    if (!validTeamId(teamId)) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
+    const searchParams = new URL(request.url).searchParams;
+    const teamId = searchParams.get("teamId") || "";
+    const teamIds = [...new Set((searchParams.get("teamIds") || "").split(",").filter(Boolean))];
+    if (teamIds.length > 60 || teamIds.some((item) => !validTeamId(item))) {
+      return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
+    }
+    if (!teamIds.length && !validTeamId(teamId)) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
     const db = createSupabaseAdminClient();
-    const { data } = await db.storage.from("media").list(pathPrefix(teamId), { limit: 20, sortBy: { column: "created_at", order: "desc" } });
-    const object = data?.[0];
-    if (!object) return Response.json({ [kind]: restoredAsset(kind, teamId) }, { headers: { "cache-control": "no-store" } });
-    const key = `${pathPrefix(teamId)}${object.name}`;
-    const { data: signed } = await db.storage.from("media").createSignedUrl(key, 3600);
-    return Response.json({ [kind]: { key, url: signed?.signedUrl || "", uploadedAt: object.created_at } }, { headers: { "cache-control": "no-store" } });
+
+    async function loadAsset(id: string) {
+      const { data } = await db.storage.from("media").list(pathPrefix(id), { limit: 20, sortBy: { column: "created_at", order: "desc" } });
+      const object = data?.[0];
+      if (!object) return restoredAsset(kind, id);
+      const key = `${pathPrefix(id)}${object.name}`;
+      const { data: signed } = await db.storage.from("media").createSignedUrl(key, 3600);
+      return { key, url: signed?.signedUrl || "", uploadedAt: object.created_at };
+    }
+
+    if (teamIds.length) {
+      const assets = await Promise.all(teamIds.map(async (id) => [id, await loadAsset(id)] as const));
+      return Response.json({ items: Object.fromEntries(assets) }, { headers: { "cache-control": "no-store" } });
+    }
+
+    return Response.json({ [kind]: await loadAsset(teamId) }, { headers: { "cache-control": "no-store" } });
   }
 
   async function POST(request: Request) {

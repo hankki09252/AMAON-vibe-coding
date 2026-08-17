@@ -44,6 +44,9 @@ type School = {
   featured?: boolean;
 };
 
+type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
+type TeamDirectoryAssets = Record<string, { banner?: string; emblem?: string }>;
+
 type Player = {
   name: string;
   school: string;
@@ -279,6 +282,7 @@ export default function Home() {
   const [savingRegions, setSavingRegions] = useState(false);
   const [regionNotice, setRegionNotice] = useState("");
   const [managedRosterPlayers, setManagedRosterPlayers] = useState<ManagedRosterPlayer[]>([]);
+  const [teamDirectoryAssets, setTeamDirectoryAssets] = useState<TeamDirectoryAssets>({});
 
   useEffect(() => {
     Promise.all([
@@ -293,6 +297,40 @@ export default function Home() {
       setIsAdmin(Boolean(admin?.isAdmin));
       if (Array.isArray(rosterManagement?.items)) setManagedRosterPlayers(rosterManagement.items);
     }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const teamIds = [...new Set(Object.values(rosterSectionBySchool))].join(",");
+    const loadAssets = async () => {
+      const [bannerResponse, emblemResponse] = await Promise.all([
+        fetch(`/api/team-banners?teamIds=${encodeURIComponent(teamIds)}`, { cache: "no-store" }),
+        fetch(`/api/team-emblems?teamIds=${encodeURIComponent(teamIds)}`, { cache: "no-store" }),
+      ]);
+      const banners = bannerResponse.ok
+        ? (await bannerResponse.json() as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {}
+        : {};
+      const emblems = emblemResponse.ok
+        ? (await emblemResponse.json() as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {}
+        : {};
+      setTeamDirectoryAssets(Object.fromEntries(Object.values(rosterSectionBySchool).map((teamId) => [teamId, {
+        banner: banners[teamId]?.url || undefined,
+        emblem: emblems[teamId]?.url || undefined,
+      }])));
+    };
+    void loadAssets().catch(() => undefined);
+
+    function syncTeamAsset(event: Event) {
+      const detail = (event as CustomEvent<{ teamId?: string; kind?: "banner" | "emblem"; url?: string }>).detail;
+      if (!detail?.teamId || !detail.kind) return;
+      const teamId = detail.teamId;
+      const kind = detail.kind;
+      setTeamDirectoryAssets((current) => ({
+        ...current,
+        [teamId]: { ...current[teamId], [kind]: detail.url || undefined },
+      }));
+    }
+    window.addEventListener("amaon:team-asset-changed", syncTeamAsset);
+    return () => window.removeEventListener("amaon:team-asset-changed", syncTeamAsset);
   }, []);
 
   useEffect(() => {
@@ -542,28 +580,36 @@ export default function Home() {
         </div>
         <div className="directory-head"><span>TEAM / REGION</span><span>ROSTER</span></div>
         <div className="school-list">
-          {filteredSchools.length ? filteredSchools.map((school, index) => (
-            <article
+          {filteredSchools.length ? filteredSchools.map((school, index) => {
+            const sectionId = rosterSectionBySchool[school.name];
+            const visual = sectionId ? teamDirectoryAssets[sectionId] : undefined;
+            return <article
               className="school-row"
               key={school.name}
               role="button"
               tabIndex={0}
               aria-label={`${school.name} 선수단 보기`}
-              onClick={() => jumpToSection(rosterSectionBySchool[school.name] ?? "players")}
+              onClick={() => jumpToSection(sectionId ?? "players")}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  jumpToSection(rosterSectionBySchool[school.name] ?? "players");
+                  jumpToSection(sectionId ?? "players");
                 }
               }}
             >
               <span className="school-index">{String(index + 1).padStart(2, "0")}</span>
-              <div className="school-emblem" aria-hidden="true">{school.name.slice(0, 1)}</div>
+              <div className={`school-banner-preview${visual?.banner || visual?.emblem ? " has-image" : ""}`} aria-hidden="true">
+                {visual?.banner
+                  ? <img src={visual.banner} alt="" />
+                  : visual?.emblem
+                    ? <img className="emblem-image" src={visual.emblem} alt="" />
+                    : <span className="school-emblem">{school.name.slice(0, 1)}</span>}
+              </div>
               <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>
               {school.featured && <span className="verified">✓ 정보 확인</span>}
               <div className="roster"><strong>{school.players}</strong><span>명</span></div>
-            </article>
-          )) : <div className="empty">조건에 맞는 학교가 없습니다. 다른 지역이나 검색어를 선택해 주세요.</div>}
+            </article>;
+          }) : <div className="empty">조건에 맞는 학교가 없습니다. 다른 지역이나 검색어를 선택해 주세요.</div>}
         </div>
         <p className="data-note">학교·선수 수는 제공하신 2026년 자료를 바탕으로 구성한 시안 데이터입니다.</p>
       </section>
