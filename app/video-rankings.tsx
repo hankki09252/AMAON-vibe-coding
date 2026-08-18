@@ -12,6 +12,9 @@ type RankingItem = {
   uploadedAt: string;
   likeCount: number;
   url: string;
+  source?: "upload" | "youtube";
+  videoId?: string;
+  thumbnailUrl?: string;
 };
 
 const categoryLabels = { pitching: "투구영상", batting: "타격영상", fielding: "수비영상" } as const;
@@ -66,7 +69,7 @@ export default function VideoRankings({ players, visibleRegions, schoolRegions }
           {ranked.map(({ item, match }, index) => (
             <button type="button" className={`video-ranking-card rank-${index + 1}`} key={item.key} onClick={() => openRankedVideo(item, match)}>
               <span className="video-ranking-number"><small>RANK</small>{index + 1}</span>
-              <div className="video-ranking-preview"><video src={item.url} muted playsInline preload="metadata" /><span>▶</span></div>
+              <div className="video-ranking-preview">{item.source === "youtube" && item.thumbnailUrl ? <img src={item.thumbnailUrl} alt={`${match.player.name} 유튜브 영상 미리보기`} /> : <video src={item.url} muted playsInline preload="metadata" />}<span>▶</span></div>
               <div className="video-ranking-player">
                 <small>{match.school} · {categoryLabels[item.category]}</small>
                 <strong><em>{match.player.number}</em> {match.player.name}</strong>

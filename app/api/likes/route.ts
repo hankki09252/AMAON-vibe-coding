@@ -2,7 +2,7 @@ import { apiUser } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 
 function isMediaKey(value: string) {
-  return /^(gd|teams)\/[A-Za-z0-9-]+\/(pitching|batting|fielding|photo|profile|banner|emblem)\/[^/]{1,240}$/.test(value);
+  return /^((gd|teams)\/[A-Za-z0-9-]+\/(pitching|batting|fielding|photo|profile|banner|emblem)\/[^/]{1,240}|youtube\/[A-Za-z0-9-]+\/(pitching|batting|fielding)\/[A-Za-z0-9_-]{11})$/.test(value);
 }
 
 export async function GET() {

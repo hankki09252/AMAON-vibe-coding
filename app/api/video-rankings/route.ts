@@ -1,5 +1,6 @@
 import { apiUser } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
+import { youtubeEmbedUrl, youtubeThumbnailUrl } from "../../youtube";
 
 const videoCategories = ["pitching", "batting", "fielding"];
 
@@ -33,6 +34,19 @@ export async function GET() {
     .slice(0, 50);
 
   const items = await Promise.all(ranked.map(async (row) => {
+    const youtube = row.storage_key.match(/^youtube\/[A-Za-z0-9-]+\/(pitching|batting|fielding)\/([A-Za-z0-9_-]{11})$/);
+    if (youtube) return {
+      key: row.storage_key,
+      playerId: row.player_id,
+      category: row.category,
+      contentType: row.content_type,
+      uploadedAt: row.uploaded_at,
+      likeCount: row.like_count,
+      source: "youtube",
+      videoId: youtube[2],
+      url: youtubeEmbedUrl(youtube[2]),
+      thumbnailUrl: youtubeThumbnailUrl(youtube[2]),
+    };
     const { data: signed } = await db.storage.from("media").createSignedUrl(row.storage_key, 3600);
     return {
       key: row.storage_key,
@@ -42,6 +56,8 @@ export async function GET() {
       uploadedAt: row.uploaded_at,
       likeCount: row.like_count,
       url: signed?.signedUrl || "",
+      source: "upload",
+      thumbnailUrl: "",
     };
   }));
 
