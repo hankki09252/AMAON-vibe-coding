@@ -34,6 +34,7 @@ import SangwooRoster, { players as sangwooPlayers } from "./sangwoo-roster";
 import SewonRoster, { players as sewonPlayers } from "./sewon-roster";
 import SoraeRoster, { players as soraePlayers } from "./sorae-roster";
 import SuwonRoster, { players as suwonPlayers } from "./suwon-roster";
+import ShinheungRoster, { players as shinheungPlayers } from "./shinheung-roster";
 import PwaInstallButton from "./pwa-install-button";
 import VideoRankings from "./video-rankings";
 
@@ -234,6 +235,7 @@ const rosterSectionBySchool: Record<string, string> = {
   "세원고": "sewon-roster",
   "소래고": "sorae-roster",
   "수원야구단(U-18)": "suwon-roster",
+  "신흥고": "shinheung-roster",
 };
 const schoolByRosterSection = Object.fromEntries(Object.entries(rosterSectionBySchool).map(([school, sectionId]) => [sectionId, school]));
 
@@ -269,6 +271,7 @@ const playerSearchIndex = [
   ...sewonPlayers.map((player) => ({ player, school: "세원고", sectionId: "sewon-roster" })),
   ...soraePlayers.map((player) => ({ player, school: "소래고", sectionId: "sorae-roster" })),
   ...suwonPlayers.map((player) => ({ player, school: "수원야구단(U-18)", sectionId: "suwon-roster" })),
+  ...shinheungPlayers.map((player) => ({ player, school: "신흥고", sectionId: "shinheung-roster" })),
 ];
 
 export default function Home() {
@@ -651,6 +654,7 @@ export default function Home() {
         <SewonRoster />
         <SoraeRoster />
         <SuwonRoster />
+        <ShinheungRoster />
       </>}
 
       <section className="player-section" id="players">
