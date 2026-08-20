@@ -3,7 +3,7 @@
 // The signed-in member experience. Authentication is enforced by app/page.tsx.
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import GdRoster, { gdPlayers, type ManagedRosterPlayer } from "./gd-roster";
+import GdRoster, { gdPlayers, TeamRoster, type ManagedRosterPlayer } from "./gd-roster";
 import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
 import GyeongsangRoster, { players as gyeongsangPlayers } from "./gyeongsang-roster";
 import KyungdongRoster, { players as kyungdongPlayers } from "./kyungdong-roster";
@@ -38,6 +38,7 @@ import ShinheungRoster, { players as shinheungPlayers } from "./shinheung-roster
 import AnsanTechnicalRoster, { players as ansanTechnicalPlayers } from "./ansan-technical-roster";
 import PwaInstallButton from "./pwa-install-button";
 import VideoRankings from "./video-rankings";
+import { managedTeamOptions } from "./team-directory";
 
 type School = {
   name: string;
@@ -204,42 +205,20 @@ const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "�
 const defaultVisibleRegions = ["경기", "인천"];
 const schoolRegionByName = Object.fromEntries(schools.map((school) => [school.name, school.region]));
 
-const rosterSectionBySchool: Record<string, string> = {
-  "GD챌린저스BC(U-18)": "gd-roster",
-  "경기고": "gyeonggi-roster",
-  "경기상업고": "gyeongsang-roster",
-  "경동고": "kyungdong-roster",
-  "강릉고": "gangneung-roster",
-  "덕수고": "deoksu-roster",
-  "명지BC(U-18)": "myeongji-roster",
-  "배명고": "baemyeong-roster",
-  "배재고": "baekjae-roster",
-  "서울HG야구단(U-18)": "seoul-hg-roster",
-  "서울HK야구단(U-18)": "seoul-hk-roster",
-  "서울고": "seoul-roster",
-  "서울동산고": "seoul-dongsan-roster",
-  "서울디자인고": "seoul-design-roster",
-  "서울아이티고BC": "seoul-it-roster",
-  "서울자동차고": "seoul-auto-roster",
-  "서울컨벤션고": "seoul-convention-roster",
-  "선린인터넷고": "sunrin-roster",
-  "성남고": "seongnam-roster",
-  "세명컴퓨터고야구단": "semyeong-roster",
-  "경기항공고": "gyeonggi-aviation-roster",
-  "경민IT고": "gyeongmin-it-roster",
-  "김포과학기술고": "gimpo-science-roster",
-  "라온고": "raon-roster",
-  "백송고": "baeksong-roster",
-  "부원고야구단": "buwon-roster",
-  "비봉고": "bibong-roster",
-  "상우고야구단": "sangwoo-roster",
-  "세원고": "sewon-roster",
-  "소래고": "sorae-roster",
-  "수원야구단(U-18)": "suwon-roster",
-  "신흥고": "shinheung-roster",
-  "안산공업고": "ansan-technical-roster",
-};
+const rosterSectionBySchool: Record<string, string> = Object.fromEntries(
+  managedTeamOptions.map((team) => [team.label, team.id]),
+);
 const schoolByRosterSection = Object.fromEntries(Object.entries(rosterSectionBySchool).map(([school, sectionId]) => [sectionId, school]));
+
+const customRosterSectionIds = new Set([
+  "gd-roster", "gyeonggi-roster", "gyeongsang-roster", "kyungdong-roster", "gangneung-roster",
+  "deoksu-roster", "myeongji-roster", "baemyeong-roster", "baekjae-roster", "seoul-hg-roster",
+  "seoul-hk-roster", "seoul-roster", "seoul-dongsan-roster", "seoul-design-roster", "seoul-it-roster",
+  "seoul-auto-roster", "seoul-convention-roster", "sunrin-roster", "seongnam-roster", "semyeong-roster",
+  "gyeonggi-aviation-roster", "gyeongmin-it-roster", "gimpo-science-roster", "raon-roster", "baeksong-roster",
+  "buwon-roster", "bibong-roster", "sangwoo-roster", "sewon-roster", "sorae-roster", "suwon-roster",
+  "shinheung-roster", "ansan-technical-roster",
+]);
 
 const playerSearchIndex = [
   ...gdPlayers.map((player) => ({ player, school: "GD챌린저스BC(U-18)", sectionId: "gd-roster" })),
@@ -660,6 +639,24 @@ export default function Home() {
         <ShinheungRoster />
         <AnsanTechnicalRoster />
       </>}
+      {publishedSchools
+        .filter((school) => {
+          const sectionId = rosterSectionBySchool[school.name];
+          return sectionId && !customRosterSectionIds.has(sectionId);
+        })
+        .map((school) => {
+          const sectionId = rosterSectionBySchool[school.name];
+          return <TeamRoster
+            key={sectionId}
+            sectionId={sectionId}
+            kicker={`${school.region} · U-18 BASEBALL · 2026`}
+            title={`${school.name} 선수단`}
+            subtitle={`선수를 직접 추가하거나 엑셀로 일괄 등록할 수 있습니다 · 감독 ${school.coach}`}
+            teamLabel={school.name}
+            monogram={school.name.slice(0, 1)}
+            players={[]}
+          />;
+        })}
 
       <section className="player-section" id="players">
         <div className="section-title light">
