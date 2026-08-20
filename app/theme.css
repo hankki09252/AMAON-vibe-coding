@@ -175,6 +175,30 @@ footer p, footer small { color: #777; }
 .gd-new-player-form button { border: 0; padding: 10px 16px; background: #111; color: white; font-size: 10px; font-weight: 900; cursor: pointer; }
 .gd-new-player-form button.cancel { background: #777; }
 .gd-new-player-form button:disabled { opacity: .55; cursor: wait; }
+.gd-roster-import { margin-top: 16px; padding-top: 16px; border-top: 1px solid #d2cec5; color: #111; }
+.gd-roster-import-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.gd-roster-import-head strong, .gd-roster-import-head span { display: block; }
+.gd-roster-import-head strong { font-size: 14px; }
+.gd-roster-import-head span { margin-top: 3px; color: #777; font-size: 9px; }
+.gd-roster-import-head button.template { border: 1px solid #111; padding: 8px 11px; background: white; color: #111; font-size: 9px; font-weight: 900; cursor: pointer; }
+.gd-roster-import > label { position: relative; display: flex; min-height: 48px; align-items: center; justify-content: center; border: 2px dashed #999; background: white; color: #111; font-size: 11px; font-weight: 900; cursor: pointer; }
+.gd-roster-import > label:hover { border-color: #ff6500; }
+.gd-roster-import > label.disabled { opacity: .6; pointer-events: none; }
+.gd-roster-import > label input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.gd-roster-import-guide { margin: 8px 0 0; color: #777; font-size: 9px; }
+.gd-roster-import-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; font-size: 10px; }
+.gd-roster-import-summary em { color: #b04400; font-style: normal; }
+.gd-roster-import-preview { max-height: 290px; margin-top: 10px; overflow: auto; border: 1px solid #ccc; background: white; }
+.gd-roster-import-preview table { width: 100%; min-width: 660px; border-collapse: collapse; font-size: 10px; }
+.gd-roster-import-preview th, .gd-roster-import-preview td { padding: 9px; border-bottom: 1px solid #e5e5e5; text-align: left; white-space: nowrap; }
+.gd-roster-import-preview th { position: sticky; top: 0; background: #111; color: white; }
+.gd-roster-import-preview tr.duplicate { color: #999; background: #f2f2f2; text-decoration: line-through; }
+.gd-roster-import-errors { margin-top: 8px; color: #a64000; font-size: 9px; }
+.gd-roster-import-errors p { margin: 4px 0; }
+.gd-roster-import-actions { display: flex; gap: 7px; margin-top: 12px; }
+.gd-roster-import-actions button { border: 0; padding: 10px 16px; background: #111; color: white; font-size: 10px; font-weight: 900; cursor: pointer; }
+.gd-roster-import-actions button.cancel { background: #777; }
+.gd-roster-import-actions button:disabled { opacity: .55; cursor: wait; }
 .gd-roster-manager { margin-top: 16px; padding-top: 14px; border-top: 1px solid #d2cec5; }
 .gd-roster-manager > div { display: flex; align-items: baseline; gap: 10px; margin: 8px 0; }
 .gd-roster-manager > div strong { font-size: 13px; }

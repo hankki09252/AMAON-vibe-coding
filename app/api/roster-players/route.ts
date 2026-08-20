@@ -104,14 +104,28 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const teamId = String(body?.teamId || "");
   if (!validTeamId(teamId) || !managedTeamLabel[teamId]) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
-  const playerId = `custom-${crypto.randomUUID()}`;
-  const player = parsePlayer(body?.player, playerId);
-  if (!player) return Response.json({ error: "선수 이름·학년·포지션·신체정보를 확인해 주세요." }, { status: 400 });
-  const item: ManagedRosterPlayer = { playerId, originTeamId: teamId, teamId, hidden: false, created: true, player, updatedAt: new Date().toISOString(), updatedBy: user.email || "" };
+  const incoming = Array.isArray(body?.players) ? body.players : [body?.player];
+  if (!incoming.length || incoming.length > 150) return Response.json({ error: "한 번에 1명부터 150명까지 등록할 수 있습니다." }, { status: 400 });
+  const now = new Date().toISOString();
+  const parsed = incoming.map((value) => {
+    const playerId = `custom-${crypto.randomUUID()}`;
+    const player = parsePlayer(value, playerId);
+    return player ? { playerId, originTeamId: teamId, teamId, hidden: false, created: true, player, updatedAt: now, updatedBy: user.email || "" } satisfies ManagedRosterPlayer : null;
+  });
+  if (parsed.some((item) => !item)) return Response.json({ error: "선수 이름·학년·포지션·신체정보를 확인해 주세요." }, { status: 400 });
+  const newItems = parsed as ManagedRosterPlayer[];
   try {
     const items = await readItems();
-    await writeItems([...items.filter((current) => current.playerId !== playerId), item]);
-    return Response.json({ item });
+    const existingKeys = new Set(items.filter((item) => item.teamId === teamId).map((item) => `${item.player.name}|${item.player.number}`));
+    const uniqueItems = newItems.filter((item, index) => {
+      const key = `${item.player.name}|${item.player.number}`;
+      if (existingKeys.has(key) || newItems.findIndex((candidate) => `${candidate.player.name}|${candidate.player.number}` === key) !== index) return false;
+      existingKeys.add(key);
+      return true;
+    });
+    if (!uniqueItems.length) return Response.json({ error: "새로 등록할 선수가 없습니다. 이미 등록된 이름과 등번호를 확인해 주세요." }, { status: 409 });
+    await writeItems([...items, ...uniqueItems]);
+    return Response.json({ item: uniqueItems[0], items: uniqueItems, skipped: newItems.length - uniqueItems.length });
   } catch (error) {
     return Response.json({ error: `선수를 저장하지 못했습니다: ${error instanceof Error ? error.message : "저장 오류"}` }, { status: 500 });
   }
