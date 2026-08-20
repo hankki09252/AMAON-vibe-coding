@@ -13,7 +13,22 @@ type ImportPlayer = {
 };
 
 const headerAliases = {
-  number: ["등번호", "배번", "번호", "背番"],
+  number: [
+    "등번호",
+    "배번",
+    "백넘버",
+    "백 번호",
+    "유니폼번호",
+    "선수번호",
+    "번호",
+    "no",
+    "no.",
+    "back number",
+    "back no",
+    "uniform number",
+    "jersey number",
+    "背番",
+  ],
   name: ["선수명", "성명", "이름", "선수"],
   year: ["기준연도", "연도", "시즌", "년도"],
   position: ["포지션", "수비위치", "위치", "포지션명"],
@@ -63,6 +78,9 @@ function parseSheet(rows: unknown[][]) {
   const indexes = Object.fromEntries(Object.entries(headerAliases).map(([key, aliases]) => [key, findHeaderIndex(header, aliases)])) as Record<keyof ImportPlayer, number>;
   const players: ImportPlayer[] = [];
   const errors: string[] = [];
+  if (indexes.number < 0) {
+    errors.push("등번호 열을 찾지 못했습니다. 열 제목을 '등번호', '배번' 또는 '백넘버'로 입력해 주세요.");
+  }
 
   rows.slice(headerRowIndex + 1).forEach((row, offset) => {
     const rowNumber = headerRowIndex + offset + 2;

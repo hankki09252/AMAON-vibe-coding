@@ -116,16 +116,43 @@ export async function POST(request: Request) {
   const newItems = parsed as ManagedRosterPlayer[];
   try {
     const items = await readItems();
-    const existingKeys = new Set(items.filter((item) => item.teamId === teamId).map((item) => `${item.player.name}|${item.player.number}`));
+    const teamItems = items.filter((item) => item.teamId === teamId);
+    const existingKeys = new Set(teamItems.map((item) => `${item.player.name}|${item.player.number}`));
+    const correctedItems: ManagedRosterPlayer[] = [];
+    const correctedIds = new Set<string>();
     const uniqueItems = newItems.filter((item, index) => {
       const key = `${item.player.name}|${item.player.number}`;
       if (existingKeys.has(key) || newItems.findIndex((candidate) => `${candidate.player.name}|${candidate.player.number}` === key) !== index) return false;
+      const missingNumberMatch = teamItems.find((current) =>
+        current.created
+        && !correctedIds.has(current.playerId)
+        && current.player.name === item.player.name
+        && (!current.player.number || current.player.number === "미정")
+        && item.player.number !== "미정"
+      );
+      if (missingNumberMatch) {
+        correctedIds.add(missingNumberMatch.playerId);
+        correctedItems.push({
+          ...missingNumberMatch,
+          player: { ...missingNumberMatch.player, ...item.player, id: missingNumberMatch.playerId },
+          updatedAt: now,
+          updatedBy: user.email || "",
+        });
+        return false;
+      }
       existingKeys.add(key);
       return true;
     });
-    if (!uniqueItems.length) return Response.json({ error: "새로 등록할 선수가 없습니다. 이미 등록된 이름과 등번호를 확인해 주세요." }, { status: 409 });
-    await writeItems([...items, ...uniqueItems]);
-    return Response.json({ item: uniqueItems[0], items: uniqueItems, skipped: newItems.length - uniqueItems.length });
+    const savedItems = [...correctedItems, ...uniqueItems];
+    if (!savedItems.length) return Response.json({ error: "새로 등록하거나 등번호를 보정할 선수가 없습니다. 이미 등록된 이름과 등번호를 확인해 주세요." }, { status: 409 });
+    await writeItems([...items.filter((item) => !correctedIds.has(item.playerId)), ...savedItems]);
+    return Response.json({
+      item: savedItems[0],
+      items: savedItems,
+      corrected: correctedItems.length,
+      created: uniqueItems.length,
+      skipped: newItems.length - savedItems.length,
+    });
   } catch (error) {
     return Response.json({ error: `선수를 저장하지 못했습니다: ${error instanceof Error ? error.message : "저장 오류"}` }, { status: 500 });
   }
