@@ -127,6 +127,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [newPlayerForm, setNewPlayerForm] = useState<NewPlayerForm>({ number: "", name: "", year: "2026", position: "미지정", grade: "1학년", height: "170", weight: "65", batsThrows: "우투우타" });
   const mediaFeedRef = useRef<HTMLDivElement>(null);
   const mediaVideoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const profileHistoryPushedRef = useRef(false);
 
   function resolvePlayer(player: TeamPlayer): TeamPlayer {
     const override = profileOverrides[player.id];
@@ -158,7 +159,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     setYoutubeFormOpen(false);
     setYoutubeUrl("");
     setNotice("");
-    window.history.replaceState(null, "", getProfileUrl(player));
+    profileHistoryPushedRef.current = true;
+    window.history.pushState({ amaonView: "player", team: sectionId, player: player.id }, "", getProfileUrl(player));
   }
 
   function closePlayer() {
@@ -166,13 +168,30 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     setSelected(null);
     setEditingProfile(false);
     setEditingOrigins(false);
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("team") === sectionId) {
-      url.searchParams.delete("team");
-      url.searchParams.delete("player");
-      url.hash = sectionId;
-      window.history.replaceState(null, "", url);
+    if (profileHistoryPushedRef.current) {
+      profileHistoryPushedRef.current = false;
+      window.history.back();
+      return;
     }
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("team") !== sectionId) return;
+    url.searchParams.delete("team");
+    url.searchParams.delete("player");
+    url.hash = sectionId;
+    window.history.replaceState({ amaonView: "team", team: sectionId }, "", url);
+  }
+
+  function goToSchoolDirectory() {
+    setSelected(null);
+    setMediaFeedOpen(false);
+    profileHistoryPushedRef.current = false;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("team");
+    url.searchParams.delete("player");
+    url.searchParams.delete("media");
+    url.hash = "schools";
+    window.history.pushState({ amaonView: "schools" }, "", url);
+    document.getElementById("schools")?.scrollIntoView({ behavior: "auto", block: "start" });
   }
 
   async function copyProfileLink() {
@@ -682,23 +701,46 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   }
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("team") !== sectionId) return;
-    const playerId = params.get("player");
-    const linkedPlayer = displayPlayers.find((player) => player.id === playerId);
-    if (linkedPlayer) {
-      setSelected(linkedPlayer);
-      setSelectedCategory("photo");
-      return;
+    function syncProfileFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("team") !== sectionId) {
+        profileHistoryPushedRef.current = false;
+        setSelected(null);
+        setMediaFeedOpen(false);
+        return;
+      }
+      const playerId = params.get("player");
+      const linkedPlayer = displayPlayers.find((player) => player.id === playerId);
+      if (linkedPlayer) {
+        setSelected(linkedPlayer);
+        setSelectedCategory("photo");
+        return;
+      }
+      profileHistoryPushedRef.current = false;
+      setSelected(null);
+      const movedPlayer = rosterChanges.find((item) => item.playerId === playerId && !item.hidden && item.teamId !== sectionId);
+      if (movedPlayer) {
+        const targetUrl = new URL(window.location.href);
+        targetUrl.searchParams.set("team", movedPlayer.teamId);
+        targetUrl.hash = movedPlayer.teamId;
+        window.location.replace(targetUrl.toString());
+      }
     }
-    const movedPlayer = rosterChanges.find((item) => item.playerId === playerId && !item.hidden && item.teamId !== sectionId);
-    if (movedPlayer) {
-      const targetUrl = new URL(window.location.href);
-      targetUrl.searchParams.set("team", movedPlayer.teamId);
-      targetUrl.hash = movedPlayer.teamId;
-      window.location.replace(targetUrl.toString());
-    }
+
+    syncProfileFromUrl();
+    window.addEventListener("popstate", syncProfileFromUrl);
+    return () => window.removeEventListener("popstate", syncProfileFromUrl);
   }, [displayPlayers, rosterChanges, sectionId]);
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (mediaFeedOpen) setMediaFeedOpen(false);
+      else if (selected) closePlayer();
+    }
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [mediaFeedOpen, selected]);
 
   const mediaByPlayer = useMemo(() => {
     const grouped = new Map<string, MediaItem[]>();
@@ -912,6 +954,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   return (
     <section className="gd-section" id={sectionId}>
+      <button type="button" className="gd-roster-back" onClick={goToSchoolDirectory} aria-label="학교 목록으로 돌아가기">
+        <span aria-hidden="true">←</span> 학교 목록으로
+      </button>
       <div className="gd-heading">
         <div className="gd-heading-main">
           <div className="gd-team-emblem">
@@ -1011,6 +1056,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
         <div className="modal-backdrop" role="presentation" onMouseDown={closePlayer}>
           <section className="gd-modal" role="dialog" aria-modal="true" aria-label={`${selectedDisplay.name} 선수 프로필`} onMouseDown={(event) => event.stopPropagation()}>
             <button className="modal-close" onClick={closePlayer} aria-label="닫기">×</button>
+            <button type="button" className="gd-profile-back" onClick={closePlayer} aria-label={`${teamLabel} 선수단으로 돌아가기`}>
+              <span aria-hidden="true">←</span> 선수단으로
+            </button>
             <div className={`gd-modal-team-banner${teamBanner ? " has-image" : ""}`}>
               {teamBanner && <img src={teamBanner.url} alt={`${teamLabel} 팀 배너`} />}
               <div className="gd-team-banner-overlay" />
