@@ -69,7 +69,8 @@ export async function POST(request: Request) {
   const orientation: VideoOrientation = body.orientation === "landscape" ? "landscape" : "portrait";
   const key = isYoutube && videoId ? `youtube/${playerId}/${category}/${videoId}` : body.key || "";
   const contentType = isYoutube ? `video/youtube;orientation=${orientation}` : body.contentType || "application/octet-stream";
-  if (!validKey(key) || !validPlayerId(playerId) || !categories.has(category) || (isYoutube ? !videoId || imageCategories.has(category) : !key.startsWith(`gd/${playerId}/${category}/`))) {
+  const isDirectImage = !isYoutube && imageCategories.has(category) && contentType.startsWith("image/");
+  if (!validKey(key) || !validPlayerId(playerId) || !categories.has(category) || (isYoutube ? !videoId || imageCategories.has(category) : !isDirectImage || !key.startsWith(`gd/${playerId}/${category}/`))) {
     return Response.json({ error: "업로드 정보가 올바르지 않습니다." }, { status: 400 });
   }
   const db = createSupabaseAdminClient();

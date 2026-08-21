@@ -750,10 +750,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     try {
       for (const file of files) {
         const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(file.name);
-        if ((selectedCategory === "photo" && !isVideo) || (selectedCategory !== "photo" && isVideo)) {
-          setUploadProgress(0);
-          await uploadSupabaseFile(file, selected.id, selectedCategory);
-        } else throw new Error("선택한 카테고리와 파일 형식이 맞지 않습니다.");
+        if (selectedCategory !== "photo" || isVideo) throw new Error("사진만 직접 업로드할 수 있습니다. 경기 영상은 유튜브 링크로 등록해 주세요.");
+        setUploadProgress(0);
+        await uploadSupabaseFile(file, selected.id, "photo");
       }
       const categoryLabel = mediaCategories.find((category) => category.id === selectedCategory)?.label;
       setNotice(`${categoryLabel}에 ${files.length}개 파일을 업로드했습니다.`);
@@ -1085,11 +1084,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               ))}
             </div>
             {isAdmin && selectedCategory !== "photo" && youtubeFormOpen && <div className="gd-youtube-form">
-              <div><small>YOUTUBE PUBLIC VIDEO</small><strong>{activeCategory.label} 링크 등록</strong><p>유튜브에 공개로 올린 영상의 공유 주소를 붙여 넣으세요.</p></div>
+              <div><small>YOUTUBE PUBLIC VIDEO</small><strong>{activeCategory.label} 링크 등록</strong><p>영상 원본은 유튜브에서 재생되며 아마온에는 링크 정보만 저장됩니다.</p></div>
               <label className="url-field">유튜브 주소<input type="url" value={youtubeUrl} placeholder="https://youtu.be/… 또는 Shorts 주소" onChange={(event) => setYoutubeUrl(event.target.value)} disabled={savingYoutube} /></label>
               <label>영상 비율<select value={youtubeOrientation} onChange={(event) => setYoutubeOrientation(event.target.value as VideoOrientation)} disabled={savingYoutube}><option value="portrait">세로 9:16</option><option value="landscape">가로 16:9</option></select></label>
               <button type="button" onClick={() => void registerYoutubeVideo()} disabled={savingYoutube || !youtubeUrl.trim()}>{savingYoutube ? "등록 중…" : "영상 등록"}</button>
-              <details><summary>기존 MP4 파일로 직접 올리기</summary><label className={uploading ? "disabled" : ""}><input type="file" accept="video/mp4,video/webm,video/quicktime" multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : "영상 파일 선택"}</span></label></details>
             </div>}
             {notice && <p className="gd-notice">{notice}</p>}
             <div className="gd-media-grid">

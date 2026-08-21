@@ -27,26 +27,119 @@ type ManagedRosterPlayer = {
   updatedBy: string;
 };
 
-async function readItems(): Promise<ManagedRosterPlayer[]> {
+type RosterPlayerRow = {
+  player_id: string;
+  origin_team_id: string;
+  team_id: string;
+  hidden: boolean;
+  created: boolean;
+  jersey_number: string;
+  name: string;
+  roster_year: number;
+  position: string;
+  grade: string;
+  height: number;
+  weight: number;
+  bats_throws: string;
+  updated_at: string;
+  updated_by: string;
+};
+
+function toRow(item: ManagedRosterPlayer): RosterPlayerRow {
+  return {
+    player_id: item.playerId,
+    origin_team_id: item.originTeamId,
+    team_id: item.teamId,
+    hidden: item.hidden,
+    created: item.created,
+    jersey_number: item.player.number,
+    name: item.player.name,
+    roster_year: item.player.year,
+    position: item.player.position,
+    grade: item.player.grade,
+    height: item.player.height,
+    weight: item.player.weight,
+    bats_throws: item.player.batsThrows,
+    updated_at: item.updatedAt,
+    updated_by: item.updatedBy,
+  };
+}
+
+function fromRow(row: RosterPlayerRow): ManagedRosterPlayer {
+  return {
+    playerId: row.player_id,
+    originTeamId: row.origin_team_id,
+    teamId: row.team_id,
+    hidden: row.hidden,
+    created: row.created,
+    player: {
+      id: row.player_id,
+      number: row.jersey_number,
+      name: row.name,
+      year: row.roster_year,
+      position: row.position,
+      grade: row.grade,
+      height: row.height,
+      weight: row.weight,
+      batsThrows: row.bats_throws,
+    },
+    updatedAt: row.updated_at,
+    updatedBy: row.updated_by,
+  };
+}
+
+async function readTableItems(): Promise<ManagedRosterPlayer[]> {
+  const db = createSupabaseAdminClient();
+  const items: ManagedRosterPlayer[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await db
+      .from("roster_players")
+      .select("*")
+      .order("player_id")
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error(`선수 기록 테이블을 읽지 못했습니다: ${error.message}`);
+    const rows = (data || []) as RosterPlayerRow[];
+    items.push(...rows.map(fromRow));
+    if (rows.length < pageSize) break;
+  }
+  return items;
+}
+
+async function readLegacyItems(): Promise<ManagedRosterPlayer[]> {
   const db = createSupabaseAdminClient();
   const { data, error } = await db.storage.from("media").download(SETTINGS_FILE);
-  if (error || !data) return [];
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("not found") || message.includes("does not exist")) return [];
+    throw new Error(`기존 선수 기록을 읽지 못했습니다: ${error.message}`);
+  }
+  if (!data) throw new Error("기존 선수 기록 파일의 내용이 비어 있습니다.");
   try {
     const parsed = JSON.parse(await data.text());
     return Array.isArray(parsed?.items) ? parsed.items : [];
-  } catch {
-    return [];
+  } catch (error) {
+    throw new Error(`기존 선수 기록 형식이 손상되었습니다: ${error instanceof Error ? error.message : "JSON 오류"}`);
   }
 }
 
-async function writeItems(items: ManagedRosterPlayer[]) {
+async function saveItems(items: ManagedRosterPlayer[]) {
+  if (!items.length) return;
   const db = createSupabaseAdminClient();
-  const { error } = await db.storage.from("media").upload(
-    SETTINGS_FILE,
-    JSON.stringify({ items, updatedAt: new Date().toISOString() }),
-    { contentType: "application/json; charset=utf-8", upsert: true },
-  );
+  const { error } = await db.from("roster_players").upsert(items.map(toRow), { onConflict: "player_id" });
   if (error) throw new Error(error.message);
+}
+
+async function readItems(): Promise<ManagedRosterPlayer[]> {
+  const items = await readTableItems();
+  if (items.length) return items;
+
+  // 첫 실행 때만 기존 Storage JSON을 새 테이블로 복사한다.
+  // 이후부터는 테이블만 사용하며 JSON 파일은 비상 백업으로 그대로 남긴다.
+  const legacyItems = await readLegacyItems();
+  if (!legacyItems.length) return [];
+  await saveItems(legacyItems);
+  return readTableItems();
 }
 
 function parsePlayer(value: unknown, forcedId?: string): StoredPlayer | null {
@@ -145,7 +238,7 @@ export async function POST(request: Request) {
     });
     const savedItems = [...correctedItems, ...uniqueItems];
     if (!savedItems.length) return Response.json({ error: "새로 등록하거나 등번호를 보정할 선수가 없습니다. 이미 등록된 이름과 등번호를 확인해 주세요." }, { status: 409 });
-    await writeItems([...items.filter((item) => !correctedIds.has(item.playerId)), ...savedItems]);
+    await saveItems(savedItems);
     return Response.json({
       item: savedItems[0],
       items: savedItems,
@@ -182,8 +275,7 @@ export async function PUT(request: Request) {
   };
   try {
     if (fromTeamId !== teamId) await migratePlayerDetails(playerId, fromTeamId, teamId);
-    const items = await readItems();
-    await writeItems([...items.filter((current) => current.playerId !== playerId), item]);
+    await saveItems([item]);
     return Response.json({ item });
   } catch (error) {
     return Response.json({ error: `변경사항을 저장하지 못했습니다: ${error instanceof Error ? error.message : "저장 오류"}` }, { status: 500 });
