@@ -288,18 +288,26 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const teamIds = [...new Set(Object.values(rosterSectionBySchool))].join(",");
+    const teamIds = [...new Set(Object.values(rosterSectionBySchool))];
     const loadAssets = async () => {
-      const [bannerResponse, emblemResponse] = await Promise.all([
-        fetch(`/api/team-banners?teamIds=${encodeURIComponent(teamIds)}`, { cache: "no-store" }),
-        fetch(`/api/team-emblems?teamIds=${encodeURIComponent(teamIds)}`, { cache: "no-store" }),
+      async function loadAssetKind(kind: "banners" | "emblems") {
+        const chunks = Array.from({ length: Math.ceil(teamIds.length / 50) }, (_, index) =>
+          teamIds.slice(index * 50, (index + 1) * 50),
+        );
+        const responses = await Promise.all(chunks.map((chunk) =>
+          fetch(`/api/team-${kind}?teamIds=${encodeURIComponent(chunk.join(","))}`, { cache: "no-store" }),
+        ));
+        const payloads = await Promise.all(responses.map(async (response) => response.ok
+          ? (await response.json() as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {}
+          : {},
+        ));
+        return Object.assign({}, ...payloads) as Record<string, TeamDirectoryAsset | null>;
+      }
+
+      const [banners, emblems] = await Promise.all([
+        loadAssetKind("banners"),
+        loadAssetKind("emblems"),
       ]);
-      const banners = bannerResponse.ok
-        ? (await bannerResponse.json() as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {}
-        : {};
-      const emblems = emblemResponse.ok
-        ? (await emblemResponse.json() as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {}
-        : {};
       setTeamDirectoryAssets(Object.fromEntries(Object.values(rosterSectionBySchool).map((teamId) => [teamId, {
         banner: banners[teamId]?.url || undefined,
         emblem: emblems[teamId]?.url || undefined,
