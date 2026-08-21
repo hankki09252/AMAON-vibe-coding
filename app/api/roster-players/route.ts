@@ -216,18 +216,21 @@ export async function POST(request: Request) {
     const uniqueItems = newItems.filter((item, index) => {
       const key = `${item.player.name}|${item.player.number}`;
       if (existingKeys.has(key) || newItems.findIndex((candidate) => `${candidate.player.name}|${candidate.player.number}` === key) !== index) return false;
-      const missingNumberMatch = teamItems.find((current) =>
+      const sameNameMatches = teamItems.filter((current) =>
         current.created
         && !correctedIds.has(current.playerId)
         && current.player.name === item.player.name
-        && (!current.player.number || current.player.number === "미정")
-        && item.player.number !== "미정"
       );
-      if (missingNumberMatch) {
-        correctedIds.add(missingNumberMatch.playerId);
+      const numberCorrectionMatch = sameNameMatches.length === 1
+        && item.player.number !== "미정"
+        && sameNameMatches[0].player.number !== item.player.number
+        ? sameNameMatches[0]
+        : null;
+      if (numberCorrectionMatch) {
+        correctedIds.add(numberCorrectionMatch.playerId);
         correctedItems.push({
-          ...missingNumberMatch,
-          player: { ...missingNumberMatch.player, ...item.player, id: missingNumberMatch.playerId },
+          ...numberCorrectionMatch,
+          player: { ...numberCorrectionMatch.player, number: item.player.number },
           updatedAt: now,
           updatedBy: user.email || "",
         });

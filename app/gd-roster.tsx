@@ -586,7 +586,11 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   }
 
   const existingPlayerKeys = useMemo(() => new Set(displayPlayers.map((player) => `${player.name.trim()}|${player.number.trim()}`)), [displayPlayers]);
-  const missingNumberPlayerNames = useMemo(() => new Set(displayPlayers.filter((player) => !player.number || player.number === "미정").map((player) => player.name.trim())), [displayPlayers]);
+  const uniqueExistingPlayerNames = useMemo(() => {
+    const counts = new Map<string, number>();
+    displayPlayers.forEach((player) => counts.set(player.name.trim(), (counts.get(player.name.trim()) || 0) + 1));
+    return new Set([...counts].filter(([, count]) => count === 1).map(([name]) => name));
+  }, [displayPlayers]);
   const importablePlayers = bulkImportPlayers.filter((player) => !existingPlayerKeys.has(`${player.name.trim()}|${player.number.trim()}`));
   const duplicateImportCount = bulkImportPlayers.length - importablePlayers.length;
 
@@ -624,7 +628,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   }
 
   function downloadRosterTemplate() {
-    const csv = "\uFEFF선수명,등번호,기준연도,학년,포지션,키(cm),몸무게(kg),투타\r\n홍길동,10,2026,1학년,투수,180,75,우투우타\r\n";
+    const csv = "\uFEFF선수명,백넘버,기준연도,학년,포지션,키(cm),몸무게(kg),투타\r\n홍길동,10,2026,1학년,투수,180,75,우투우타\r\n";
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
@@ -955,12 +959,12 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <input type="file" accept=".xls,.xlsx,.csv" onChange={(event) => void previewRosterFile(event)} disabled={bulkImportReading || rosterSaving} />
             <span>{bulkImportReading ? "파일 확인 중…" : bulkImportFileName || "엑셀·CSV 명단 선택"}</span>
           </label>
-          <p className="gd-roster-import-guide">열 제목은 선수명(또는 성명), 등번호(배번·백넘버도 가능), 학년, 포지션, 키, 몸무게, 투타를 사용하세요. 감독·코치 행은 자동 제외됩니다. 기존 선수가 등번호 미정이면 같은 이름의 번호를 자동 보정합니다.</p>
+          <p className="gd-roster-import-guide">열 제목은 선수명(또는 성명), 백넘버(등번호·배번도 가능), 학년, 포지션, 키, 몸무게, 투타를 사용하세요. No와 백넘버 열이 함께 있으면 백넘버를 선수 배번으로 적용합니다. 감독·코치 행은 자동 제외됩니다. 같은 이름의 기존 선수가 한 명이면 백넘버를 자동 교정합니다.</p>
           {bulkImportPlayers.length > 0 && <>
-            <div className="gd-roster-import-summary"><b>확인 {bulkImportPlayers.length}명</b><span>등록 가능 {importablePlayers.length}명</span>{duplicateImportCount > 0 && <em>기존 중복 {duplicateImportCount}명 제외</em>}{bulkImportErrors.length > 0 && <em>오류 행 {bulkImportErrors.length}개 제외</em>}</div>
-            <div className="gd-roster-import-preview"><table><thead><tr><th>등번호</th><th>선수명</th><th>학년</th><th>포지션</th><th>신체</th><th>투타</th><th>상태</th></tr></thead><tbody>{bulkImportPlayers.map((player, index) => { const duplicate = existingPlayerKeys.has(`${player.name.trim()}|${player.number.trim()}`); const correctsNumber = !duplicate && player.number !== "미정" && missingNumberPlayerNames.has(player.name.trim()); return <tr key={`${player.name}-${player.number}-${index}`} className={duplicate ? "duplicate" : ""}><td>{player.number}</td><td>{player.name}</td><td>{player.grade}</td><td>{player.position}</td><td>{player.height}cm / {player.weight}kg</td><td>{player.batsThrows}</td><td>{duplicate ? "기존 명단 중복" : correctsNumber ? "등번호 보정" : "등록 가능"}</td></tr>; })}</tbody></table></div>
+            <div className="gd-roster-import-summary"><b>확인 {bulkImportPlayers.length}명</b><span>등록·교정 가능 {importablePlayers.length}명</span>{duplicateImportCount > 0 && <em>변경 없는 선수 {duplicateImportCount}명 제외</em>}{bulkImportErrors.length > 0 && <em>오류 행 {bulkImportErrors.length}개 제외</em>}</div>
+            <div className="gd-roster-import-preview"><table><thead><tr><th>등번호</th><th>선수명</th><th>학년</th><th>포지션</th><th>신체</th><th>투타</th><th>상태</th></tr></thead><tbody>{bulkImportPlayers.map((player, index) => { const duplicate = existingPlayerKeys.has(`${player.name.trim()}|${player.number.trim()}`); const correctsNumber = !duplicate && player.number !== "미정" && uniqueExistingPlayerNames.has(player.name.trim()); return <tr key={`${player.name}-${player.number}-${index}`} className={duplicate ? "duplicate" : ""}><td>{player.number}</td><td>{player.name}</td><td>{player.grade}</td><td>{player.position}</td><td>{player.height}cm / {player.weight}kg</td><td>{player.batsThrows}</td><td>{duplicate ? "기존 명단 중복" : correctsNumber ? "백넘버 교정" : "등록 가능"}</td></tr>; })}</tbody></table></div>
             {bulkImportErrors.length > 0 && <details className="gd-roster-import-errors"><summary>제외된 행 확인</summary>{bulkImportErrors.map((error) => <p key={error}>{error}</p>)}</details>}
-            <div className="gd-roster-import-actions"><button type="button" onClick={() => void importRosterPlayers()} disabled={rosterSaving || !importablePlayers.length}>{rosterSaving ? "저장 중…" : `${importablePlayers.length}명 등록`}</button><button type="button" className="cancel" onClick={() => { setBulkImportOpen(false); setBulkImportPlayers([]); setBulkImportErrors([]); setBulkImportFileName(""); }} disabled={rosterSaving}>취소</button></div>
+            <div className="gd-roster-import-actions"><button type="button" onClick={() => void importRosterPlayers()} disabled={rosterSaving || !importablePlayers.length}>{rosterSaving ? "저장 중…" : `${importablePlayers.length}명 등록·교정`}</button><button type="button" className="cancel" onClick={() => { setBulkImportOpen(false); setBulkImportPlayers([]); setBulkImportErrors([]); setBulkImportFileName(""); }} disabled={rosterSaving}>취소</button></div>
           </>}
         </div>}
         {rosterManagerOpen && <div className="gd-roster-manager">

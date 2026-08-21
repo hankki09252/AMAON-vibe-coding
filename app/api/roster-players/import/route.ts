@@ -47,8 +47,16 @@ function normalizedHeader(value: unknown) {
 }
 
 function findHeaderIndex(row: unknown[], aliases: readonly string[]) {
-  const normalizedAliases = aliases.map(normalizedHeader);
-  return row.findIndex((cell) => normalizedAliases.includes(normalizedHeader(cell)));
+  const normalizedRow = row.map(normalizedHeader);
+
+  // Alias order is intentional: specific jersey-number headers such as
+  // "백넘버" must win over generic spreadsheet row headers such as "No".
+  for (const alias of aliases) {
+    const index = normalizedRow.indexOf(normalizedHeader(alias));
+    if (index >= 0) return index;
+  }
+
+  return -1;
 }
 
 function numberFromCell(value: unknown) {
