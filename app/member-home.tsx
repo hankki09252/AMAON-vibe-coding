@@ -405,7 +405,7 @@ export default function Home() {
     const previousScrollBehavior = document.documentElement.style.scrollBehavior;
     document.documentElement.style.scrollBehavior = "auto";
     window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, left: 0, behavior: "auto" });
-    window.history.replaceState(null, "", `#${sectionId}`);
+    window.history.pushState({ amaonView: "section", sectionId }, "", `#${sectionId}`);
     requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = previousScrollBehavior; });
   }
 
@@ -722,6 +722,7 @@ export default function Home() {
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setSelectedPlayer(null)}>
           <section className="profile-modal" role="dialog" aria-modal="true" aria-label={`${selectedPlayer.name} 선수 프로필`} onMouseDown={(event) => event.stopPropagation()}>
             <button className="modal-close" onClick={() => setSelectedPlayer(null)} aria-label="닫기">×</button>
+            <button type="button" className="sample-profile-back" onClick={() => setSelectedPlayer(null)}><span aria-hidden="true">←</span> 선수 목록으로</button>
             <p className="kicker dark"><span /> PLAYER PROFILE · SAMPLE</p>
             <div className="modal-player-head"><div className="mini-jersey">{selectedPlayer.number}</div><div><small>{selectedPlayer.school} · {selectedPlayer.grade}</small><h2>{selectedPlayer.name}</h2><b>{selectedPlayer.position}</b></div></div>
             <div className="stat-panel"><strong>{selectedPlayer.stat}</strong><span>{selectedPlayer.detail}</span></div>
