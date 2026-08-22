@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { COMMUNITY_CATEGORIES, activityLevel } from "./community-model";
+import { COMMUNITY_CATEGORIES, MEMBER_ROLE_LABELS, MEMBER_ROLES, activityLevel } from "./community-model";
 
 type Profile = {
   user_id: string; display_name: string; member_role: string; school_name: string;
@@ -11,6 +11,10 @@ type Profile = {
 type Post = {
   id: string; author_id: string; category: string; title: string; content: string; created_at: string;
   author?: { display_name: string; member_role: string; identity_status: string; activity_points: number; identity_badge: string } | null;
+};
+type MemberStats = {
+  total: number; verified: number; joinedToday: number;
+  roleCounts: Record<string, number>;
 };
 
 export default function CommunityBoard() {
@@ -24,29 +28,38 @@ export default function CommunityBoard() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [stats, setStats] = useState<MemberStats | null>(null);
+  const [totalMembers, setTotalMembers] = useState(0);
 
   const categoryLabel = useMemo(() => Object.fromEntries(COMMUNITY_CATEGORIES), []);
 
   async function load() {
-    const [memberResponse, postResponse] = await Promise.all([
+    const [memberResponse, postResponse, statsResponse] = await Promise.all([
       fetch("/api/member-profile", { cache: "no-store" }),
       fetch("/api/community/posts", { cache: "no-store" }),
+      fetch("/api/member-stats", { cache: "no-store" }),
     ]);
     const memberPayload = await memberResponse.json().catch(() => ({}));
     const postPayload = await postResponse.json().catch(() => ({}));
+    const statsPayload = await statsResponse.json().catch(() => ({}));
     if (memberResponse.ok) {
       setProfile(memberPayload.profile);
       setMembers(memberPayload.members || []);
+      setStats(memberPayload.stats || null);
     }
     if (postResponse.ok) {
       setPosts(postPayload.items || []);
       setUserId(postPayload.userId || "");
     }
-    const error = memberPayload.error || postPayload.error;
+    if (statsResponse.ok) setTotalMembers(Number(statsPayload.totalMembers || 0));
+    const error = memberPayload.error || postPayload.error || statsPayload.error;
     if (error) setNotice(error);
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   async function submitPost(event: FormEvent) {
     event.preventDefault();
@@ -75,18 +88,29 @@ export default function CommunityBoard() {
     if (response.ok) await load();
   }
 
+  function downloadMembers(role: string = "all") {
+    window.location.href = `/api/admin/members-export?role=${encodeURIComponent(role)}`;
+  }
+
   return <section className="community-section" id="community">
     <div className="community-heading">
       <div><p className="kicker"><span /> AMAON COMMUNITY</p><h2>야구로 연결되는<br /><em>우리들의 라커룸</em></h2></div>
-      <p>선수와 보호자, 지도자와 팬이 안전하게 소식을 나눕니다.<br />연락처·주소·개인 SNS는 게시할 수 없습니다.</p>
+      <div className="community-follower-count"><strong>{totalMembers.toLocaleString()}</strong><span>아마ON 팔로워</span><small>회원가입 완료 계정 기준</small></div>
     </div>
     <div className="member-badge-card">
       <div><span className="identity-badge">{profile?.identityBadge || "회원 확인 중"}</span><strong>{profile?.display_name || "아마ON 회원"}</strong><small>{profile?.school_name || "소속 정보 미입력"}</small></div>
       <div><span>활동 등급</span><strong>{profile?.activityLevel || "루키"}</strong><small>{Number(profile?.activity_points || 0).toLocaleString()} P</small></div>
       <p>신원 배지는 운영팀 확인 후 부여되며, 활동 등급과는 별도로 표시됩니다.</p>
-      {profile?.isAdmin && <button type="button" onClick={() => setAdminOpen((open) => !open)}>{adminOpen ? "인증 관리 닫기" : "회원 인증 관리"}</button>}
+      {profile?.isAdmin && <button type="button" onClick={() => setAdminOpen((open) => !open)}>{adminOpen ? "회원 관리 닫기" : "회원 데이터·인증 관리"}</button>}
     </div>
     {adminOpen && profile?.isAdmin && <div className="member-verification-panel">
+      <div className="member-admin-heading"><div><h3>회원 데이터 관리</h3><p>회원가입 구분별 현황을 확인하고 엑셀로 내려받을 수 있습니다.</p></div><button type="button" onClick={() => downloadMembers()}>전체 회원 엑셀 다운로드</button></div>
+      <div className="member-stat-grid">
+        <article><span>전체 회원·팔로워</span><strong>{Number(stats?.total || totalMembers).toLocaleString()}명</strong></article>
+        <article><span>신원 인증 완료</span><strong>{Number(stats?.verified || 0).toLocaleString()}명</strong></article>
+        <article><span>오늘 가입</span><strong>{Number(stats?.joinedToday || 0).toLocaleString()}명</strong></article>
+      </div>
+      <div className="member-role-export-grid">{MEMBER_ROLES.map((role) => <button type="button" key={role} onClick={() => downloadMembers(role)}><span>{MEMBER_ROLE_LABELS[role]}</span><strong>{Number(stats?.roleCounts?.[role] || 0).toLocaleString()}명</strong><small>엑셀 받기 ↓</small></button>)}</div>
       <h3>회원 신원 인증</h3>
       {members.filter((member) => !member.isAdmin).map((member) => <div key={member.user_id}>
         <span><strong>{member.display_name}</strong><small>{member.school_name || "소속 미입력"} · {member.identityBadge}</small></span>
@@ -121,3 +145,4 @@ export default function CommunityBoard() {
     </div>
   </section>;
 }
+
