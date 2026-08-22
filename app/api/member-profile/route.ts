@@ -13,7 +13,7 @@ async function ensureProfile() {
   const row = {
     user_id: user.id,
     email: user.email || "",
-    display_name: String(metadata.display_name || user.email?.split("@")[0] || "회원").slice(0, 40),
+    display_name: String(metadata.display_name || "아마ON 회원").slice(0, 40),
     member_role: role,
     school_name: String(metadata.school_name || "").slice(0, 80),
     related_player_name: String(metadata.related_player_name || "").slice(0, 40),
@@ -23,10 +23,18 @@ async function ensureProfile() {
   return { user, profile: data };
 }
 
+function publicDisplayName(profile: Record<string, unknown>) {
+  const displayName = String(profile.display_name || "").trim();
+  const emailPrefix = String(profile.email || "").split("@")[0].trim().toLowerCase();
+  if (!displayName || (emailPrefix && displayName.toLowerCase() === emailPrefix)) return "아마ON 회원";
+  return displayName;
+}
+
 function present(profile: Record<string, unknown>, adminRole?: string | null) {
   const points = Number(profile.activity_points || 0);
   return {
     ...profile,
+    display_name: publicDisplayName(profile),
     identityBadge: identityBadge(String(profile.member_role), String(profile.identity_status), adminRole),
     activityLevel: activityLevel(points),
     isAdmin: Boolean(adminRole),

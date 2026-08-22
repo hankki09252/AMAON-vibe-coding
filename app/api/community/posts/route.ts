@@ -2,6 +2,13 @@ import { apiUser, configuredAdminRole } from "../../../api-auth";
 import { COMMUNITY_CATEGORIES, communityContentError, identityBadge } from "../../../community-model";
 import { createSupabaseAdminClient } from "../../../supabase/admin";
 
+function publicDisplayName(profile: Record<string, unknown>) {
+  const displayName = String(profile.display_name || "").trim();
+  const emailPrefix = String(profile.email || "").split("@")[0].trim().toLowerCase();
+  if (!displayName || (emailPrefix && displayName.toLowerCase() === emailPrefix)) return "아마ON 회원";
+  return displayName;
+}
+
 export async function GET() {
   const user = await apiUser();
   if (!user) return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
@@ -17,7 +24,7 @@ export async function GET() {
   const { data: profiles } = authorIds.length ? await supabase.from("member_profiles").select("user_id,display_name,member_role,identity_status,activity_points,email").in("user_id", authorIds) : { data: [] };
   const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, {
     user_id: profile.user_id,
-    display_name: profile.display_name,
+    display_name: publicDisplayName(profile),
     member_role: profile.member_role,
     identity_status: profile.identity_status,
     activity_points: profile.activity_points,

@@ -30,6 +30,9 @@ export default function CommunityBoard() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [stats, setStats] = useState<MemberStats | null>(null);
   const [totalMembers, setTotalMembers] = useState(0);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [schoolName, setSchoolName] = useState("");
 
   const categoryLabel = useMemo(() => Object.fromEntries(COMMUNITY_CATEGORIES), []);
 
@@ -61,6 +64,12 @@ export default function CommunityBoard() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!profile) return;
+    setDisplayName(profile.display_name === "아마ON 회원" ? "" : profile.display_name);
+    setSchoolName(profile.school_name || "");
+  }, [profile]);
+
   async function submitPost(event: FormEvent) {
     event.preventDefault();
     setBusy(true); setNotice("");
@@ -88,6 +97,17 @@ export default function CommunityBoard() {
     if (response.ok) await load();
   }
 
+  async function saveProfile(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true); setNotice("");
+    const response = await fetch("/api/member-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName, schoolName }) });
+    const payload = await response.json().catch(() => ({}));
+    setBusy(false);
+    if (!response.ok) return setNotice(payload.error || "회원 정보를 수정하지 못했습니다.");
+    setProfileEditOpen(false); setNotice("닉네임과 소속 정보를 수정했습니다.");
+    await load();
+  }
+
   function downloadMembers(role: string = "all") {
     window.location.href = `/api/admin/members-export?role=${encodeURIComponent(role)}`;
   }
@@ -98,11 +118,17 @@ export default function CommunityBoard() {
       <div className="community-follower-count"><strong>{totalMembers.toLocaleString()}</strong><span>아마ON 팔로워</span><small>회원가입 완료 계정 기준</small></div>
     </div>
     <div className="member-badge-card">
-      <div><span className="identity-badge">{profile?.identityBadge || "회원 확인 중"}</span><strong>{profile?.display_name || "아마ON 회원"}</strong><small>{profile?.school_name || "소속 정보 미입력"}</small></div>
+      <div><span className="identity-badge">{profile?.identityBadge || "회원 확인 중"}</span><strong>{profile?.display_name || "아마ON 회원"}</strong><small>{profile?.school_name || "소속 정보 미입력"}</small><button className="profile-edit-toggle" type="button" onClick={() => setProfileEditOpen((open) => !open)}>{profileEditOpen ? "수정 닫기" : "닉네임·소속 수정"}</button></div>
       <div><span>활동 등급</span><strong>{profile?.activityLevel || "루키"}</strong><small>{Number(profile?.activity_points || 0).toLocaleString()} P</small></div>
       <p>신원 배지는 운영팀 확인 후 부여되며, 활동 등급과는 별도로 표시됩니다.</p>
       {profile?.isAdmin && <button type="button" onClick={() => setAdminOpen((open) => !open)}>{adminOpen ? "회원 관리 닫기" : "회원 데이터·인증 관리"}</button>}
     </div>
+    {profileEditOpen && <form className="member-profile-edit" onSubmit={saveProfile}>
+      <div><h3>공개 프로필 수정</h3><p>커뮤니티에는 이메일이 아닌 닉네임만 공개됩니다.</p></div>
+      <label>닉네임<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} required placeholder="커뮤니티에 표시할 닉네임" /></label>
+      <label>소속 학교·야구단<input value={schoolName} onChange={(event) => setSchoolName(event.target.value)} maxLength={80} placeholder="예: 경기항공고" /></label>
+      <button type="submit" disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
+    </form>}
     {adminOpen && profile?.isAdmin && <div className="member-verification-panel">
       <div className="member-admin-heading"><div><h3>회원 데이터 관리</h3><p>회원가입 구분별 현황을 확인하고 엑셀로 내려받을 수 있습니다.</p></div><button type="button" onClick={() => downloadMembers()}>전체 회원 엑셀 다운로드</button></div>
       <div className="member-stat-grid">

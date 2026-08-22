@@ -10,7 +10,7 @@ export async function getAmaonUser(): Promise<AmaonUser | null> {
   return {
     userId: user.id,
     email: user.email,
-    displayName: String(user.user_metadata?.display_name || user.user_metadata?.full_name || user.email),
+    displayName: String(user.user_metadata?.display_name || user.user_metadata?.full_name || "아마ON 회원"),
   };
 }
 
