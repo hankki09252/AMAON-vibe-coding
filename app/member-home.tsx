@@ -269,6 +269,9 @@ export default function Home() {
   const [regionNotice, setRegionNotice] = useState("");
   const [managedRosterPlayers, setManagedRosterPlayers] = useState<ManagedRosterPlayer[]>([]);
   const [teamDirectoryAssets, setTeamDirectoryAssets] = useState<TeamDirectoryAssets>({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeMobileSection, setActiveMobileSection] = useState("top");
+  const [showMobileBack, setShowMobileBack] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -344,6 +347,41 @@ export default function Home() {
     if (region !== "전체" && !visibleRegions.includes(region)) setRegion("전체");
   }, [region, visibleRegions]);
 
+  useEffect(() => {
+    function syncMobileNavigation() {
+      const hash = window.location.hash.replace(/^#/, "") || "top";
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("player") || hash === "players") setActiveMobileSection("players");
+      else if (hash === "video-ranking") setActiveMobileSection("video-ranking");
+      else if (hash === "community") setActiveMobileSection("community");
+      else if (hash === "schools" || hash.endsWith("-roster")) setActiveMobileSection("schools");
+      else setActiveMobileSection("top");
+      setShowMobileBack(params.has("player") || hash.endsWith("-roster"));
+      setMobileMenuOpen(false);
+    }
+    syncMobileNavigation();
+    window.addEventListener("hashchange", syncMobileNavigation);
+    window.addEventListener("popstate", syncMobileNavigation);
+    return () => {
+      window.removeEventListener("hashchange", syncMobileNavigation);
+      window.removeEventListener("popstate", syncMobileNavigation);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileMenuOpen]);
+
   const publishedSchools = useMemo(
     () => schools.filter((school) => visibleRegions.includes(school.region)),
     [visibleRegions],
@@ -404,7 +442,22 @@ export default function Home() {
     document.documentElement.style.scrollBehavior = "auto";
     window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, left: 0, behavior: "auto" });
     window.history.pushState({ amaonView: "section", sectionId }, "", `#${sectionId}`);
+    setActiveMobileSection(sectionId.endsWith("-roster") ? "schools" : sectionId);
+    setShowMobileBack(sectionId.endsWith("-roster"));
+    setMobileMenuOpen(false);
     requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = previousScrollBehavior; });
+  }
+
+  function mobileGoBack() {
+    const url = new URL(window.location.href);
+    const teamId = url.searchParams.get("team");
+    if (url.searchParams.has("player")) {
+      url.searchParams.delete("player");
+      url.hash = teamId || "schools";
+      window.location.assign(url.toString());
+      return;
+    }
+    jumpToSection("schools");
   }
 
   function openSearchedPlayer(result: (typeof currentPlayerSearchIndex)[number]) {
@@ -465,7 +518,7 @@ export default function Home() {
   }
 
   return (
-    <main>
+    <main className="member-home">
       <header className="topbar">
         <a className="brand-lockup" href="#top" aria-label="아마ON 홈">
           <span className="amaon-mark" aria-hidden="true"><i>●</i><strong>아마<em>ON</em></strong></span>
@@ -479,7 +532,56 @@ export default function Home() {
         </nav>
         <PwaInstallButton />
         <button className="outline-button" onClick={() => jumpToSection("community")}>내 회원정보</button>
+        <div className="mobile-top-actions">
+          <button type="button" className="mobile-account-button" onClick={() => jumpToSection("community")} aria-label="내 회원정보">
+            <span className="mobile-account-glyph" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="mobile-menu-button"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="전체 메뉴 열기"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-site-menu"
+          >
+            <span /><span /><span />
+          </button>
+        </div>
       </header>
+
+      <div className={`mobile-drawer-backdrop${mobileMenuOpen ? " open" : ""}`} onMouseDown={() => setMobileMenuOpen(false)}>
+        <aside id="mobile-site-menu" className="mobile-drawer" aria-label="모바일 전체 메뉴" onMouseDown={(event) => event.stopPropagation()}>
+          <div className="mobile-drawer-head">
+            <div><small>AMAON MENU</small><strong>메뉴</strong></div>
+            <button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="메뉴 닫기">×</button>
+          </div>
+          <button type="button" className="mobile-member-card" onClick={() => jumpToSection("community")}>
+            <span className="mobile-account-glyph" aria-hidden="true" />
+            <span><small>MEMBER</small><strong>내 회원정보</strong></span>
+            <b>→</b>
+          </button>
+          <nav className="mobile-drawer-nav" aria-label="전체 메뉴 항목">
+            <button type="button" onClick={() => jumpToSection("top")}><span>⌂</span><strong>홈</strong></button>
+            <button type="button" onClick={() => jumpToSection("schools")}><span>▦</span><strong>학교 찾기</strong></button>
+            <button type="button" onClick={() => jumpToSection("players")}><span>◎</span><strong>선수 프로필</strong></button>
+            <button type="button" onClick={() => jumpToSection("video-ranking")}><span>▶</span><strong>영상 TOP 5</strong></button>
+            <button type="button" onClick={() => jumpToSection("community")}><span>◌</span><strong>커뮤니티</strong></button>
+            <button type="button" onClick={() => jumpToSection("how")}><span>＋</span><strong>등록 안내</strong></button>
+          </nav>
+          {isAdmin && (
+            <button type="button" className="mobile-admin-link" onClick={() => jumpToSection("schools")}>
+              <span>운영자</span><strong>학교·선수 관리</strong><b>→</b>
+            </button>
+          )}
+          <p className="mobile-drawer-note">학교와 선수 기록은 기존 데이터 그대로 유지됩니다.</p>
+        </aside>
+      </div>
+
+      {showMobileBack && (
+        <button type="button" className="mobile-context-back" onClick={mobileGoBack}>
+          <span aria-hidden="true">←</span> 이전 화면
+        </button>
+      )}
 
       <section className="hero" id="top">
         <div className="hero-copy">
@@ -721,6 +823,14 @@ export default function Home() {
           </section>
         </div>
       )}
+
+      <nav className="mobile-bottom-nav" aria-label="모바일 빠른 메뉴">
+        <button type="button" className={activeMobileSection === "top" ? "active" : ""} onClick={() => jumpToSection("top")}><span>⌂</span><small>홈</small></button>
+        <button type="button" className={activeMobileSection === "schools" ? "active" : ""} onClick={() => jumpToSection("schools")}><span>▦</span><small>학교</small></button>
+        <button type="button" className={activeMobileSection === "players" ? "active" : ""} onClick={() => jumpToSection("players")}><span>◎</span><small>선수</small></button>
+        <button type="button" className={activeMobileSection === "video-ranking" ? "active" : ""} onClick={() => jumpToSection("video-ranking")}><span>▶</span><small>영상</small></button>
+        <button type="button" className={activeMobileSection === "community" ? "active" : ""} onClick={() => jumpToSection("community")}><span>◌</span><small>커뮤니티</small></button>
+      </nav>
 
     </main>
   );

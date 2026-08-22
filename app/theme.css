@@ -522,3 +522,309 @@ footer p, footer small { color: #777; }
     font-size: 12px;
   }
 }
+
+/* Mobile app navigation */
+.mobile-top-actions,
+.mobile-drawer-backdrop,
+.mobile-context-back,
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .member-home {
+    padding-bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    z-index: 70;
+    padding: 0 14px;
+  }
+
+  .topbar > nav,
+  .topbar > .pwa-install-button,
+  .topbar > .outline-button {
+    display: none;
+  }
+
+  .mobile-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .mobile-account-button,
+  .mobile-menu-button {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #343434;
+    background: #111;
+    color: #fff;
+  }
+
+  .mobile-account-glyph {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    display: block;
+  }
+
+  .mobile-account-glyph::before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 1px;
+    width: 8px;
+    height: 8px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+  }
+
+  .mobile-account-glyph::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    bottom: 0;
+    width: 16px;
+    height: 9px;
+    border: 2px solid currentColor;
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .mobile-menu-button {
+    gap: 5px;
+    align-content: center;
+  }
+
+  .mobile-menu-button span {
+    width: 21px;
+    height: 2px;
+    display: block;
+    background: #ff6200;
+  }
+
+  .mobile-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    display: block;
+    background: rgba(0, 0, 0, .72);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .22s ease, visibility .22s ease;
+  }
+
+  .mobile-drawer-backdrop.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .mobile-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(88vw, 390px);
+    height: 100dvh;
+    padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    background: #111;
+    color: #fff;
+    border-left: 1px solid #363636;
+    transform: translateX(100%);
+    transition: transform .24s ease;
+  }
+
+  .mobile-drawer-backdrop.open .mobile-drawer {
+    transform: translateX(0);
+  }
+
+  .mobile-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #333;
+  }
+
+  .mobile-drawer-head div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .mobile-drawer-head small,
+  .mobile-member-card small {
+    color: #ff6200;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+
+  .mobile-drawer-head strong {
+    font-size: 27px;
+  }
+
+  .mobile-drawer-head button {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 36px;
+    line-height: 1;
+  }
+
+  .mobile-member-card {
+    width: 100%;
+    margin: 18px 0;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 34px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #ff6200;
+    background: #050505;
+    color: #fff;
+    text-align: left;
+  }
+
+  .mobile-member-card > span:nth-child(2) {
+    display: grid;
+    gap: 3px;
+  }
+
+  .mobile-drawer-nav {
+    display: grid;
+    gap: 8px;
+  }
+
+  .mobile-drawer-nav button {
+    min-height: 58px;
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    border: 1px solid #333;
+    background: #1b1b1b;
+    color: #fff;
+    text-align: left;
+  }
+
+  .mobile-drawer-nav button span {
+    color: #ff6200;
+    font-size: 22px;
+    text-align: center;
+  }
+
+  .mobile-drawer-nav button strong {
+    font-size: 16px;
+  }
+
+  .mobile-admin-link {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    border: 0;
+    background: #ff6200;
+    color: #090909;
+    text-align: left;
+  }
+
+  .mobile-drawer-note {
+    margin: 16px 2px 0;
+    color: #8d8d8d;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 7px;
+    z-index: 90;
+    min-height: 66px;
+    padding: 5px 4px calc(5px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border: 1px solid rgba(255, 98, 0, .65);
+    background: rgba(8, 8, 8, .95);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .42);
+    backdrop-filter: blur(12px);
+  }
+
+  .mobile-bottom-nav button {
+    min-width: 0;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 3px;
+    border: 0;
+    border-left: 1px solid #252525;
+    background: transparent;
+    color: #aaa;
+  }
+
+  .mobile-bottom-nav button:first-child {
+    border-left: 0;
+  }
+
+  .mobile-bottom-nav button span {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .mobile-bottom-nav button small {
+    font-size: 10px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .mobile-bottom-nav button.active {
+    color: #ff6200;
+    background: rgba(255, 98, 0, .08);
+  }
+
+  .mobile-context-back {
+    position: fixed;
+    left: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    z-index: 86;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 14px;
+    border: 1px solid #ff6200;
+    background: rgba(0, 0, 0, .92);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .mobile-context-back span {
+    color: #ff6200;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-bottom-nav button small {
+    font-size: 9px;
+  }
+
+  .mobile-drawer {
+    width: 92vw;
+    padding-inline: 16px;
+  }
+}
