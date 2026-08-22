@@ -34,15 +34,32 @@ function present(profile: Record<string, unknown>, adminRole?: string | null) {
   };
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const current = await ensureProfile();
     if (!current) return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
     const adminRole = configuredAdminRole(current.user.email);
     const result: Record<string, unknown> = { profile: present(current.profile, adminRole) };
     if (adminRole) {
-      const { data } = await createSupabaseAdminClient().from("member_profiles").select("*").order("created_at", { ascending: false }).limit(200);
+      const supabase = createSupabaseAdminClient();
+      const { data } = await supabase.from("member_profiles").select("*").order("created_at", { ascending: false }).limit(500);
       result.members = (data || []).map((item) => present(item, configuredAdminRole(item.email)));
+      const today = new Date().toISOString().slice(0, 10);
+      const tomorrow = new Date(`${today}T00:00:00.000Z`);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      const [totalResult, verifiedResult, joinedTodayResult, ...roleResults] = await Promise.all([
+        supabase.from("member_profiles").select("user_id", { count: "exact", head: true }),
+        supabase.from("member_profiles").select("user_id", { count: "exact", head: true }).eq("identity_status", "verified"),
+        supabase.from("member_profiles").select("user_id", { count: "exact", head: true }).gte("created_at", `${today}T00:00:00.000Z`).lt("created_at", tomorrow.toISOString()),
+        ...MEMBER_ROLES.map((role) => supabase.from("member_profiles").select("user_id", { count: "exact", head: true }).eq("member_role", role)),
+      ]);
+      const roleCounts = Object.fromEntries(MEMBER_ROLES.map((role, index) => [role, roleResults[index].count || 0]));
+      result.stats = {
+        total: totalResult.count || 0,
+        verified: verifiedResult.count || 0,
+        joinedToday: joinedTodayResult.count || 0,
+        roleCounts,
+      };
     }
     return Response.json(result);
   } catch (error) {
@@ -69,3 +86,4 @@ export async function PATCH(request: Request) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
 }
+
