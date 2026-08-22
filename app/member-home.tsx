@@ -38,6 +38,7 @@ import ShinheungRoster, { players as shinheungPlayers } from "./shinheung-roster
 import AnsanTechnicalRoster, { players as ansanTechnicalPlayers } from "./ansan-technical-roster";
 import PwaInstallButton from "./pwa-install-button";
 import VideoRankings from "./video-rankings";
+import CommunityBoard from "./community-board";
 import { managedTeamOptions } from "./team-directory";
 
 type School = {
@@ -260,9 +261,6 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("전체");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [joinOpen, setJoinOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [role, setRole] = useState("선수 본인");
   const [visibleRegions, setVisibleRegions] = useState(defaultVisibleRegions);
   const [regionDraft, setRegionDraft] = useState(defaultVisibleRegions);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -436,16 +434,6 @@ export default function Home() {
     requestAnimationFrame(() => jumpToSection(sectionId ?? "schools"));
   }
 
-  function openJoin() {
-    setSubmitted(false);
-    setJoinOpen(true);
-  }
-
-  function submitProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitted(true);
-  }
-
   function toggleRegionDraft(item: string) {
     setRegionNotice("");
     setRegionDraft((current) => current.includes(item) ? current.filter((regionName) => regionName !== item) : [...current, item]);
@@ -487,10 +475,10 @@ export default function Home() {
           <a href="#schools">학교 찾기</a>
           <a href="#schools">경기·인천 학교</a>
           <a href="#players">선수 프로필</a>
-          <a href="#how">등록 안내</a>
+          <a href="#community">커뮤니티</a>
         </nav>
         <PwaInstallButton />
-        <button className="outline-button" onClick={openJoin}>프로필 등록</button>
+        <button className="outline-button" onClick={() => jumpToSection("community")}>내 회원정보</button>
       </header>
 
       <section className="hero" id="top">
@@ -539,6 +527,8 @@ export default function Home() {
       </section>
 
       <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} />
+
+      <CommunityBoard />
 
       <section className="school-section" id="schools">
         <div className="section-title">
@@ -689,15 +679,15 @@ export default function Home() {
       <section className="how-section" id="how">
         <div className="how-copy">
           <p className="kicker dark"><span /> TRUSTED PROFILE SYSTEM</p>
-          <h2>누구나 신청하고,<br />확인된 정보만 공개합니다.</h2>
-          <p>운영자가 학교 기본 정보를 먼저 만들고, 선수·보호자·학교 관계자가 프로필을 신청하는 혼합형 운영입니다.</p>
-          <button className="solid-button" onClick={openJoin}>내 프로필 등록 신청 <span>↗</span></button>
+          <h2>가입 즉시 함께하고,<br />신원은 안전하게 확인합니다.</h2>
+          <p>회원은 학교·선수 검색과 커뮤니티를 이용하고, 운영팀 확인을 거치면 선수·보호자·지도자 신원 배지가 표시됩니다.</p>
+          <button className="solid-button" onClick={() => jumpToSection("community")}>커뮤니티 참여하기 <span>↗</span></button>
         </div>
         <ol className="steps">
-          <li><span>01</span><div><strong>역할을 선택해 신청</strong><p>선수 본인, 보호자 또는 지도자가 기본 정보를 입력합니다.</p></div></li>
-          <li><span>02</span><div><strong>소속과 보호자 동의 확인</strong><p>재학·소속 자료와 보호자 동의를 운영팀이 확인합니다.</p></div></li>
-          <li><span>03</span><div><strong>사진·영상·기록 검수</strong><p>저작권과 공개 범위를 확인한 콘텐츠만 프로필에 게시합니다.</p></div></li>
-          <li><span>04</span><div><strong>인증 배지와 함께 공개</strong><p>수정 이력을 관리하고 당사자는 언제든 비공개를 요청할 수 있습니다.</p></div></li>
+          <li><span>01</span><div><strong>회원 유형을 선택해 가입</strong><p>선수, 보호자, 지도자, 관계자 또는 팬으로 가입합니다.</p></div></li>
+          <li><span>02</span><div><strong>가입 즉시 열람·활동</strong><p>학교와 선수를 검색하고 안전한 커뮤니티를 이용합니다.</p></div></li>
+          <li><span>03</span><div><strong>운영팀 신원 확인</strong><p>소속 확인 후 신원 배지를 부여합니다. 활동 등급은 별도입니다.</p></div></li>
+          <li><span>04</span><div><strong>콘텐츠는 운영자만 편집</strong><p>선수·보호자 회원은 열람과 커뮤니티 활동만 가능합니다.</p></div></li>
         </ol>
       </section>
 
@@ -709,7 +699,7 @@ export default function Home() {
       <section className="cta-section">
         <p>YOUR STORY STARTS HERE</p>
         <h2>당신의 야구를<br /><em>기록으로 남기세요.</em></h2>
-        <button onClick={openJoin}>프로필 등록 시작하기 <span>↗</span></button>
+        <button onClick={() => jumpToSection("community")}>커뮤니티 바로가기 <span>↗</span></button>
       </section>
 
       <footer>
@@ -732,35 +722,6 @@ export default function Home() {
         </div>
       )}
 
-      {joinOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setJoinOpen(false)}>
-          <section className="join-modal" role="dialog" aria-modal="true" aria-label="프로필 등록 신청" onMouseDown={(event) => event.stopPropagation()}>
-            <button className="modal-close" onClick={() => setJoinOpen(false)} aria-label="닫기">×</button>
-            {submitted ? (
-              <div className="success-state">
-                <span>✓</span><p>REGISTRATION REQUEST</p><h2>신청서가 준비됐습니다.</h2>
-                <p>현재 시안에서는 제출 화면까지만 제공됩니다. 실제 서비스에서는 보호자 동의와 소속 확인 후 운영팀 검수가 시작됩니다.</p>
-                <button className="solid-button" onClick={() => setJoinOpen(false)}>확인</button>
-              </div>
-            ) : (
-              <form onSubmit={submitProfile}>
-                <p className="kicker dark"><span /> PROFILE REGISTRATION</p>
-                <h2>프로필 등록 신청</h2>
-                <p className="form-lead">신청자 역할을 먼저 선택해 주세요.</p>
-                <div className="role-tabs">
-                  {["선수 본인", "보호자", "지도자"].map((item) => <button type="button" key={item} className={role === item ? "active" : ""} onClick={() => setRole(item)}>{item}</button>)}
-                </div>
-                <label>선수 이름<input required placeholder="실명 입력" /></label>
-                <label>소속 학교<input required placeholder="학교명 입력" /></label>
-                <div className="form-row"><label>학년<select defaultValue=""><option value="" disabled>선택</option><option>1학년</option><option>2학년</option><option>3학년</option></select></label><label>포지션<input required placeholder="예: 우완 투수" /></label></div>
-                <label className="upload-box"><input type="file" accept="image/*,video/*" multiple /><span>＋ 사진·영상 추가</span><small>JPG, PNG, MP4 · 실제 업로드는 저장소 연결 후 활성화됩니다.</small></label>
-                <label className="agree"><input type="checkbox" required /><span>개인정보 처리 및 프로필 검수 절차에 동의합니다.</span></label>
-                <button className="submit-button" type="submit">등록 신청서 확인 <span>↗</span></button>
-              </form>
-            )}
-          </section>
-        </div>
-      )}
     </main>
   );
 }
