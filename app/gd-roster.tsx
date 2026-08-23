@@ -52,6 +52,10 @@ const mediaCategories: Array<{ id: MediaCategory; label: string; shortLabel: str
   { id: "pitching", label: "투구영상", shortLabel: "PITCHING" },
 ];
 
+function newestMediaFirst(items: MediaItem[]) {
+  return [...items].sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt));
+}
+
 export const gdPlayers: TeamPlayer[] = [
   { id: "13", number: "13", name: "기재혁", position: "외야수", grade: "1학년", height: 182, weight: 80, batsThrows: "우투우타" },
   { id: "21", number: "21", name: "김건수", position: "투수", grade: "2학년", height: 187, weight: 92, batsThrows: "좌투좌타" },
@@ -202,6 +206,25 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     } catch {
       setNotice("링크를 복사하지 못했습니다. 주소창의 링크를 직접 복사해 주세요.");
     }
+  }
+
+  async function shareProfile() {
+    if (!selected) return;
+    const player = resolvePlayer(selected);
+    const url = getProfileUrl(selected);
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${player.name} 선수 | 아마ON`,
+          text: `${teamLabel} ${player.name} 선수 프로필`,
+          url,
+        });
+        return;
+      } catch (error) {
+        if ((error as { name?: string })?.name === "AbortError") return;
+      }
+    }
+    await copyProfileLink();
   }
 
   async function loadMedia(extraPlayerIds: string[] = []) {
@@ -908,6 +931,15 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const selectedDisplay = selected ? resolvePlayer(selected) : null;
   const selectedOrigins = selectedDisplay ? originSchools[selectedDisplay.id] ?? [] : [];
   const selectedDetails = selectedDisplay ? profileOverrides[selectedDisplay.id] : undefined;
+  const selectedProfilePortrait = selected
+    ? newestMediaFirst(selectedMedia.filter((item) => item.type === "image" && item.category === "profile"))[0]
+      ?? newestMediaFirst(selectedMedia.filter((item) => item.type === "image" && item.category === "photo"))[0]
+    : undefined;
+  const featuredVideo = selected
+    ? newestMediaFirst(selectedMedia.filter((item) => item.type === "video"))[0]
+    : undefined;
+  const selectedTagline = selectedDetails?.introduction?.trim()
+    || `${selectedDisplay?.position ?? "야구선수"}로서 매 순간 성장하고 있습니다.`;
 
   function openMediaFeed() {
     if (!selectedCategoryMedia.length) return;
@@ -1036,9 +1068,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
         {displayPlayers.map((player) => {
           const displayPlayer = resolvePlayer(player);
           const playerMedia = mediaByPlayer.get(player.id) ?? [];
-          const newestFirst = (items: MediaItem[]) => [...items].sort((a, b) => Date.parse(b.uploadedAt) - Date.parse(a.uploadedAt));
-          const profilePortrait = newestFirst(playerMedia.filter((item) => item.type === "image" && item.category === "profile"))[0];
-          const legacyPortrait = newestFirst(playerMedia.filter((item) => item.type === "image" && item.category === "photo"))[0];
+          const profilePortrait = newestMediaFirst(playerMedia.filter((item) => item.type === "image" && item.category === "profile"))[0];
+          const legacyPortrait = newestMediaFirst(playerMedia.filter((item) => item.type === "image" && item.category === "photo"))[0];
           const portrait = profilePortrait ?? legacyPortrait;
           const galleryMediaCount = playerMedia.filter((item) => item.category !== "profile").length;
           return (
@@ -1084,17 +1115,38 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
                 {teamBanner && <button type="button" onClick={() => void deleteTeamBanner()}>기본 배너로</button>}
               </div>}
             </div>
-            <div className="gd-modal-head">
-              <div className="gd-modal-number">{selectedDisplay.number}</div>
-              <div className="gd-modal-identity"><p>{teamLabel} · {selectedDisplay.year}</p><h2>{selectedDisplay.name}</h2><strong>{selectedDisplay.position} · {selectedDisplay.grade}</strong><button className="gd-share-link" onClick={() => void copyProfileLink()}>프로필 링크 복사</button>{isAdmin && <button className="gd-profile-edit-button" onClick={beginProfileEdit}>선수 정보 편집</button>}</div>
-              <section className="gd-origin-panel">
-                <div className="gd-origin-title"><div><small>PLAYER HISTORY</small><h3>출신학교</h3></div>{isAdmin && <button type="button" onClick={beginOriginEdit}>편집</button>}</div>
-                {selectedOrigins.length ? <div className="gd-origin-table">
-                  <div className="head"><span>지역</span><span>학교</span><span>연도</span><span>포지션</span></div>
-                  {selectedOrigins.map((item) => <div className="row" key={`${item.sequence}-${item.school}-${item.year}`}><span>{item.region}</span><strong>{item.school}</strong><span>{item.year}</span><span>{item.position}</span></div>)}
-                </div> : <p className="gd-origin-empty">등록된 출신학교가 없습니다.</p>}
-              </section>
-            </div>
+            <section className="gd-profile-hero">
+              <div className="gd-profile-portrait">
+                {selectedProfilePortrait
+                  ? <img src={selectedProfilePortrait.url} alt={`${selectedDisplay.name} 선수 프로필`} />
+                  : <div className="gd-profile-portrait-fallback"><small>{monogram}</small><strong>{selectedDisplay.number}</strong></div>}
+                <span>OFFICIAL PLAYER</span>
+              </div>
+              <div className="gd-profile-hero-copy">
+                <p>PLAYER SPOTLIGHT · {selectedDisplay.year}</p>
+                <h2>{selectedDisplay.name}</h2>
+                <div className="gd-profile-chips">
+                  <span>{teamLabel}</span>
+                  <span>{selectedDisplay.position} · {selectedDisplay.grade}</span>
+                  {selectedDisplay.height > 0 && selectedDisplay.weight > 0 && <span>{selectedDisplay.height}cm · {selectedDisplay.weight}kg</span>}
+                  <span>{selectedDisplay.batsThrows}</span>
+                </div>
+                <blockquote>{selectedTagline}</blockquote>
+                <div className="gd-profile-actions">
+                  <button type="button" className="primary" onClick={() => void shareProfile()}>프로필 공유</button>
+                  <button type="button" onClick={() => document.getElementById(`${sectionId}-${selectedDisplay.id}-media`)?.scrollIntoView({ behavior: "smooth", block: "start" })} disabled={!featuredVideo}>대표 영상 보기</button>
+                  {isAdmin && <button type="button" className="edit" onClick={beginProfileEdit}>선수 정보 편집</button>}
+                </div>
+              </div>
+              <aside className="gd-profile-feature">
+                <header><small>FEATURED PLAY</small><strong>대표 경기 영상</strong></header>
+                {featuredVideo ? <div className={`gd-profile-feature-media ${featuredVideo.orientation ?? "portrait"}`}>
+                  {featuredVideo.source === "youtube" && featuredVideo.videoId
+                    ? <iframe src={youtubeEmbedUrl(featuredVideo.videoId)} title={`${selectedDisplay.name} 대표 경기 영상`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+                    : <video src={featuredVideo.url} controls preload="metadata" playsInline />}
+                </div> : <div className="gd-profile-feature-empty"><b>대표 영상 준비 중</b><span>투구·타격·수비 영상을 등록하면 이곳에 가장 최근 영상이 표시됩니다.</span></div>}
+              </aside>
+            </section>
 
             {isAdmin && <div className="gd-player-management">
               <div><small>ADMIN · PLAYER STATUS</small><h3>선수 소속·활동 관리</h3><p>전학은 사진·영상·좋아요·프로필을 유지한 채 새 학교로 옮깁니다. 숨김은 데이터를 삭제하지 않습니다.</p></div>
@@ -1134,13 +1186,22 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <div className="gd-profile-editor-actions"><button type="button" onClick={() => void saveProfileEdit()} disabled={savingProfile}>{savingProfile ? "저장 중…" : "변경사항 저장"}</button><button type="button" className="cancel" onClick={() => setEditingProfile(false)} disabled={savingProfile}>취소</button>{profileOverrides[selectedDisplay.id] && <button type="button" className="reset" onClick={() => void resetProfileEdit()} disabled={savingProfile}>최초값으로</button>}</div>
             </div>}
 
+            <div className="gd-profile-section-title"><small>PLAYER STORY</small><h3>기록보다 깊게, 선수를 말합니다</h3></div>
             <section className="gd-player-story">
               <article className="introduction"><span>01 · ABOUT ME</span><h3>자기소개</h3><p>{selectedDetails?.introduction || "선수 자기소개가 준비 중입니다."}</p></article>
               <article><span>02 · MY STRENGTH</span><h3>나의 장점</h3><p>{selectedDetails?.strengths || "선수의 장점이 준비 중입니다."}</p></article>
               <article><span>03 · MY GOAL</span><h3>목표와 포부</h3><p>{selectedDetails?.aspiration || "선수의 목표와 포부가 준비 중입니다."}</p></article>
             </section>
 
-            <div className="gd-media-head"><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택한 뒤 전체화면에서 위아래로 넘겨볼 수 있습니다.</p></div><div className="gd-media-head-actions"><button type="button" className="gd-feed-open" onClick={openMediaFeed} disabled={!selectedCategoryMedia.length}>릴스처럼 보기 <span>↕</span></button>{isAdmin ? selectedCategory === "photo" ? <label className={uploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : "+ 사진 올리기"}</span></label> : <button type="button" className="gd-youtube-open" onClick={() => setYoutubeFormOpen((open) => !open)}>+ 유튜브 영상 등록</button> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div></div>
+            <section className="gd-origin-panel">
+              <div className="gd-origin-title"><div><small>PLAYER HISTORY</small><h3>출신학교</h3></div>{isAdmin && <button type="button" onClick={beginOriginEdit}>편집</button>}</div>
+              {selectedOrigins.length ? <div className="gd-origin-table">
+                <div className="head"><span>지역</span><span>학교</span><span>연도</span><span>포지션</span></div>
+                {selectedOrigins.map((item) => <div className="row" key={`${item.sequence}-${item.school}-${item.year}`}><span>{item.region}</span><strong>{item.school}</strong><span>{item.year}</span><span>{item.position}</span></div>)}
+              </div> : <p className="gd-origin-empty">등록된 출신학교가 없습니다.</p>}
+            </section>
+
+            <div className="gd-media-head" id={`${sectionId}-${selectedDisplay.id}-media`}><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택한 뒤 전체화면에서 위아래로 넘겨볼 수 있습니다.</p></div><div className="gd-media-head-actions"><button type="button" className="gd-feed-open" onClick={openMediaFeed} disabled={!selectedCategoryMedia.length}>릴스처럼 보기 <span>↕</span></button>{isAdmin ? selectedCategory === "photo" ? <label className={uploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : "+ 사진 올리기"}</span></label> : <button type="button" className="gd-youtube-open" onClick={() => setYoutubeFormOpen((open) => !open)}>+ 유튜브 영상 등록</button> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div></div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
               {mediaCategories.map((category) => (
                 <button key={category.id} className={selectedCategory === category.id ? "active" : ""} onClick={() => { setSelectedCategory(category.id); setYoutubeFormOpen(false); setNotice(""); }}>
