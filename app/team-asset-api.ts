@@ -1,6 +1,9 @@
 import { apiAdmin, apiUser, validTeamId } from "./api-auth";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
+const signedUrlTtlSeconds = 60 * 60 * 24 * 7;
+const assetResponseHeaders = { "cache-control": "private, max-age=60, stale-while-revalidate=300" };
+
 const restoredEmblemTeams = new Set([
   "baekjae-roster",
   "baemyeong-roster",
@@ -74,16 +77,16 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
       const object = data?.[0];
       if (!object) return restoredAsset(kind, id);
       const key = `${pathPrefix(id)}${object.name}`;
-      const { data: signed } = await db.storage.from("media").createSignedUrl(key, 3600);
+      const { data: signed } = await db.storage.from("media").createSignedUrl(key, signedUrlTtlSeconds);
       return { key, url: signed?.signedUrl || "", uploadedAt: object.created_at };
     }
 
     if (teamIds.length) {
       const assets = await Promise.all(teamIds.map(async (id) => [id, await loadAsset(id)] as const));
-      return Response.json({ items: Object.fromEntries(assets) }, { headers: { "cache-control": "no-store" } });
+      return Response.json({ items: Object.fromEntries(assets) }, { headers: assetResponseHeaders });
     }
 
-    return Response.json({ [kind]: await loadAsset(teamId) }, { headers: { "cache-control": "no-store" } });
+    return Response.json({ [kind]: await loadAsset(teamId) }, { headers: assetResponseHeaders });
   }
 
   async function POST(request: Request) {
@@ -100,9 +103,9 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
     const previous = await db.storage.from("media").list(pathPrefix(teamId), { limit: 20 });
     if (previous.data?.length) await db.storage.from("media").remove(previous.data.map((item) => `${pathPrefix(teamId)}${item.name}`));
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const { error } = await db.storage.from("media").upload(key, bytes, { contentType: file.type, upsert: true });
+    const { error } = await db.storage.from("media").upload(key, bytes, { contentType: file.type, cacheControl: "31536000", upsert: true });
     if (error) return Response.json({ error: error.message }, { status: 500 });
-    const { data: signed } = await db.storage.from("media").createSignedUrl(key, 3600);
+    const { data: signed } = await db.storage.from("media").createSignedUrl(key, signedUrlTtlSeconds);
     return Response.json({ ok: true, key, url: signed?.signedUrl || "" }, { status: 201 });
   }
 

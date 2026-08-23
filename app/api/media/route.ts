@@ -4,6 +4,7 @@ import { extractYouTubeVideoId, youtubeEmbedUrl, youtubeThumbnailUrl, type Video
 
 const categories = new Set(["pitching", "batting", "fielding", "photo", "profile"]);
 const imageCategories = new Set(["photo", "profile"]);
+const signedUrlTtlSeconds = 60 * 60 * 24 * 7;
 
 function validKey(key: string) {
   return /^(gd\/[A-Za-z0-9-]+\/(pitching|batting|fielding|photo|profile)\/[^/]{1,240}|youtube\/[A-Za-z0-9-]+\/(pitching|batting|fielding)\/[A-Za-z0-9_-]{11})$/.test(key);
@@ -21,10 +22,13 @@ export async function GET(request: Request) {
   if (!user) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
   const url = new URL(request.url);
   const playerId = url.searchParams.get("playerId");
+  const playerIds = [...new Set((url.searchParams.get("playerIds") || "").split(",").filter(Boolean))];
   if (playerId && !validPlayerId(playerId)) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
+  if (playerIds.length > 100 || playerIds.some((id) => !validPlayerId(id))) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
   const db = createSupabaseAdminClient();
   let query = db.from("media_items").select("storage_key, player_id, category, content_type, uploaded_at").order("uploaded_at", { ascending: false }).limit(1000);
   if (playerId) query = query.eq("player_id", playerId);
+  else if (playerIds.length) query = query.in("player_id", playerIds);
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
   const items = await Promise.all((data || []).map(async (row) => {
@@ -42,7 +46,7 @@ export async function GET(request: Request) {
       videoId: youtube.videoId,
       orientation: youtube.orientation,
     };
-    const { data: signed } = await db.storage.from("media").createSignedUrl(row.storage_key, 3600);
+    const { data: signed } = await db.storage.from("media").createSignedUrl(row.storage_key, signedUrlTtlSeconds);
     return {
       key: row.storage_key,
       playerId: row.player_id,

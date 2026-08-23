@@ -204,10 +204,20 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
-  async function loadMedia() {
+  async function loadMedia(extraPlayerIds: string[] = []) {
     setLoading(true);
     try {
-      const response = await fetch("/api/media", { cache: "no-store" });
+      const teamPlayerIds = [...new Set([
+        ...players.map((player) => player.id),
+        ...rosterChanges.filter((item) => item.teamId === sectionId && !item.hidden).map((item) => item.playerId),
+        ...extraPlayerIds,
+      ])].slice(0, 100);
+      if (!teamPlayerIds.length) {
+        setMedia([]);
+        return;
+      }
+      const params = new URLSearchParams({ playerIds: teamPlayerIds.join(",") });
+      const response = await fetch(`/api/media?${params.toString()}`, { cache: "no-store" });
       if (!response.ok) throw new Error("미디어를 불러오지 못했습니다.");
       const data = await response.json() as { items: MediaItem[] };
       setMedia(data.items);
@@ -241,7 +251,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   async function loadTeamEmblem() {
     try {
-      const response = await fetch(`/api/team-emblems?teamId=${encodeURIComponent(sectionId)}`, { cache: "no-store" });
+      const response = await fetch(`/api/team-emblems?teamId=${encodeURIComponent(sectionId)}`);
       if (!response.ok) return;
       const data = await response.json() as { emblem: TeamEmblem | null };
       setEmblem(data.emblem);
@@ -264,7 +274,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   async function loadTeamBanner() {
     try {
-      const response = await fetch(`/api/team-banners?teamId=${encodeURIComponent(sectionId)}`, { cache: "no-store" });
+      const response = await fetch(`/api/team-banners?teamId=${encodeURIComponent(sectionId)}`);
       if (!response.ok) return;
       const data = await response.json() as { banner: TeamBanner | null };
       setTeamBanner(data.banner);
@@ -292,7 +302,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       const response = await fetch("/api/roster-players", { cache: "no-store" });
       if (!response.ok) return;
       const data = await response.json() as { items: ManagedRosterPlayer[] };
-      setRosterChanges(data.items || []);
+      const items = data.items || [];
+      setRosterChanges(items);
+      const managedPlayerIds = items.filter((item) => item.teamId === sectionId && !item.hidden).map((item) => item.playerId);
+      if (managedPlayerIds.length) void loadMedia(managedPlayerIds);
     } catch {
       // The original roster remains available if management settings cannot load.
     }
@@ -768,7 +781,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
         uploadDataDuringCreation: true,
         removeFingerprintOnSuccess: true,
         chunkSize: 6 * 1024 * 1024,
-        metadata: { bucketName: "media", objectName: key, contentType },
+        metadata: { bucketName: "media", objectName: key, contentType, cacheControl: "31536000" },
         onError: reject,
         onProgress: (uploaded, total) => setUploadProgress(Math.round((uploaded / total) * 95)),
         onSuccess: () => resolve(),
@@ -960,7 +973,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       <div className="gd-heading">
         <div className="gd-heading-main">
           <div className="gd-team-emblem">
-            {emblem ? <img src={emblem.url} alt={`${teamLabel} 엠블럼`} /> : <strong>{monogram}</strong>}
+            {emblem ? <img src={emblem.url} alt={`${teamLabel} 엠블럼`} loading="lazy" decoding="async" /> : <strong>{monogram}</strong>}
             {isAdmin && <div className="gd-emblem-controls">
               <label className={emblemUploading ? "disabled" : ""}>
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadTeamEmblem} disabled={emblemUploading} />
@@ -1032,7 +1045,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <article className="gd-card" key={player.id}>
               <button className="gd-card-main" onClick={() => openPlayer(player)}>
                 <div className="gd-portrait">
-                  {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{displayPlayer.number}</b><i>{monogram}</i></span>}
+                  {portrait ? <img className="gd-uploaded-portrait" src={portrait.url} alt={`${player.name} 선수`} loading="lazy" decoding="async" /> : <span className="gd-jersey-placeholder" aria-hidden="true"><b>{displayPlayer.number}</b><i>{monogram}</i></span>}
                   <small>{galleryMediaCount ? `MEDIA ${galleryMediaCount}` : "PHOTO READY"}</small>
                 </div>
                 <div className="gd-card-info">
@@ -1060,10 +1073,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <span aria-hidden="true">←</span> 선수단으로
             </button>
             <div className={`gd-modal-team-banner${teamBanner ? " has-image" : ""}`}>
-              {teamBanner && <img src={teamBanner.url} alt={`${teamLabel} 팀 배너`} />}
+              {teamBanner && <img src={teamBanner.url} alt={`${teamLabel} 팀 배너`} loading="lazy" decoding="async" />}
               <div className="gd-team-banner-overlay" />
               <div className="gd-team-banner-brand">
-                <span className="gd-team-banner-emblem">{emblem ? <img src={emblem.url} alt="" /> : monogram}</span>
+                <span className="gd-team-banner-emblem">{emblem ? <img src={emblem.url} alt="" loading="lazy" decoding="async" /> : monogram}</span>
                 <div><small>PLAYER TEAM</small><strong>{teamLabel}</strong><b>{selectedDisplay.year} · U-18 BASEBALL</b></div>
               </div>
               {isAdmin && <div className="gd-team-banner-controls">
@@ -1145,7 +1158,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <div className="gd-media-grid">
               {selectedCategoryMedia.map((item) => {
                 const like = likes[item.key] ?? { count: 0, liked: false };
-                return <figure className={item.orientation === "portrait" ? "portrait" : "landscape"} key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} /> : item.source === "youtube" && item.videoId ? <div className="gd-youtube-player"><iframe src={youtubeEmbedUrl(item.videoId)} title={`${selectedDisplay.name} ${activeCategory.label}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}{item.source === "youtube" ? " · YOUTUBE" : ""}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
+                return <figure className={item.orientation === "portrait" ? "portrait" : "landscape"} key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} loading="lazy" decoding="async" /> : item.source === "youtube" && item.videoId ? <div className="gd-youtube-player"><iframe src={youtubeEmbedUrl(item.videoId)} title={`${selectedDisplay.name} ${activeCategory.label}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}{item.source === "youtube" ? " · YOUTUBE" : ""}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
               })}
               {!selectedCategoryMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 {activeCategory.label}이 없습니다.</strong><p>{selectedCategory === "photo" ? "JPG·PNG·WEBP 사진을 올려주세요." : "공개 유튜브 영상 주소를 등록해 주세요."}</p></div>}
             </div>
@@ -1162,7 +1175,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               const like = likes[item.key] ?? { count: 0, liked: false };
               return <article className="gd-media-feed-slide" key={item.key} aria-label={`${index + 1}번째 미디어`}>
                 <div className="gd-media-feed-stage">
-                  {item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} /> : item.source === "youtube" && item.videoId ? <div className={`gd-youtube-feed-player ${item.orientation === "portrait" ? "portrait" : "landscape"}`}><iframe src={youtubeEmbedUrl(item.videoId, index === activeMediaIndex)} title={`${selectedDisplay.name} ${activeCategory.label} ${index + 1}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video ref={(node) => { mediaVideoRefs.current[index] = node; }} src={item.url} controls playsInline muted loop preload={Math.abs(index - activeMediaIndex) <= 1 ? "metadata" : "none"} />}
+                  {item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} loading="lazy" decoding="async" /> : item.source === "youtube" && item.videoId ? <div className={`gd-youtube-feed-player ${item.orientation === "portrait" ? "portrait" : "landscape"}`}><iframe src={youtubeEmbedUrl(item.videoId, index === activeMediaIndex)} title={`${selectedDisplay.name} ${activeCategory.label} ${index + 1}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video ref={(node) => { mediaVideoRefs.current[index] = node; }} src={item.url} controls playsInline muted loop preload={Math.abs(index - activeMediaIndex) <= 1 ? "metadata" : "none"} />}
                 </div>
                 <div className="gd-media-feed-meta"><div><small>{activeCategory.shortLabel}</small><strong>{selectedDisplay.number}. {selectedDisplay.name}</strong><span>{teamLabel}</span></div><div className="gd-media-feed-actions"><button type="button" className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button type="button" className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></div>
               </article>;

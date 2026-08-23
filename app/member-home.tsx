@@ -296,7 +296,7 @@ export default function Home() {
           teamIds.slice(index * 50, (index + 1) * 50),
         );
         const responses = await Promise.all(chunks.map((chunk) =>
-          fetch(`/api/team-${kind}?teamIds=${encodeURIComponent(chunk.join(","))}`, { cache: "no-store" }),
+          fetch(`/api/team-${kind}?teamIds=${encodeURIComponent(chunk.join(","))}`),
         ));
         const payloads = await Promise.all(responses.map(async (response) => response.ok
           ? (await response.json() as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {}
@@ -688,9 +688,9 @@ export default function Home() {
               <span className="school-index">{String(index + 1).padStart(2, "0")}</span>
               <div className={`school-banner-preview${visual?.banner || visual?.emblem ? " has-image" : ""}`} aria-hidden="true">
                 {visual?.banner
-                  ? <img src={visual.banner} alt="" />
+                  ? <img src={visual.banner} alt="" loading="lazy" decoding="async" />
                   : visual?.emblem
-                    ? <img className="emblem-image" src={visual.emblem} alt="" />
+                    ? <img className="emblem-image" src={visual.emblem} alt="" loading="lazy" decoding="async" />
                     : <span className="school-emblem">{school.name.slice(0, 1)}</span>}
               </div>
               <div className="school-name"><h3>{school.name}</h3><p>{school.region} · 감독 {school.coach}</p></div>
