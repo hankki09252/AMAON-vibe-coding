@@ -81,6 +81,13 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => ({}));
   const supabase = createSupabaseAdminClient();
   if (body.targetUserId && adminRole) {
+    if (Object.prototype.hasOwnProperty.call(body, "linkedPlayerId") || Object.prototype.hasOwnProperty.call(body, "linkedTeamId")) {
+      const linkedPlayerId = String(body.linkedPlayerId || "").trim().slice(0, 120);
+      const linkedTeamId = String(body.linkedTeamId || "").trim().slice(0, 120);
+      const { error } = await supabase.from("member_profiles").update({ linked_player_id: linkedPlayerId, linked_team_id: linkedTeamId, updated_at: new Date().toISOString() }).eq("user_id", body.targetUserId);
+      if (error) return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ ok: true });
+    }
     const status = ["pending", "verified", "rejected"].includes(body.identityStatus) ? body.identityStatus : null;
     if (!status) return Response.json({ error: "올바른 인증 상태가 아닙니다." }, { status: 400 });
     const { error } = await supabase.from("member_profiles").update({ identity_status: status, verified_at: status === "verified" ? new Date().toISOString() : null, verified_by: user.email }).eq("user_id", body.targetUserId);
@@ -94,4 +101,3 @@ export async function PATCH(request: Request) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
 }
-

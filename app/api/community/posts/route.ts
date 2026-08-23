@@ -2,7 +2,7 @@ import { apiUser, configuredAdminRole } from "../../../api-auth";
 import { COMMUNITY_CATEGORIES, communityContentError, identityBadge } from "../../../community-model";
 import { createSupabaseAdminClient } from "../../../supabase/admin";
 
-function publicDisplayName(profile: Record<string, unknown>) {
+function publicDisplayName(profile: { display_name?: string | null; email?: string | null }) {
   const displayName = String(profile.display_name || "").trim();
   const emailPrefix = String(profile.email || "").split("@")[0].trim().toLowerCase();
   if (!displayName || (emailPrefix && displayName.toLowerCase() === emailPrefix)) return "아마ON 회원";
@@ -20,7 +20,15 @@ export async function GET() {
   if (error) return Response.json({ error: error.message }, { status: 500 });
   const blockedIds = new Set((blocked || []).map((item) => item.blocked_user_id));
   const visible = (posts || []).filter((post) => !blockedIds.has(post.author_id));
-  const authorIds = [...new Set(visible.map((post) => post.author_id))];
+  const postIds = visible.map((post) => post.id);
+  const { data: comments } = postIds.length
+    ? await supabase.from("community_comments").select("*").in("post_id", postIds).order("created_at", { ascending: false }).limit(500)
+    : { data: [] };
+  const visibleComments = (comments || []).filter((comment) => !blockedIds.has(comment.author_id));
+  const authorIds = [...new Set([
+    ...visible.map((post) => post.author_id),
+    ...visibleComments.map((comment) => comment.author_id),
+  ])];
   const { data: profiles } = authorIds.length ? await supabase.from("member_profiles").select("user_id,display_name,member_role,identity_status,activity_points,email").in("user_id", authorIds) : { data: [] };
   const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, {
     user_id: profile.user_id,
@@ -30,7 +38,26 @@ export async function GET() {
     activity_points: profile.activity_points,
     identity_badge: identityBadge(profile.member_role, profile.identity_status, configuredAdminRole(profile.email)),
   }]));
-  return Response.json({ items: visible.map((post) => ({ ...post, author: profileMap.get(post.author_id) || null })), userId: user.id, isAdmin: Boolean(configuredAdminRole(user.email)) });
+  type CommentAuthor = NonNullable<ReturnType<typeof profileMap.get>>;
+  type CommentWithAuthor = (typeof visibleComments)[number] & { author: CommentAuthor | null };
+  const commentsByPost = new Map<string, CommentWithAuthor[]>();
+  for (const comment of visibleComments) {
+    const current = commentsByPost.get(comment.post_id) || [];
+    current.push({ ...comment, author: profileMap.get(comment.author_id) || null });
+    commentsByPost.set(comment.post_id, current);
+  }
+  for (const comments of commentsByPost.values()) {
+    comments.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }
+  return Response.json({
+    items: visible.map((post) => ({
+      ...post,
+      author: profileMap.get(post.author_id) || null,
+      comments: commentsByPost.get(post.id) || [],
+    })),
+    userId: user.id,
+    isAdmin: Boolean(configuredAdminRole(user.email)),
+  });
 }
 
 export async function POST(request: Request) {

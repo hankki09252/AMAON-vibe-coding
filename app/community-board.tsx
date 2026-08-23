@@ -6,11 +6,20 @@ import { COMMUNITY_CATEGORIES, MEMBER_ROLE_LABELS, MEMBER_ROLES, activityLevel }
 type Profile = {
   user_id: string; display_name: string; member_role: string; school_name: string;
   identity_status: string; identityBadge: string; activityLevel: string; activity_points: number;
-  isAdmin?: boolean; adminRole?: string;
+  isAdmin?: boolean; adminRole?: string; linked_team_id?: string | null; linked_player_id?: string | null;
+};
+type CommentItem = {
+  id: string; post_id: string; author_id: string; content: string; created_at: string;
+  author?: { display_name: string; activity_points: number; identity_badge: string } | null;
 };
 type Post = {
   id: string; author_id: string; category: string; title: string; content: string; created_at: string;
   author?: { display_name: string; member_role: string; identity_status: string; activity_points: number; identity_badge: string } | null;
+  comments?: CommentItem[];
+};
+type NotificationItem = {
+  id: string; notification_type: "post_comment" | "media_like"; post_id?: string | null; media_key?: string | null;
+  team_id?: string | null; player_id?: string | null; read_at?: string | null; created_at: string; actorName: string;
 };
 type MemberStats = {
   total: number; verified: number; joinedToday: number;
@@ -28,25 +37,33 @@ export default function CommunityBoard() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
-  const [stats, setStats] = useState<MemberStats | null>(null);
-  const [totalMembers, setTotalMembers] = useState(0);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [schoolName, setSchoolName] = useState("");
+  const [stats, setStats] = useState<MemberStats | null>(null);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentBusy, setCommentBusy] = useState("");
 
   const categoryLabel = useMemo(() => Object.fromEntries(COMMUNITY_CATEGORIES), []);
 
   async function load() {
-    const [memberResponse, postResponse, statsResponse] = await Promise.all([
+    const [memberResponse, postResponse, statsResponse, notificationResponse] = await Promise.all([
       fetch("/api/member-profile", { cache: "no-store" }),
       fetch("/api/community/posts", { cache: "no-store" }),
       fetch("/api/member-stats", { cache: "no-store" }),
+      fetch("/api/community/notifications", { cache: "no-store" }),
     ]);
     const memberPayload = await memberResponse.json().catch(() => ({}));
     const postPayload = await postResponse.json().catch(() => ({}));
     const statsPayload = await statsResponse.json().catch(() => ({}));
+    const notificationPayload = await notificationResponse.json().catch(() => ({}));
     if (memberResponse.ok) {
       setProfile(memberPayload.profile);
+      setDisplayName(memberPayload.profile?.display_name === "아마ON 회원" ? "" : memberPayload.profile?.display_name || "");
+      setSchoolName(memberPayload.profile?.school_name || "");
       setMembers(memberPayload.members || []);
       setStats(memberPayload.stats || null);
     }
@@ -55,6 +72,7 @@ export default function CommunityBoard() {
       setUserId(postPayload.userId || "");
     }
     if (statsResponse.ok) setTotalMembers(Number(statsPayload.totalMembers || 0));
+    if (notificationResponse.ok) setNotifications(notificationPayload.items || []);
     const error = memberPayload.error || postPayload.error || statsPayload.error;
     if (error) setNotice(error);
   }
@@ -64,11 +82,17 @@ export default function CommunityBoard() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (!profile) return;
-    setDisplayName(profile.display_name === "아마ON 회원" ? "" : profile.display_name);
-    setSchoolName(profile.school_name || "");
-  }, [profile]);
+  async function saveProfile(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true); setNotice("");
+    const response = await fetch("/api/member-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName, schoolName }) });
+    const payload = await response.json().catch(() => ({}));
+    setBusy(false);
+    if (!response.ok) return setNotice(payload.error || "회원 정보를 수정하지 못했습니다.");
+    setProfileEditOpen(false);
+    setNotice("닉네임과 소속 정보를 수정했습니다.");
+    await load();
+  }
 
   async function submitPost(event: FormEvent) {
     event.preventDefault();
@@ -97,15 +121,58 @@ export default function CommunityBoard() {
     if (response.ok) await load();
   }
 
-  async function saveProfile(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true); setNotice("");
-    const response = await fetch("/api/member-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName, schoolName }) });
+  async function linkMember(member: Profile) {
+    const linkedTeamId = window.prompt("선수의 팀 ID를 입력하세요. (예: gd-roster)", member.linked_team_id || "");
+    if (linkedTeamId === null) return;
+    const linkedPlayerId = window.prompt("선수 프로필 ID를 입력하세요. (예: 13)", member.linked_player_id || "");
+    if (linkedPlayerId === null) return;
+    const response = await fetch("/api/member-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetUserId: member.user_id, linkedTeamId, linkedPlayerId }) });
     const payload = await response.json().catch(() => ({}));
-    setBusy(false);
-    if (!response.ok) return setNotice(payload.error || "회원 정보를 수정하지 못했습니다.");
-    setProfileEditOpen(false); setNotice("닉네임과 소속 정보를 수정했습니다.");
+    setNotice(response.ok ? "회원과 선수 프로필을 연결했습니다." : payload.error || "선수 프로필을 연결하지 못했습니다.");
+    if (response.ok) await load();
+  }
+
+  async function submitComment(event: FormEvent, postId: string) {
+    event.preventDefault();
+    const comment = (commentDrafts[postId] || "").trim();
+    if (!comment) return;
+    setCommentBusy(postId); setNotice("");
+    const response = await fetch("/api/community/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postId, content: comment }) });
+    const payload = await response.json().catch(() => ({}));
+    setCommentBusy("");
+    if (!response.ok) return setNotice(payload.error || "댓글을 등록하지 못했습니다.");
+    setCommentDrafts((drafts) => ({ ...drafts, [postId]: "" }));
     await load();
+  }
+
+  async function deleteComment(commentId: string) {
+    if (!window.confirm("댓글을 삭제할까요?")) return;
+    const response = await fetch(`/api/community/comments?id=${encodeURIComponent(commentId)}`, { method: "DELETE" });
+    const payload = await response.json().catch(() => ({}));
+    setNotice(response.ok ? "댓글을 삭제했습니다." : payload.error || "댓글을 삭제하지 못했습니다.");
+    if (response.ok) await load();
+  }
+
+  async function markNotificationsRead() {
+    if (!notifications.some((item) => !item.read_at)) return;
+    const response = await fetch("/api/community/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ all: true }) });
+    if (response.ok) setNotifications((items) => items.map((item) => ({ ...item, read_at: item.read_at || new Date().toISOString() })));
+  }
+
+  function toggleNotifications() {
+    setNotificationOpen((open) => !open);
+    if (!notificationOpen) void markNotificationsRead();
+  }
+
+  function openNotification(item: NotificationItem) {
+    setNotificationOpen(false);
+    if (item.notification_type === "media_like" && item.team_id && item.player_id) {
+      window.location.assign(`/?team=${encodeURIComponent(item.team_id)}&player=${encodeURIComponent(item.player_id)}#${encodeURIComponent(item.team_id)}`);
+      return;
+    }
+    const post = posts.find((entry) => entry.id === item.post_id);
+    if (post) setCategory(post.category);
+    window.setTimeout(() => document.getElementById(`community-post-${item.post_id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   }
 
   function downloadMembers(role: string = "all") {
@@ -118,16 +185,24 @@ export default function CommunityBoard() {
       <div className="community-follower-count"><strong>{totalMembers.toLocaleString()}</strong><span>아마ON 팔로워</span><small>회원가입 완료 계정 기준</small></div>
     </div>
     <div className="member-badge-card">
-      <div><span className="identity-badge">{profile?.identityBadge || "회원 확인 중"}</span><strong>{profile?.display_name || "아마ON 회원"}</strong><small>{profile?.school_name || "소속 정보 미입력"}</small><button className="profile-edit-toggle" type="button" onClick={() => setProfileEditOpen((open) => !open)}>{profileEditOpen ? "수정 닫기" : "닉네임·소속 수정"}</button></div>
+      <div><span className="identity-badge">{profile?.identityBadge || "회원 확인 중"}</span><strong>{profile?.display_name || "아마ON 회원"}</strong><small>{profile?.school_name || "소속 정보 미입력"}</small><button className="member-profile-edit-toggle" type="button" onClick={() => setProfileEditOpen((open) => !open)}>{profileEditOpen ? "수정 닫기" : "닉네임·소속 수정"}</button></div>
       <div><span>활동 등급</span><strong>{profile?.activityLevel || "루키"}</strong><small>{Number(profile?.activity_points || 0).toLocaleString()} P</small></div>
       <p>신원 배지는 운영팀 확인 후 부여되며, 활동 등급과는 별도로 표시됩니다.</p>
       {profile?.isAdmin && <button type="button" onClick={() => setAdminOpen((open) => !open)}>{adminOpen ? "회원 관리 닫기" : "회원 데이터·인증 관리"}</button>}
+      <button className="community-notification-toggle" type="button" aria-expanded={notificationOpen} onClick={toggleNotifications}>알림 <strong>{notifications.filter((item) => !item.read_at).length}</strong></button>
     </div>
+    {notificationOpen && <div className="community-notification-panel">
+      <div><h3>내 알림</h3><button type="button" onClick={() => setNotificationOpen(false)}>닫기</button></div>
+      {notifications.map((item) => <button className={item.read_at ? "" : "unread"} type="button" key={item.id} onClick={() => openNotification(item)}>
+        <strong>{item.actorName}</strong><span>{item.notification_type === "post_comment" ? "내 게시글에 댓글을 남겼습니다." : "내 영상에 좋아요를 눌렀습니다."}</span><small>{new Date(item.created_at).toLocaleString("ko-KR")}</small>
+      </button>)}
+      {!notifications.length && <p>아직 새 알림이 없습니다.</p>}
+    </div>}
     {profileEditOpen && <form className="member-profile-edit" onSubmit={saveProfile}>
-      <div><h3>공개 프로필 수정</h3><p>커뮤니티에는 이메일이 아닌 닉네임만 공개됩니다.</p></div>
-      <label>닉네임<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} required placeholder="커뮤니티에 표시할 닉네임" /></label>
-      <label>소속 학교·야구단<input value={schoolName} onChange={(event) => setSchoolName(event.target.value)} maxLength={80} placeholder="예: 경기항공고" /></label>
-      <button type="submit" disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
+      <div><h3>내 회원 정보 수정</h3><p>커뮤니티에는 이메일이 아닌 닉네임만 공개됩니다.</p></div>
+      <label>닉네임<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} required placeholder="공개할 닉네임" /></label>
+      <label>소속<input value={schoolName} onChange={(event) => setSchoolName(event.target.value)} maxLength={80} placeholder="학교 또는 야구단" /></label>
+      <button disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
     </form>}
     {adminOpen && profile?.isAdmin && <div className="member-verification-panel">
       <div className="member-admin-heading"><div><h3>회원 데이터 관리</h3><p>회원가입 구분별 현황을 확인하고 엑셀로 내려받을 수 있습니다.</p></div><button type="button" onClick={() => downloadMembers()}>전체 회원 엑셀 다운로드</button></div>
@@ -140,7 +215,7 @@ export default function CommunityBoard() {
       <h3>회원 신원 인증</h3>
       {members.filter((member) => !member.isAdmin).map((member) => <div key={member.user_id}>
         <span><strong>{member.display_name}</strong><small>{member.school_name || "소속 미입력"} · {member.identityBadge}</small></span>
-        <button onClick={() => verify(member.user_id, "verified")}>인증</button><button onClick={() => verify(member.user_id, "rejected")}>반려</button>
+        <button onClick={() => verify(member.user_id, "verified")}>인증</button><button onClick={() => verify(member.user_id, "rejected")}>반려</button><button onClick={() => linkMember(member)}>선수 프로필 연결</button>
       </div>)}
     </div>}
     <div className="community-layout">
@@ -157,13 +232,25 @@ export default function CommunityBoard() {
         {posts.filter((post) => post.category === category).map((post) => {
           const author = post.author;
           const badge = author?.identity_badge || "인증 대기";
-          return <article className="community-post" key={post.id}>
+          return <article className="community-post" id={`community-post-${post.id}`} key={post.id}>
             <header><span className="identity-badge small">{badge}</span><strong>{author?.display_name || "아마ON 회원"}</strong><small>{activityLevel(author?.activity_points || 0)} · {new Date(post.created_at).toLocaleDateString("ko-KR")}</small></header>
             <span className="post-category">{categoryLabel[post.category]}</span><h3>{post.title}</h3><p>{post.content}</p>
             <footer>
               {post.author_id !== userId && <><button onClick={() => moderate("report", post)}>신고</button><button onClick={() => moderate("block", post)}>작성자 차단</button></>}
               {profile?.isAdmin && <><button onClick={() => moderate("hide", post)}>운영자 숨김</button><button onClick={() => moderate("suspend", post)}>7일 정지</button></>}
             </footer>
+            <div className="community-comments">
+              <h4>댓글 <span>{post.comments?.length || 0}</span></h4>
+              <div className="community-comment-list">{post.comments?.map((comment) => <div key={comment.id}>
+                <p><strong>{comment.author?.display_name || "아마ON 회원"}</strong><small>{new Date(comment.created_at).toLocaleString("ko-KR")}</small></p>
+                <span>{comment.content}</span>
+                {(comment.author_id === userId || profile?.isAdmin) && <button type="button" onClick={() => deleteComment(comment.id)}>삭제</button>}
+              </div>)}</div>
+              <form onSubmit={(event) => submitComment(event, post.id)}>
+                <input aria-label="댓글 내용" value={commentDrafts[post.id] || ""} onChange={(event) => setCommentDrafts((drafts) => ({ ...drafts, [post.id]: event.target.value }))} maxLength={500} placeholder="서로를 존중하는 댓글을 남겨주세요" />
+                <button disabled={commentBusy === post.id}>{commentBusy === post.id ? "등록 중…" : "댓글 등록"}</button>
+              </form>
+            </div>
           </article>;
         })}
         {!posts.some((post) => post.category === category) && <div className="community-empty">첫 번째 이야기를 남겨주세요.</div>}
@@ -171,4 +258,3 @@ export default function CommunityBoard() {
     </div>
   </section>;
 }
-

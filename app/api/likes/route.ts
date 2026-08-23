@@ -28,8 +28,26 @@ export async function POST(request: Request) {
   if (!isMediaKey(key)) return Response.json({ error: "올바르지 않은 미디어입니다." }, { status: 400 });
   const db = createSupabaseAdminClient();
   const existing = await db.from("media_likes").select("media_key").eq("media_key", key).eq("visitor_id", user.id).maybeSingle();
-  if (existing.data) await db.from("media_likes").delete().eq("media_key", key).eq("visitor_id", user.id);
-  else await db.from("media_likes").insert({ media_key: key, visitor_id: user.id });
+  if (existing.data) {
+    await db.from("media_likes").delete().eq("media_key", key).eq("visitor_id", user.id);
+    await db.from("member_notifications").delete().eq("notification_type", "media_like").eq("media_key", key).eq("actor_id", user.id);
+  } else {
+    await db.from("media_likes").insert({ media_key: key, visitor_id: user.id });
+    const { data: media } = await db.from("media_items").select("player_id").eq("storage_key", key).maybeSingle();
+    const playerId = String(media?.player_id || key.split("/")[1] || "");
+    if (playerId) {
+      const { data: owners } = await db.from("member_profiles").select("user_id,linked_team_id,linked_player_id").eq("linked_player_id", playerId);
+      const rows = (owners || []).filter((owner) => owner.user_id !== user.id).map((owner) => ({
+        recipient_id: owner.user_id,
+        actor_id: user.id,
+        notification_type: "media_like",
+        media_key: key,
+        team_id: owner.linked_team_id || "",
+        player_id: owner.linked_player_id || playerId,
+      }));
+      if (rows.length) await db.from("member_notifications").insert(rows);
+    }
+  }
   const { count } = await db.from("media_likes").select("*", { count: "exact", head: true }).eq("media_key", key);
   return Response.json({ key, count: count || 0, liked: !existing.data });
 }
