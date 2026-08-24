@@ -674,15 +674,26 @@ footer p, footer small { color: #777; }
     position: absolute;
     top: 0;
     right: 0;
-    width: min(88vw, 390px);
+    width: min(90vw, 420px);
     height: 100dvh;
-    padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
+    padding: max(24px, env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));
     overflow-y: auto;
-    background: #111;
+    background:
+      radial-gradient(circle at 92% 4%, rgba(255, 98, 0, .17), transparent 29%),
+      linear-gradient(180deg, #171717 0%, #090909 100%);
     color: #fff;
-    border-left: 1px solid #363636;
+    border-left: 1px solid rgba(255, 98, 0, .45);
+    box-shadow: -26px 0 80px rgba(0, 0, 0, .72);
     transform: translateX(100%);
     transition: transform .24s ease;
+  }
+
+  .mobile-drawer::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg, #ff6200, rgba(255, 98, 0, 0));
   }
 
   .mobile-drawer-backdrop.open .mobile-drawer {
@@ -717,23 +728,25 @@ footer p, footer small { color: #777; }
   .mobile-drawer-head button {
     width: 42px;
     height: 42px;
-    border: 0;
-    background: transparent;
+    border: 1px solid rgba(255, 255, 255, .13);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .045);
     color: #fff;
-    font-size: 36px;
+    font-size: 30px;
     line-height: 1;
   }
 
   .mobile-member-card {
     width: 100%;
     margin: 18px 0;
-    padding: 16px;
+    padding: 16px 17px;
     display: grid;
     grid-template-columns: 34px 1fr auto;
     align-items: center;
     gap: 12px;
-    border: 1px solid #ff6200;
-    background: #050505;
+    border: 1px solid rgba(255, 98, 0, .72);
+    background: linear-gradient(135deg, rgba(255, 98, 0, .12), #050505 58%);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, .24);
     color: #fff;
     text-align: left;
   }
@@ -745,30 +758,99 @@ footer p, footer small { color: #777; }
 
   .mobile-drawer-nav {
     display: grid;
-    gap: 8px;
+    gap: 9px;
   }
 
   .mobile-drawer-nav button {
-    min-height: 58px;
+    position: relative;
+    min-height: 68px;
     display: grid;
-    grid-template-columns: 34px 1fr;
+    grid-template-columns: 42px 1fr 22px;
     align-items: center;
     gap: 12px;
-    padding: 0 16px;
-    border: 1px solid #333;
-    background: #1b1b1b;
+    padding: 9px 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .11);
+    background: linear-gradient(135deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .025));
     color: #fff;
     text-align: left;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
   }
 
-  .mobile-drawer-nav button span {
+  .mobile-drawer-nav button::before {
+    content: "";
+    position: absolute;
+    inset: 10px auto 10px 0;
+    width: 3px;
+    background: currentColor;
+    transform: scaleY(0);
+    transition: transform .18s ease;
+  }
+
+  .mobile-drawer-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 98, 0, .35);
+    border-radius: 11px;
+    background: rgba(255, 98, 0, .08);
     color: #ff6200;
-    font-size: 22px;
+    font-size: 20px;
     text-align: center;
   }
 
-  .mobile-drawer-nav button strong {
+  .mobile-drawer-label {
+    display: grid;
+    gap: 2px;
+  }
+
+  .mobile-drawer-label small {
+    color: #777;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.7px;
+  }
+
+  .mobile-drawer-label strong {
     font-size: 16px;
+  }
+
+  .mobile-drawer-nav button > b {
+    color: #5f5f5f;
+    font-size: 17px;
+    text-align: right;
+  }
+
+  .mobile-drawer-nav button.is-active {
+    color: #090909;
+    border-color: #ff7a00;
+    background: linear-gradient(135deg, #ff5600, #ff8a00);
+    box-shadow: 0 13px 30px rgba(255, 98, 0, .24);
+    transform: translateX(-4px);
+  }
+
+  .mobile-drawer-nav button.is-active::before {
+    transform: scaleY(1);
+  }
+
+  .mobile-drawer-nav button.is-active .mobile-drawer-icon {
+    border-color: #090909;
+    background: #090909;
+    color: #ff6b00;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .28);
+  }
+
+  .mobile-drawer-nav button.is-active .mobile-drawer-label small {
+    color: rgba(0, 0, 0, .58);
+  }
+
+  .mobile-drawer-nav button.is-active > b {
+    color: #090909;
+  }
+
+  .mobile-drawer-nav button:active {
+    transform: translateX(-2px) scale(.985);
   }
 
   .mobile-admin-link {

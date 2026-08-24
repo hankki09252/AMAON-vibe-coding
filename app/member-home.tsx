@@ -354,6 +354,7 @@ export default function Home() {
       if (params.has("player") || hash === "players") setActiveMobileSection("players");
       else if (hash === "video-ranking") setActiveMobileSection("video-ranking");
       else if (hash === "community") setActiveMobileSection("community");
+      else if (hash === "how") setActiveMobileSection("how");
       else if (hash === "schools" || hash.endsWith("-roster")) setActiveMobileSection("schools");
       else setActiveMobileSection("top");
       setShowMobileBack(params.has("player") || hash.endsWith("-roster"));
@@ -559,15 +560,32 @@ export default function Home() {
             <span className="mobile-account-glyph" aria-hidden="true" />
             <span><small>MEMBER</small><strong>내 회원정보</strong></span>
             <b>→</b>
-          </button>
-          <nav className="mobile-drawer-nav" aria-label="전체 메뉴 항목">
-            <button type="button" onClick={() => jumpToSection("top")}><span>⌂</span><strong>홈</strong></button>
-            <button type="button" onClick={() => jumpToSection("schools")}><span>▦</span><strong>학교 찾기</strong></button>
-            <button type="button" onClick={() => jumpToSection("players")}><span>◎</span><strong>선수 프로필</strong></button>
-            <button type="button" onClick={() => jumpToSection("video-ranking")}><span>▶</span><strong>영상 TOP 5</strong></button>
-            <button type="button" onClick={() => jumpToSection("community")}><span>◌</span><strong>커뮤니티</strong></button>
-            <button type="button" onClick={() => jumpToSection("how")}><span>＋</span><strong>등록 안내</strong></button>
-          </nav>
+            </button>
+            <nav className="mobile-drawer-nav" aria-label="전체 메뉴 항목">
+              {[
+                { id: "top", icon: "⌂", eyebrow: "HOME", label: "홈" },
+                { id: "schools", icon: "▦", eyebrow: "TEAM", label: "학교 찾기" },
+                { id: "players", icon: "◎", eyebrow: "PLAYER", label: "선수 프로필" },
+                { id: "video-ranking", icon: "▶", eyebrow: "FILM", label: "영상 TOP 5" },
+                { id: "community", icon: "◌", eyebrow: "COMMUNITY", label: "커뮤니티" },
+                { id: "how", icon: "＋", eyebrow: "GUIDE", label: "등록 안내" },
+              ].map((item) => {
+                const isActive = activeMobileSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={isActive ? "is-active" : ""}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => jumpToSection(item.id)}
+                  >
+                    <span className="mobile-drawer-icon" aria-hidden="true">{item.icon}</span>
+                    <span className="mobile-drawer-label"><small>{item.eyebrow}</small><strong>{item.label}</strong></span>
+                    <b aria-hidden="true">→</b>
+                  </button>
+                );
+              })}
+            </nav>
           {isAdmin && (
             <button type="button" className="mobile-admin-link" onClick={() => jumpToSection("schools")}>
               <span>운영자</span><strong>학교·선수 관리</strong><b>→</b>
