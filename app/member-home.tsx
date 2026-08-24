@@ -2,6 +2,7 @@
 
 // The signed-in member experience. Authentication is enforced by app/page.tsx.
 
+import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import GdRoster, { gdPlayers, TeamRoster, type ManagedRosterPlayer } from "./gd-roster";
 import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
@@ -522,8 +523,14 @@ export default function Home() {
     <main className="member-home">
       <header className="topbar">
         <a className="brand-lockup" href="#top" aria-label="아마ON 홈">
-          <span className="amaon-mark" aria-hidden="true"><i>●</i><strong>아마<em>ON</em></strong></span>
-          <span><b>아마ON</b><small>BY 한끼방패</small></span>
+          <Image
+            className="brand-logo-image"
+            src="/yamaon-logo.png"
+            alt="아마ON by 한끼방패"
+            width={72}
+            height={72}
+            priority
+          />
         </a>
         <nav aria-label="주요 메뉴">
           <a href="#schools">학교 찾기</a>
@@ -603,9 +610,15 @@ export default function Home() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="kicker"><span /> AMATEUR BASEBALL ON AIR</p>
-          <h1><span className="hero-title-line">야구의 모든 순간,</span><br /><em>지금 ON.</em></h1>
-          <p className="hero-lead">학교와 선수, 기록과 영상을 한곳에서.<br />고교야구의 모든 순간을 선명하게 남깁니다.</p>
+          <p className="kicker"><span /> PLAYER SPOTLIGHT PLATFORM</p>
+          <h1 className="hero-purpose-title">
+            <span className="hero-title-line">아마ON,</span><br />
+            <em className="hero-purpose-line">이제는 선수를 알리는 시대.</em>
+          </h1>
+          <p className="hero-lead">
+            기록을 넘어, 선수의 진정성과 가능성을 세상에 연결합니다.<br />
+            선수와 부모가 함께 완성하는 단 하나의 야구 프로필.
+          </p>
           <div className="hero-search-wrap">
             <form className="hero-search" onSubmit={searchSchool}>
               <span aria-hidden="true">⌕</span>
@@ -835,7 +848,15 @@ export default function Home() {
       </section>
 
       <footer>
-        <a className="brand-lockup footer-brand" href="#top"><span className="amaon-mark" aria-hidden="true"><i>●</i><strong>아마<em>ON</em></strong></span><span><b>아마ON</b><small>BY 한끼방패</small></span></a>
+        <a className="brand-lockup footer-brand" href="#top" aria-label="아마ON 홈">
+          <Image
+            className="brand-logo-image"
+            src="/yamaon-logo.png"
+            alt="아마ON by 한끼방패"
+            width={76}
+            height={76}
+          />
+        </a>
         <p>고교야구 선수와 팀의 오늘을 기록합니다.</p>
         <small>© 2026 HANKKI AMATEUR BASEBALL</small>
       </footer>
