@@ -618,13 +618,25 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="이번 주 주목할 선수 샘플">
+        <div className="hero-visual hero-dashboard" aria-label="아마ON 빠른 시작">
           <div className="score-grid" />
-          <div className="broadcast-corner corner-a" />
-          <div className="broadcast-corner corner-b" />
-          <span className="on-air"><i /> ON AIR</span>
-          <div className="hero-brand-mark" aria-label="아마ON by 한끼방패"><span className="hero-brand-signal">●</span><strong><span>아마</span><em>ON</em></strong><small>BY 한끼방패</small></div>
-          <div className="ticker"><b>LIVE</b><span>PLAYER · TEAM · RECORD · FILM · HIGH SCHOOL BASEBALL</span></div>
+          <div className="hero-dashboard-shell">
+            <div className="hero-dashboard-head">
+              <span className="hero-dashboard-live"><i /> LIVE DIRECTORY</span>
+              <small>AMAON · 2026</small>
+            </div>
+            <div className="hero-dashboard-copy">
+              <p>PLAYER FIRST PLATFORM</p>
+              <h2>선수의 이름이<br /><em>하나의 브랜드가 되도록.</em></h2>
+              <span>학교를 찾고, 선수의 영상을 보고, 프로필 링크를 공유하세요.</span>
+            </div>
+            <div className="hero-quick-grid">
+              <button type="button" onClick={() => jumpToSection("schools")}><small>01 · TEAM</small><strong>학교 찾기</strong><span>{publishedSchools.length}팀 <b>→</b></span></button>
+              <button type="button" onClick={() => jumpToSection("players")}><small>02 · PLAYER</small><strong>선수 보기</strong><span>{publishedPlayerCount.toLocaleString()}명 <b>→</b></span></button>
+              <button type="button" onClick={() => jumpToSection("video-ranking")}><small>03 · FILM</small><strong>영상 TOP 5</strong><span>PLAY <b>→</b></span></button>
+            </div>
+            <div className="hero-dashboard-foot"><b>ON</b><span>DIRECT PROFILE · YOUTUBE FILM · COMMUNITY</span></div>
+          </div>
         </div>
       </section>
 
@@ -825,11 +837,11 @@ export default function Home() {
       )}
 
       <nav className="mobile-bottom-nav" aria-label="모바일 빠른 메뉴">
-        <button type="button" className={activeMobileSection === "top" ? "active" : ""} onClick={() => jumpToSection("top")}><span>⌂</span><small>홈</small></button>
-        <button type="button" className={activeMobileSection === "schools" ? "active" : ""} onClick={() => jumpToSection("schools")}><span>▦</span><small>학교</small></button>
-        <button type="button" className={activeMobileSection === "players" ? "active" : ""} onClick={() => jumpToSection("players")}><span>◎</span><small>선수</small></button>
-        <button type="button" className={activeMobileSection === "video-ranking" ? "active" : ""} onClick={() => jumpToSection("video-ranking")}><span>▶</span><small>영상</small></button>
-        <button type="button" className={activeMobileSection === "community" ? "active" : ""} onClick={() => jumpToSection("community")}><span>◌</span><small>커뮤니티</small></button>
+        <button type="button" aria-current={activeMobileSection === "top" ? "page" : undefined} className={activeMobileSection === "top" ? "active" : ""} onClick={() => jumpToSection("top")}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-5v-6h-5v6h-5A1.5 1.5 0 0 1 3 19.5z" /></svg><small>홈</small></button>
+        <button type="button" aria-current={activeMobileSection === "schools" ? "page" : undefined} className={activeMobileSection === "schools" ? "active" : ""} onClick={() => jumpToSection("schools")}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M8 10h1m6 0h1M8 14h1m6 0h1M10 21v-4h4v4M2 21h20" /></svg><small>학교</small></button>
+        <button type="button" aria-current={activeMobileSection === "players" ? "page" : undefined} className={activeMobileSection === "players" ? "active" : ""} onClick={() => jumpToSection("players")}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c.7-5 3.4-7.5 8-7.5S19.3 16 20 21" /></svg><small>선수</small></button>
+        <button type="button" aria-current={activeMobileSection === "video-ranking" ? "page" : undefined} className={activeMobileSection === "video-ranking" ? "active" : ""} onClick={() => jumpToSection("video-ranking")}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m10 9 5 3-5 3z" /></svg><small>영상</small></button>
+        <button type="button" aria-current={activeMobileSection === "community" ? "page" : undefined} className={activeMobileSection === "community" ? "active" : ""} onClick={() => jumpToSection("community")}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 4v-15Z" /><path d="M8 10h8M8 13h5" /></svg><small>커뮤니티</small></button>
       </nav>
 
     </main>
