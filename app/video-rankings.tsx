@@ -60,6 +60,10 @@ export default function VideoRankings({ players, visibleRegions, schoolRegions }
 
   return (
     <section className="video-ranking-section" id="video-ranking">
+      <div className="section-console-bar inverted">
+        <span><i /> 03 · FILM ROOM</span>
+        <small>MEMBER PICKS · LIVE RANKING</small>
+      </div>
       <div className="video-ranking-heading">
         <div><p className="kicker dark"><span /> MOST LIKED FILMS</p><h2>좋아요 TOP 5 영상</h2></div>
         <p>회원들이 가장 많이 좋아한 선수 영상을 만나보세요.<br />순위를 누르면 해당 영상이 바로 재생됩니다.</p>
@@ -76,7 +80,7 @@ export default function VideoRankings({ players, visibleRegions, schoolRegions }
                 <span>{match.player.position} · {match.player.grade}</span>
               </div>
               <div className="video-ranking-likes"><span>♥</span><strong>{item.likeCount}</strong><small>LIKES</small></div>
-              <b className="video-ranking-open">영상 보기 ↗</b>
+              <b className="video-ranking-open"><span>PLAY</span> 영상 보기 ↗</b>
             </button>
           ))}
         </div>

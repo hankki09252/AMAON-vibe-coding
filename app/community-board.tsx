@@ -180,6 +180,10 @@ export default function CommunityBoard() {
   }
 
   return <section className="community-section" id="community">
+    <div className="section-console-bar inverted">
+      <span><i /> 04 · COMMUNITY CLUBHOUSE</span>
+      <small>MEMBERS ONLY · SAFE SPACE</small>
+    </div>
     <div className="community-heading">
       <div><p className="kicker"><span /> AMAON COMMUNITY</p><h2>야구로 연결되는<br /><em>우리들의 라커룸</em></h2></div>
       <div className="community-follower-count"><strong>{totalMembers.toLocaleString()}</strong><span>아마ON 팔로워</span><small>회원가입 완료 계정 기준</small></div>
@@ -228,6 +232,10 @@ export default function CommunityBoard() {
         {notice && <p className="community-notice">{notice}</p>}
       </form>
       <div className="community-feed">
+        <div className="community-feed-head">
+          <div><small>LIVE BOARD</small><strong>{categoryLabel[category]}</strong></div>
+          <span>{posts.filter((post) => post.category === category).length.toLocaleString()} STORIES</span>
+        </div>
         <div className="community-tabs">{COMMUNITY_CATEGORIES.map(([value, label]) => <button key={value} className={category === value ? "active" : ""} onClick={() => setCategory(value)}>{label}</button>)}</div>
         {posts.filter((post) => post.category === category).map((post) => {
           const author = post.author;

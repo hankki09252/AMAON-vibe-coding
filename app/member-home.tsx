@@ -676,9 +676,19 @@ export default function Home() {
       <CommunityBoard />
 
       <section className="school-section" id="schools">
+        <div className="section-console-bar">
+          <span><i /> 01 · TEAM DIRECTORY</span>
+          <small>2026 · KOREA U-18 BASEBALL</small>
+        </div>
         <div className="section-title">
           <div><p className="kicker dark"><span /> TEAM DIRECTORY</p><h2>학교별로 찾기</h2></div>
           <p>2026 고교야구 등록팀을 지역별로 살펴보세요.</p>
+        </div>
+        <div className="directory-stats" aria-label="현재 학교 검색 현황">
+          <div><small>SELECTED REGION</small><strong>{region === "전체" ? "공개 전체" : region}</strong></div>
+          <div><small>VISIBLE TEAMS</small><strong>{filteredSchools.length}<em> 팀</em></strong></div>
+          <div><small>ROSTER SIZE</small><strong>{filteredSchools.reduce((sum, school) => sum + school.players, 0).toLocaleString()}<em> 명</em></strong></div>
+          <span>팀 카드를 선택하면 등록 선수와 프로필로 바로 연결됩니다. <b>→</b></span>
         </div>
         {isAdmin && (
           <div className="region-admin">
@@ -802,6 +812,10 @@ export default function Home() {
         })}
 
       <section className="player-section" id="players">
+        <div className="section-console-bar inverted">
+          <span><i /> 02 · PLAYER SPOTLIGHT</span>
+          <small>PROFILE · STORY · FILM</small>
+        </div>
         <div className="section-title light">
           <div><p className="kicker"><span /> VERIFIED PLAYER PROFILE</p><h2>기록보다 더 깊게</h2></div>
           <p>숫자, 영상, 성장 과정까지 한 장의 프로필로 보여줍니다.</p>
@@ -823,6 +837,10 @@ export default function Home() {
 
       <section className="how-section" id="how">
         <div className="how-copy">
+          <div className="section-console-bar compact">
+            <span><i /> 05 · TRUST & SAFETY</span>
+            <small>AMAON STANDARD</small>
+          </div>
           <p className="kicker dark"><span /> TRUSTED PROFILE SYSTEM</p>
           <h2>가입 즉시 함께하고,<br />신원은 안전하게 확인합니다.</h2>
           <p>회원은 학교·선수 검색과 커뮤니티를 이용하고, 운영팀 확인을 거치면 선수·보호자·지도자 신원 배지가 표시됩니다.</p>
