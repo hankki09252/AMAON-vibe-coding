@@ -228,6 +228,7 @@ export default function Home() {
   const [managedRosterPlayers, setManagedRosterPlayers] = useState<ManagedRosterPlayer[]>([]);
   const [teamDirectoryAssets, setTeamDirectoryAssets] = useState<TeamDirectoryAssets>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState("top");
   const [showMobileBack, setShowMobileBack] = useState(false);
 
@@ -341,6 +342,20 @@ export default function Home() {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!guideOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function closeGuideOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setGuideOpen(false);
+    }
+    window.addEventListener("keydown", closeGuideOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeGuideOnEscape);
+    };
+  }, [guideOpen]);
 
   const publishedSchools = useMemo(
     () => schools.filter((school) => visibleRegions.includes(school.region)),
@@ -497,6 +512,7 @@ export default function Home() {
           />
         </a>
         <nav aria-label="주요 메뉴">
+          <button type="button" className="topbar-guide-link" onClick={() => setGuideOpen(true)}>아마ON 안내</button>
           <a href="#schools">학교 찾기</a>
           <a href="#schools">경기·인천 학교</a>
           <a href="#players">선수 프로필</a>
@@ -557,6 +573,9 @@ export default function Home() {
                 );
               })}
             </nav>
+          <button type="button" className="mobile-guide-link" onClick={() => { setMobileMenuOpen(false); setGuideOpen(true); }}>
+            <span><small>START HERE</small><strong>아마ON 사용설명서</strong></span><b>→</b>
+          </button>
           {isAdmin && (
             <button type="button" className="mobile-admin-link" onClick={() => jumpToSection("schools")}>
               <span>운영자</span><strong>학교·선수 관리</strong><b>→</b>
@@ -606,6 +625,11 @@ export default function Home() {
               </div>
             )}
           </div>
+          <button type="button" className="amaon-guide-trigger" onClick={() => setGuideOpen(true)}>
+            <span>AMAON GUIDE</span>
+            <strong>아마ON 사용설명서</strong>
+            <small>선수 등록부터 SNS 프로필 공유까지 <b>→</b></small>
+          </button>
           <div className="hero-counts" aria-label="현재 공개 현황">
             <div><strong>{publishedSchools.length}</strong><span>공개 학교</span></div>
             <div><strong>{publishedPlayerCount.toLocaleString()}</strong><span>등록 선수</span></div>
@@ -862,6 +886,45 @@ export default function Home() {
         <p>고교야구 선수와 팀의 오늘을 기록합니다.</p>
         <small>© 2026 HANKKI AMATEUR BASEBALL</small>
       </footer>
+
+      {guideOpen && <div className="amaon-guide-backdrop" role="presentation" onMouseDown={() => setGuideOpen(false)}>
+        <section className="amaon-guide-modal" role="dialog" aria-modal="true" aria-labelledby="amaon-guide-title" onMouseDown={(event) => event.stopPropagation()}>
+          <button type="button" className="amaon-guide-close" onClick={() => setGuideOpen(false)} aria-label="아마ON 사용설명서 닫기">×</button>
+          <header className="amaon-guide-head">
+            <div><small>AMAON · PLAYER PORTFOLIO GUIDE</small><span>경기 · 인천 OPEN</span></div>
+            <h2 id="amaon-guide-title">숫자를 넘어,<br /><em>선수를 알리는 시대.</em></h2>
+            <p>아마ON은 매일의 기록만 나열하는 곳이 아닙니다. 선수의 프로필과 장점, 플레이 영상을 한곳에 모아 자신을 제대로 알릴 수 있도록 돕는 아마야구 선수 포트폴리오입니다.</p>
+          </header>
+
+          <div className="amaon-guide-purpose">
+            <span>WHY AMAON</span>
+            <strong>기록은 숫자로 남고,<br />선수의 가능성은 이야기와 영상으로 기억됩니다.</strong>
+            <p>학교·포지션·신체 정보부터 자기소개, 나의 장점, 목표와 포부, 경기 영상까지 하나의 프로필로 연결합니다.</p>
+          </div>
+
+          <div className="amaon-guide-features" aria-label="아마ON 프로필 구성">
+            <article><span>01</span><small>PROFILE</small><h3>나를 소개하는 프로필</h3><p>소속 학교, 포지션, 학년과 기본 정보를 한눈에 보여줍니다.</p></article>
+            <article><span>02</span><small>STORY</small><h3>장점과 목표를 담는 이야기</h3><p>선수의 강점, 플레이 스타일, 앞으로의 목표와 포부를 직접 알립니다.</p></article>
+            <article><span>03</span><small>FILM</small><h3>플레이를 증명하는 영상</h3><p>유튜브에 등록된 투구·타격·수비 영상을 프로필에서 바로 확인할 수 있습니다.</p></article>
+          </div>
+
+          <section className="amaon-guide-register">
+            <div className="amaon-guide-section-title"><small>HOW TO REGISTER</small><h3>프로필 등록 방법</h3><p>현재 경기·인천권부터 운영하며 지역은 순차적으로 확대합니다.</p></div>
+            <ol>
+              <li><span>1</span><div><strong>프로필 내용을 준비하세요</strong><p>선수 이름, 학교, 포지션, 학년, 신체 정보, 자기소개, 장점과 목표를 정리합니다.</p></div></li>
+              <li><span>2</span><div><strong>영상과 함께 한끼방패 인스타그램 DM으로 보내주세요</strong><p>프로필 내용과 공개 가능한 사진, 유튜브 영상 주소를 전달합니다.</p></div></li>
+              <li><span>3</span><div><strong>확인 후 아마ON에 등록됩니다</strong><p>운영팀이 전달 내용을 확인한 뒤 선수 프로필을 구성해 공개합니다.</p></div></li>
+            </ol>
+          </section>
+
+          <section className="amaon-guide-share">
+            <div><small>YOUR PROFILE · ONE LINK</small><h3>등록된 프로필 링크를<br /><em>자신의 SNS에 올리세요.</em></h3><p>프로필의 ‘프로필 공유’ 기능으로 링크를 복사해 인스타그램 소개, 스토리, 게시물 또는 다른 SNS에 붙여 넣을 수 있습니다. 그 링크를 누르면 학교 목록을 다시 찾지 않아도 선수의 프로필이 바로 열립니다.</p></div>
+            <div className="amaon-guide-link-card"><span>AMAON PLAYER LINK</span><strong>나의 프로필로<br />바로 연결</strong><b>PROFILE · STORY · FILM →</b></div>
+          </section>
+
+          <div className="amaon-guide-mission"><small>OUR GOAL</small><strong>아마야구 선수가 자신의 가능성을 보여주는<br /><em>하나의 포트폴리오</em>가 되게 하는 것.</strong><button type="button" onClick={() => { setGuideOpen(false); jumpToSection("players"); }}>선수 프로필 보기 <span>→</span></button></div>
+        </section>
+      </div>}
 
       <nav className="mobile-bottom-nav" aria-label="모바일 빠른 메뉴">
         <button type="button" aria-current={activeMobileSection === "top" ? "page" : undefined} className={activeMobileSection === "top" ? "active" : ""} onClick={() => jumpToSection("top")}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-5v-6h-5v6h-5A1.5 1.5 0 0 1 3 19.5z" /></svg><small>홈</small></button>
