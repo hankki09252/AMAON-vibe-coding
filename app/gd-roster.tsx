@@ -1204,12 +1204,12 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <article className="gd-story-card gd-story-detail strength">
                 <header><span>02</span><div><small>MY STRENGTH</small><h3>나의 장점</h3></div></header>
                 <p>{selectedDetails?.strengths || "선수의 장점이 준비 중입니다."}</p>
-                <footer><span>PLAYER SKILL</span><strong>{selectedDisplay.position}</strong></footer>
+                <div className="gd-story-meta"><span>PLAYER SKILL</span><strong>{selectedDisplay.position}</strong></div>
               </article>
               <article className="gd-story-card gd-story-detail goal">
                 <header><span>03</span><div><small>MY GOAL</small><h3>목표와 포부</h3></div></header>
                 <p>{selectedDetails?.aspiration || "선수의 목표와 포부가 준비 중입니다."}</p>
-                <footer><span>NEXT CHAPTER</span><strong>{selectedDisplay.year}</strong></footer>
+                <div className="gd-story-meta"><span>NEXT CHAPTER</span><strong>{selectedDisplay.year}</strong></div>
               </article>
             </section>
 
