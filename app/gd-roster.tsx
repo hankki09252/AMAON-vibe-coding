@@ -1186,11 +1186,31 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               <div className="gd-profile-editor-actions"><button type="button" onClick={() => void saveProfileEdit()} disabled={savingProfile}>{savingProfile ? "저장 중…" : "변경사항 저장"}</button><button type="button" className="cancel" onClick={() => setEditingProfile(false)} disabled={savingProfile}>취소</button>{profileOverrides[selectedDisplay.id] && <button type="button" className="reset" onClick={() => void resetProfileEdit()} disabled={savingProfile}>최초값으로</button>}</div>
             </div>}
 
-            <div className="gd-profile-section-title"><small>PLAYER STORY</small><h3>기록보다 깊게, 선수를 말합니다</h3></div>
-            <section className="gd-player-story">
-              <article className="introduction"><span>01 · ABOUT ME</span><h3>자기소개</h3><p>{selectedDetails?.introduction || "선수 자기소개가 준비 중입니다."}</p></article>
-              <article><span>02 · MY STRENGTH</span><h3>나의 장점</h3><p>{selectedDetails?.strengths || "선수의 장점이 준비 중입니다."}</p></article>
-              <article><span>03 · MY GOAL</span><h3>목표와 포부</h3><p>{selectedDetails?.aspiration || "선수의 목표와 포부가 준비 중입니다."}</p></article>
+            <div className="gd-profile-section-title"><small>PLAYER STORY</small><h3>{selectedDisplay.name}의 야구 이야기</h3></div>
+            <section className="gd-player-story" aria-label={`${selectedDisplay.name} 선수 자기소개`}>
+              <article className="gd-story-card gd-story-about">
+                <div className="gd-story-visual">
+                  {selectedProfilePortrait
+                    ? <img src={selectedProfilePortrait.url} alt="" loading="lazy" decoding="async" />
+                    : <div className="gd-story-visual-fallback"><small>{monogram}</small><strong>{selectedDisplay.number}</strong></div>}
+                  <div className="gd-story-player-mark"><small>{selectedDisplay.position}</small><strong>#{selectedDisplay.number} {selectedDisplay.name}</strong></div>
+                </div>
+                <div className="gd-story-copy">
+                  <header><span>01</span><div><small>ABOUT ME</small><b>나를 소개합니다</b></div></header>
+                  <h3>자기소개</h3>
+                  <blockquote>{selectedDetails?.introduction || "선수 자기소개가 준비 중입니다."}</blockquote>
+                </div>
+              </article>
+              <article className="gd-story-card gd-story-detail strength">
+                <header><span>02</span><div><small>MY STRENGTH</small><h3>나의 장점</h3></div></header>
+                <p>{selectedDetails?.strengths || "선수의 장점이 준비 중입니다."}</p>
+                <footer><span>PLAYER SKILL</span><strong>{selectedDisplay.position}</strong></footer>
+              </article>
+              <article className="gd-story-card gd-story-detail goal">
+                <header><span>03</span><div><small>MY GOAL</small><h3>목표와 포부</h3></div></header>
+                <p>{selectedDetails?.aspiration || "선수의 목표와 포부가 준비 중입니다."}</p>
+                <footer><span>NEXT CHAPTER</span><strong>{selectedDisplay.year}</strong></footer>
+              </article>
             </section>
 
             <section className="gd-origin-panel">
