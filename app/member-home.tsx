@@ -725,8 +725,8 @@ export default function Home() {
           <small>REAL ROSTER · PROFILE · STORY · FILM</small>
         </div>
         <div className="section-title light">
-          <div><p className="kicker"><span /> REGISTERED PLAYER PROFILE</p><h2>실제 선수 프로필 찾기</h2></div>
-          <p>공개된 학교 선수단을 이름·학교·포지션으로 찾고 실제 프로필을 확인하세요.</p>
+          <div><p className="kicker"><span /> PLAYER PROFILE DIRECTORY</p><h2>선수 프로필 찾기</h2></div>
+          <p>공개된 학교 선수단을 이름·학교·포지션으로 검색하고 선수 프로필을 확인하세요.</p>
         </div>
         <div className="player-directory-summary" aria-label="선수 검색 현황">
           <div><small>PUBLIC REGION</small><strong>{playerDirectoryRegion === "전체" ? visibleRegions.join(" · ") : playerDirectoryRegion}</strong></div>
