@@ -11,7 +11,7 @@ export default function LoginPage() {
   const returnTo = params.get("returnTo")?.startsWith("/") ? params.get("returnTo")! : "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup">(() => params.get("mode") === "signup" ? "signup" : "login");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -37,7 +37,15 @@ export default function LoginPage() {
     <section className="login-card">
       <span className="login-kicker">AMATEUR BASEBALL ON AIR</span>
       <h1>아마<span>ON</span></h1>
-      <p>가입한 회원만 학교와 선수 프로필을 볼 수 있습니다.</p>
+      <div className="auth-mode-tabs" role="tablist" aria-label="로그인 또는 회원가입 선택">
+        <button type="button" role="tab" aria-selected={mode === "login"} className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setMessage(""); }}>로그인</button>
+        <button type="button" role="tab" aria-selected={mode === "signup"} className={mode === "signup" ? "active" : ""} onClick={() => { setMode("signup"); setMessage(""); }}>회원가입</button>
+      </div>
+      <div className="auth-mode-heading">
+        <small>{mode === "login" ? "WELCOME BACK" : "JOIN AMAON"}</small>
+        <h2>{mode === "login" ? "회원 로그인" : "아마ON 회원가입"}</h2>
+        <p>{mode === "login" ? "가입한 계정으로 학교와 선수 프로필을 확인하세요." : "선수·보호자·지도자·관계자·야구팬 누구나 가입할 수 있습니다."}</p>
+      </div>
       <form onSubmit={submit}>
         {mode === "signup" && <>
           <label>이름 또는 활동명<input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={40} autoComplete="name" /></label>
@@ -51,9 +59,6 @@ export default function LoginPage() {
         <button disabled={busy}>{busy ? "처리 중…" : mode === "login" ? "로그인" : "회원가입"}</button>
       </form>
       {message && <p className="login-message">{message}</p>}
-      <button className="mode-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>
-        {mode === "login" ? "처음이신가요? 회원가입" : "이미 가입했나요? 로그인"}
-      </button>
     </section>
   </main>;
 }
