@@ -53,17 +53,6 @@ type School = {
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
 type TeamDirectoryAssets = Record<string, { banner?: string; emblem?: string }>;
 
-type Player = {
-  name: string;
-  school: string;
-  position: string;
-  grade: string;
-  number: string;
-  stat: string;
-  detail: string;
-  tone: string;
-};
-
 const schools: School[] = [
   { name: "GD챌린저스BC(U-18)", region: "서울", players: 20, coach: "송구홍", featured: true },
   { name: "경기고", region: "서울", players: 60, coach: "오규택", featured: true },
@@ -170,39 +159,6 @@ const schools: School[] = [
   { name: "광주진흥고", region: "광주", players: 38, coach: "김인호" },
 ];
 
-const players: Player[] = [
-  {
-    name: "김○현",
-    school: "서울고",
-    position: "우완 투수",
-    grade: "3학년",
-    number: "18",
-    stat: "최고 148 km/h",
-    detail: "직구 평균 144 km/h · 슬라이더 / 체인지업",
-    tone: "lime",
-  },
-  {
-    name: "박○준",
-    school: "야탑고",
-    position: "유격수",
-    grade: "2학년",
-    number: "07",
-    stat: "AVG .378",
-    detail: "42타석 · 14타점 · 도루 8",
-    tone: "coral",
-  },
-  {
-    name: "이○우",
-    school: "경남고",
-    position: "포수",
-    grade: "3학년",
-    number: "22",
-    stat: "POP 1.91 sec",
-    detail: "도루 저지율 41% · 경기 영상 6개",
-    tone: "blue",
-  },
-];
-
 const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주", "세종"];
 const defaultVisibleRegions = ["경기", "인천"];
 const schoolRegionByName = Object.fromEntries(schools.map((school) => [school.name, school.region]));
@@ -261,7 +217,8 @@ const playerSearchIndex = [
 export default function Home() {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("전체");
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [playerDirectoryQuery, setPlayerDirectoryQuery] = useState("");
+  const [playerDirectoryRegion, setPlayerDirectoryRegion] = useState("전체");
   const [visibleRegions, setVisibleRegions] = useState(defaultVisibleRegions);
   const [regionDraft, setRegionDraft] = useState(defaultVisibleRegions);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -346,7 +303,8 @@ export default function Home() {
 
   useEffect(() => {
     if (region !== "전체" && !visibleRegions.includes(region)) setRegion("전체");
-  }, [region, visibleRegions]);
+    if (playerDirectoryRegion !== "전체" && !visibleRegions.includes(playerDirectoryRegion)) setPlayerDirectoryRegion("전체");
+  }, [playerDirectoryRegion, region, visibleRegions]);
 
   useEffect(() => {
     function syncMobileNavigation() {
@@ -417,10 +375,16 @@ export default function Home() {
     () => publishedPlayerSearchIndex.length,
     [publishedPlayerSearchIndex],
   );
-  const publishedSamplePlayers = useMemo(
-    () => players.filter((player) => visibleRegions.includes(schoolRegionByName[player.school])),
-    [visibleRegions],
-  );
+  const filteredPlayerDirectory = useMemo(() => {
+    const keyword = playerDirectoryQuery.trim().replace(/\s+/g, "").toLowerCase();
+    return publishedPlayerSearchIndex.filter(({ player, school }) => {
+      const schoolRegion = schoolRegionByName[school];
+      const matchesRegion = playerDirectoryRegion === "전체" || schoolRegion === playerDirectoryRegion;
+      const searchable = `${player.name}${school}${player.position}${player.grade}${player.number}`.replace(/\s+/g, "").toLowerCase();
+      return matchesRegion && (!keyword || searchable.includes(keyword));
+    });
+  }, [playerDirectoryQuery, playerDirectoryRegion, publishedPlayerSearchIndex]);
+  const visiblePlayerDirectory = useMemo(() => filteredPlayerDirectory.slice(0, 48), [filteredPlayerDirectory]);
 
   const filteredSchools = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -755,6 +719,50 @@ export default function Home() {
         <p className="data-note">학교·선수 수는 제공하신 2026년 자료를 바탕으로 구성한 시안 데이터입니다.</p>
       </section>
 
+      <section className="player-section actual-player-directory" id="players">
+        <div className="section-console-bar inverted">
+          <span><i /> 02 · PLAYER DIRECTORY</span>
+          <small>REAL ROSTER · PROFILE · STORY · FILM</small>
+        </div>
+        <div className="section-title light">
+          <div><p className="kicker"><span /> REGISTERED PLAYER PROFILE</p><h2>실제 선수 프로필 찾기</h2></div>
+          <p>공개된 학교 선수단을 이름·학교·포지션으로 찾고 실제 프로필을 확인하세요.</p>
+        </div>
+        <div className="player-directory-summary" aria-label="선수 검색 현황">
+          <div><small>PUBLIC REGION</small><strong>{playerDirectoryRegion === "전체" ? visibleRegions.join(" · ") : playerDirectoryRegion}</strong></div>
+          <div><small>MATCHED PLAYERS</small><strong>{filteredPlayerDirectory.length.toLocaleString()}<em> 명</em></strong></div>
+          <p>선수를 선택하면 사진·자기소개·영상이 있는 상세 프로필로 이동합니다.</p>
+        </div>
+        <div className="player-directory-tools">
+          <label className="player-directory-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={playerDirectoryQuery}
+              onChange={(event) => setPlayerDirectoryQuery(event.target.value)}
+              placeholder="선수 이름, 학교, 포지션 검색"
+              aria-label="선수 이름, 학교, 포지션 검색"
+            />
+            {playerDirectoryQuery && <button type="button" onClick={() => setPlayerDirectoryQuery("")} aria-label="선수 검색어 지우기">×</button>}
+          </label>
+          <div className="player-directory-regions" aria-label="선수 지역 필터">
+            {availableRegions.map((item) => <button key={item} type="button" className={playerDirectoryRegion === item ? "active" : ""} onClick={() => setPlayerDirectoryRegion(item)}>{item}</button>)}
+          </div>
+        </div>
+        {visiblePlayerDirectory.length ? <div className="actual-player-grid">
+          {visiblePlayerDirectory.map((result) => {
+            const { player, school } = result;
+            return <button type="button" className="actual-player-card" key={`${result.sectionId}-${player.id}`} onClick={() => openSearchedPlayer(result)} aria-label={`${school} ${player.name} 선수 프로필 보기`}>
+              <span className="actual-player-number"><small>NO.</small><strong>{player.number}</strong></span>
+              <span className="actual-player-identity"><small>{schoolRegionByName[school]} · {school}</small><strong>{player.name}</strong><span>{player.position} · {player.grade}</span></span>
+              <span className="actual-player-spec"><small>{player.height > 0 ? `${player.height}cm` : "신장 미정"} · {player.weight > 0 ? `${player.weight}kg` : "체중 미정"}</small><strong>{player.batsThrows}</strong></span>
+              <b>프로필 보기 <span aria-hidden="true">→</span></b>
+            </button>;
+          })}
+        </div> : <div className="player-directory-empty">조건에 맞는 선수가 없습니다. 검색어나 지역을 다시 선택해 주세요.</div>}
+        {filteredPlayerDirectory.length > visiblePlayerDirectory.length && <p className="player-directory-note">검색 속도를 위해 처음 48명을 표시합니다. 이름이나 학교를 입력하면 원하는 선수를 빠르게 찾을 수 있습니다.</p>}
+      </section>
+
       {visibleRegions.includes("서울") && <>
         <GdRoster />
         <GyeonggiRoster />
@@ -811,30 +819,6 @@ export default function Home() {
           />;
         })}
 
-      <section className="player-section" id="players">
-        <div className="section-console-bar inverted">
-          <span><i /> 02 · PLAYER SPOTLIGHT</span>
-          <small>PROFILE · STORY · FILM</small>
-        </div>
-        <div className="section-title light">
-          <div><p className="kicker"><span /> VERIFIED PLAYER PROFILE</p><h2>기록보다 더 깊게</h2></div>
-          <p>숫자, 영상, 성장 과정까지 한 장의 프로필로 보여줍니다.</p>
-        </div>
-        <div className="player-grid">
-          {publishedSamplePlayers.map((player, index) => (
-            <button className={`player-card ${player.tone}`} key={player.name} onClick={() => setSelectedPlayer(player)}>
-              <div className="player-card-top"><span>0{index + 1}</span><small>샘플 프로필</small></div>
-              <div className="player-figure"><span>{player.number}</span></div>
-              <div className="player-data">
-                <p>{player.school} · {player.grade}</p>
-                <h3>{player.name}</h3>
-                <div><span>{player.position}</span><strong>{player.stat}</strong></div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </section>
-
       <section className="how-section" id="how">
         <div className="how-copy">
           <div className="section-console-bar compact">
@@ -878,20 +862,6 @@ export default function Home() {
         <p>고교야구 선수와 팀의 오늘을 기록합니다.</p>
         <small>© 2026 HANKKI AMATEUR BASEBALL</small>
       </footer>
-
-      {selectedPlayer && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setSelectedPlayer(null)}>
-          <section className="profile-modal" role="dialog" aria-modal="true" aria-label={`${selectedPlayer.name} 선수 프로필`} onMouseDown={(event) => event.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelectedPlayer(null)} aria-label="닫기">×</button>
-            <button type="button" className="sample-profile-back" onClick={() => setSelectedPlayer(null)}><span aria-hidden="true">←</span> 선수 목록으로</button>
-            <p className="kicker dark"><span /> PLAYER PROFILE · SAMPLE</p>
-            <div className="modal-player-head"><div className="mini-jersey">{selectedPlayer.number}</div><div><small>{selectedPlayer.school} · {selectedPlayer.grade}</small><h2>{selectedPlayer.name}</h2><b>{selectedPlayer.position}</b></div></div>
-            <div className="stat-panel"><strong>{selectedPlayer.stat}</strong><span>{selectedPlayer.detail}</span></div>
-            <div className="video-strip"><div><span>▶</span><small>GAME FILM 01</small></div><div><span>▶</span><small>GAME FILM 02</small></div></div>
-            <p className="modal-note">화면 구성 확인을 위한 익명 샘플 프로필입니다.</p>
-          </section>
-        </div>
-      )}
 
       <nav className="mobile-bottom-nav" aria-label="모바일 빠른 메뉴">
         <button type="button" aria-current={activeMobileSection === "top" ? "page" : undefined} className={activeMobileSection === "top" ? "active" : ""} onClick={() => jumpToSection("top")}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-5v-6h-5v6h-5A1.5 1.5 0 0 1 3 19.5z" /></svg><small>홈</small></button>
