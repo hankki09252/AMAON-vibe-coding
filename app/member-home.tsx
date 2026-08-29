@@ -256,6 +256,7 @@ export default function Home() {
   const [activeRosterSection, setActiveRosterSection] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [supportCopyNotice, setSupportCopyNotice] = useState("");
   const [activeMobileSection, setActiveMobileSection] = useState("top");
   const [showMobileBack, setShowMobileBack] = useState(false);
 
@@ -541,6 +542,15 @@ export default function Home() {
       setRegionNotice(error instanceof Error ? error.message : "설정을 저장하지 못했습니다.");
     } finally {
       setSavingRegions(false);
+    }
+  }
+
+  async function copySupportAccount() {
+    try {
+      await navigator.clipboard.writeText("302-2177-2877-01");
+      setSupportCopyNotice("계좌번호가 복사되었습니다.");
+    } catch {
+      setSupportCopyNotice("계좌번호를 길게 눌러 복사해 주세요.");
     }
   }
 
@@ -873,6 +883,23 @@ export default function Home() {
         <p>YOUR STORY STARTS HERE</p>
         <h2>당신의 야구를<br /><em>기록으로 남기세요.</em></h2>
         <button onClick={() => jumpToSection("community")}>커뮤니티 바로가기 <span>↗</span></button>
+      </section>
+
+      <section className="support-section" aria-labelledby="support-title">
+        <div className="support-message">
+          <small>SUPPORT AMAON · BUY US A COFFEE</small>
+          <h2 id="support-title">아마ON이 도움이 되셨다면,<br /><em>커피 한 잔으로 응원해 주세요.</em></h2>
+          <p>보내주신 응원은 더 많은 아마야구 선수의 이야기와 영상을 알리고, 아마ON을 안정적으로 운영하는 데 소중히 사용하겠습니다.</p>
+          <span>후원은 자유이며 서비스 이용과는 무관합니다.</span>
+        </div>
+        <div className="support-account-card" aria-label="아마ON 후원 계좌">
+          <div><small>BANK</small><strong>NH농협은행</strong></div>
+          <div><small>ACCOUNT</small><strong>302-2177-2877-01</strong></div>
+          <div><small>HOLDER</small><strong>한끼방패 브랜드랩</strong></div>
+          <button type="button" onClick={() => void copySupportAccount()}>
+            {supportCopyNotice || "계좌번호 복사"}<span aria-hidden="true">→</span>
+          </button>
+        </div>
       </section>
 
       <footer>

@@ -1512,8 +1512,25 @@ footer p, footer small { color: #777; }
 .amaon-guide-mission button { min-height: 45px; padding: 0 16px; border: 1px solid #080808; background: #080808; color: white; font: inherit; font-size: 9px; font-weight: 1000; cursor: pointer; }
 .amaon-guide-mission button span { margin-left: 10px; color: var(--brand-orange); }
 
+.support-section { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(360px, .85fr); gap: clamp(30px, 6vw, 90px); align-items: center; padding: clamp(58px, 8vw, 105px) clamp(24px, 7vw, 118px); border-top: 1px solid #252525; background: radial-gradient(circle at 82% 18%, rgba(255,98,0,.14), transparent 28%), #080808; color: white; }
+.support-message > small { color: var(--brand-orange); font-size: 8px; font-weight: 1000; letter-spacing: 1.8px; }
+.support-message h2 { margin: 20px 0; font-size: clamp(34px, 4.8vw, 62px); font-style: italic; line-height: 1.04; letter-spacing: -3px; word-break: keep-all; }
+.support-message h2 em { color: var(--brand-orange); font-style: inherit; }
+.support-message p { max-width: 680px; margin: 0; color: #aaa; font-size: 12px; line-height: 1.85; word-break: keep-all; }
+.support-message > span { display: block; margin-top: 20px; color: #666; font-size: 9px; }
+.support-account-card { padding: clamp(24px, 4vw, 38px); border: 1px solid #393939; border-top: 4px solid var(--brand-orange); background: rgba(16,16,16,.94); box-shadow: 14px 14px 0 rgba(255,98,0,.08); }
+.support-account-card > div { display: grid; grid-template-columns: 82px 1fr; gap: 18px; align-items: center; min-height: 62px; border-bottom: 1px solid #303030; }
+.support-account-card > div small { color: #777; font-size: 7px; font-weight: 1000; letter-spacing: 1.5px; }
+.support-account-card > div strong { min-width: 0; color: #fff; font-size: clamp(15px, 2vw, 20px); letter-spacing: -.5px; overflow-wrap: anywhere; }
+.support-account-card > div:nth-child(2) strong { color: var(--brand-orange); font-size: clamp(21px, 2.6vw, 30px); font-style: italic; letter-spacing: -.8px; }
+.support-account-card button { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; margin-top: 22px; padding: 0 18px; border: 1px solid var(--brand-orange); background: var(--brand-orange); color: #080808; font: inherit; font-size: 11px; font-weight: 1000; cursor: pointer; }
+.support-account-card button:hover, .support-account-card button:focus-visible { background: #fff; border-color: #fff; outline: none; }
+.support-account-card button span { font-size: 18px; }
+
 @media (max-width: 1100px) {
   .actual-player-grid { grid-template-columns: 1fr; }
+  .support-section { grid-template-columns: 1fr; }
+  .support-account-card { width: min(100%, 640px); }
 }
 
 @media (max-width: 900px) {
@@ -1547,6 +1564,7 @@ footer p, footer small { color: #777; }
   .amaon-guide-features article { min-height: 180px; }
   .amaon-guide-share { grid-template-columns: 1fr; }
   .amaon-guide-link-card { min-height: 195px; }
+  .support-message h2 { letter-spacing: -2px; }
 }
 
 @media (max-width: 560px) {
@@ -1581,4 +1599,7 @@ footer p, footer small { color: #777; }
   .amaon-guide-share { padding: 40px 20px; }
   .amaon-guide-mission { grid-template-columns: 1fr; gap: 12px; padding: 30px 20px; }
   .amaon-guide-mission button { grid-column: auto; width: 100%; }
+  .support-section { padding-inline: 20px; }
+  .support-account-card { padding: 22px 18px; box-shadow: 8px 8px 0 rgba(255,98,0,.08); }
+  .support-account-card > div { grid-template-columns: 70px 1fr; gap: 10px; }
 }
