@@ -3,7 +3,7 @@
 // The signed-in member experience. Authentication is enforced by app/page.tsx.
 
 import Image from "next/image";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, type ComponentType } from "react";
 import GdRoster, { gdPlayers, TeamRoster, type ManagedRosterPlayer } from "./gd-roster";
 import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
 import GyeongsangRoster, { players as gyeongsangPlayers } from "./gyeongsang-roster";
@@ -168,15 +168,41 @@ const rosterSectionBySchool: Record<string, string> = Object.fromEntries(
 );
 const schoolByRosterSection = Object.fromEntries(Object.entries(rosterSectionBySchool).map(([school, sectionId]) => [sectionId, school]));
 
-const customRosterSectionIds = new Set([
-  "gd-roster", "gyeonggi-roster", "gyeongsang-roster", "kyungdong-roster", "gangneung-roster",
-  "deoksu-roster", "myeongji-roster", "baemyeong-roster", "baekjae-roster", "seoul-hg-roster",
-  "seoul-hk-roster", "seoul-roster", "seoul-dongsan-roster", "seoul-design-roster", "seoul-it-roster",
-  "seoul-auto-roster", "seoul-convention-roster", "sunrin-roster", "seongnam-roster", "semyeong-roster",
-  "gyeonggi-aviation-roster", "gyeongmin-it-roster", "gimpo-science-roster", "raon-roster", "baeksong-roster",
-  "buwon-roster", "bibong-roster", "sangwoo-roster", "sewon-roster", "sorae-roster", "suwon-roster",
-  "shinheung-roster", "ansan-technical-roster",
-]);
+const customRosterComponents: Record<string, ComponentType> = {
+  "gd-roster": GdRoster,
+  "gyeonggi-roster": GyeonggiRoster,
+  "gyeongsang-roster": GyeongsangRoster,
+  "kyungdong-roster": KyungdongRoster,
+  "gangneung-roster": GangneungRoster,
+  "deoksu-roster": DeoksuRoster,
+  "myeongji-roster": MyeongjiRoster,
+  "baemyeong-roster": BaemyeongRoster,
+  "baekjae-roster": BaekjaeRoster,
+  "seoul-hg-roster": SeoulHgRoster,
+  "seoul-hk-roster": SeoulHkRoster,
+  "seoul-roster": SeoulRoster,
+  "seoul-dongsan-roster": SeoulDongsanRoster,
+  "seoul-design-roster": SeoulDesignRoster,
+  "seoul-it-roster": SeoulItRoster,
+  "seoul-auto-roster": SeoulAutoRoster,
+  "seoul-convention-roster": SeoulConventionRoster,
+  "sunrin-roster": SunrinRoster,
+  "seongnam-roster": SeongnamRoster,
+  "semyeong-roster": SemyeongRoster,
+  "gyeonggi-aviation-roster": GyeonggiAviationRoster,
+  "gyeongmin-it-roster": GyeongminItRoster,
+  "gimpo-science-roster": GimpoScienceRoster,
+  "raon-roster": RaonRoster,
+  "baeksong-roster": BaeksongRoster,
+  "buwon-roster": BuwonRoster,
+  "bibong-roster": BibongRoster,
+  "sangwoo-roster": SangwooRoster,
+  "sewon-roster": SewonRoster,
+  "sorae-roster": SoraeRoster,
+  "suwon-roster": SuwonRoster,
+  "shinheung-roster": ShinheungRoster,
+  "ansan-technical-roster": AnsanTechnicalRoster,
+};
 
 const playerSearchIndex = [
   ...gdPlayers.map((player) => ({ player, school: "GD챌린저스BC(U-18)", sectionId: "gd-roster" })),
@@ -227,6 +253,7 @@ export default function Home() {
   const [regionNotice, setRegionNotice] = useState("");
   const [managedRosterPlayers, setManagedRosterPlayers] = useState<ManagedRosterPlayer[]>([]);
   const [teamDirectoryAssets, setTeamDirectoryAssets] = useState<TeamDirectoryAssets>({});
+  const [activeRosterSection, setActiveRosterSection] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState("top");
@@ -311,6 +338,8 @@ export default function Home() {
     function syncMobileNavigation() {
       const hash = window.location.hash.replace(/^#/, "") || "top";
       const params = new URLSearchParams(window.location.search);
+      const requestedRoster = hash.endsWith("-roster") ? hash : params.get("team");
+      setActiveRosterSection(requestedRoster && schoolByRosterSection[requestedRoster] ? requestedRoster : null);
       if (params.has("player") || hash === "players") setActiveMobileSection("players");
       else if (hash === "video-ranking") setActiveMobileSection("video-ranking");
       else if (hash === "community") setActiveMobileSection("community");
@@ -328,6 +357,15 @@ export default function Home() {
       window.removeEventListener("popstate", syncMobileNavigation);
     };
   }, []);
+
+  useEffect(() => {
+    if (!activeRosterSection || window.location.hash !== `#${activeRosterSection}`) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(activeRosterSection);
+      if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, left: 0, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeRosterSection]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -400,6 +438,8 @@ export default function Home() {
     });
   }, [playerDirectoryQuery, playerDirectoryRegion, publishedPlayerSearchIndex]);
   const visiblePlayerDirectory = useMemo(() => filteredPlayerDirectory.slice(0, 48), [filteredPlayerDirectory]);
+  const activeRosterSchool = activeRosterSection ? publishedSchools.find((school) => rosterSectionBySchool[school.name] === activeRosterSection) : undefined;
+  const ActiveRosterComponent = activeRosterSection ? customRosterComponents[activeRosterSection] : undefined;
 
   const filteredSchools = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -417,16 +457,22 @@ export default function Home() {
   }, [publishedPlayerSearchIndex, query]);
 
   function jumpToSection(sectionId: string) {
-    const target = document.getElementById(sectionId);
-    if (!target) return;
+    const isRosterSection = sectionId.endsWith("-roster") && Boolean(schoolByRosterSection[sectionId]);
+    if (isRosterSection) setActiveRosterSection(sectionId);
+    else setActiveRosterSection(null);
     const previousScrollBehavior = document.documentElement.style.scrollBehavior;
     document.documentElement.style.scrollBehavior = "auto";
-    window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, left: 0, behavior: "auto" });
     window.history.pushState({ amaonView: "section", sectionId }, "", `#${sectionId}`);
     setActiveMobileSection(sectionId.endsWith("-roster") ? "schools" : sectionId);
     setShowMobileBack(sectionId.endsWith("-roster"));
     setMobileMenuOpen(false);
-    requestAnimationFrame(() => { document.documentElement.style.scrollBehavior = previousScrollBehavior; });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const target = document.getElementById(sectionId);
+        if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, left: 0, behavior: "auto" });
+        document.documentElement.style.scrollBehavior = previousScrollBehavior;
+      });
+    });
   }
 
   function mobileGoBack() {
@@ -787,61 +833,17 @@ export default function Home() {
         {filteredPlayerDirectory.length > visiblePlayerDirectory.length && <p className="player-directory-note">검색 속도를 위해 처음 48명을 표시합니다. 이름이나 학교를 입력하면 원하는 선수를 빠르게 찾을 수 있습니다.</p>}
       </section>
 
-      {visibleRegions.includes("서울") && <>
-        <GdRoster />
-        <GyeonggiRoster />
-        <GyeongsangRoster />
-        <KyungdongRoster />
-        <DeoksuRoster />
-        <MyeongjiRoster />
-        <BaemyeongRoster />
-        <BaekjaeRoster />
-        <SeoulHgRoster />
-        <SeoulHkRoster />
-        <SeoulRoster />
-        <SeoulDongsanRoster />
-        <SeoulDesignRoster />
-        <SeoulItRoster />
-        <SeoulAutoRoster />
-        <SeoulConventionRoster />
-        <SunrinRoster />
-        <SeongnamRoster />
-        <SemyeongRoster />
-      </>}
-      {visibleRegions.includes("강원") && <GangneungRoster />}
-      {visibleRegions.includes("경기") && <>
-        <GyeonggiAviationRoster />
-        <GyeongminItRoster />
-        <GimpoScienceRoster />
-        <RaonRoster />
-        <BaeksongRoster />
-        <BuwonRoster />
-        <BibongRoster />
-        <SangwooRoster />
-        <SewonRoster />
-        <SoraeRoster />
-        <SuwonRoster />
-        <ShinheungRoster />
-        <AnsanTechnicalRoster />
-      </>}
-      {publishedSchools
-        .filter((school) => {
-          const sectionId = rosterSectionBySchool[school.name];
-          return sectionId && !customRosterSectionIds.has(sectionId);
-        })
-        .map((school) => {
-          const sectionId = rosterSectionBySchool[school.name];
-          return <TeamRoster
-            key={sectionId}
-            sectionId={sectionId}
-            kicker={`${school.region} · U-18 BASEBALL · 2026`}
-            title={`${school.name} 선수단`}
-            subtitle={`선수를 직접 추가하거나 엑셀로 일괄 등록할 수 있습니다 · 감독 ${school.coach}`}
-            teamLabel={school.name}
-            monogram={school.name.slice(0, 1)}
-            players={[]}
-          />;
-        })}
+      {activeRosterSchool && ActiveRosterComponent && <ActiveRosterComponent key={activeRosterSection} />}
+      {activeRosterSchool && activeRosterSection && !ActiveRosterComponent && <TeamRoster
+        key={activeRosterSection}
+        sectionId={activeRosterSection}
+        kicker={`${activeRosterSchool.region} · U-18 BASEBALL · 2026`}
+        title={`${activeRosterSchool.name} 선수단`}
+        subtitle={`선수를 직접 추가하거나 엑셀로 일괄 등록할 수 있습니다 · 감독 ${activeRosterSchool.coach}`}
+        teamLabel={activeRosterSchool.name}
+        monogram={activeRosterSchool.name.slice(0, 1)}
+        players={[]}
+      />}
 
       <section className="how-section" id="how">
         <div className="how-copy">
