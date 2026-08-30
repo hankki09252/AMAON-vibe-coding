@@ -492,8 +492,13 @@ export default function Home() {
     const url = new URL(window.location.href);
     url.searchParams.set("team", result.sectionId);
     url.searchParams.set("player", result.player.id);
+    url.searchParams.delete("media");
     url.hash = result.sectionId;
-    window.location.assign(url.toString());
+    window.history.pushState({ amaonView: "player", team: result.sectionId, player: result.player.id }, "", url);
+    setActiveRosterSection(result.sectionId);
+    setActiveMobileSection("players");
+    setShowMobileBack(true);
+    setMobileMenuOpen(false);
   }
 
   function searchSchool(event: FormEvent<HTMLFormElement>) {

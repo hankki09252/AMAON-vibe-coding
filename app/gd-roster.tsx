@@ -90,7 +90,13 @@ type TeamRosterProps = {
 };
 
 export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, monogram, players }: TeamRosterProps) {
-  const [selected, setSelected] = useState<TeamPlayer | null>(null);
+  const [selected, setSelected] = useState<TeamPlayer | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("team") !== sectionId) return null;
+    const playerId = params.get("player");
+    return players.find((player) => player.id === playerId) ?? null;
+  });
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -748,6 +754,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       const playerId = params.get("player");
       const linkedPlayer = displayPlayers.find((player) => player.id === playerId);
       if (linkedPlayer) {
+        profileHistoryPushedRef.current = window.history.state?.amaonView === "player";
         setSelected(linkedPlayer);
         setSelectedCategory("photo");
         return;
