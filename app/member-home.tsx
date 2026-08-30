@@ -501,8 +501,7 @@ export default function Home() {
     setMobileMenuOpen(false);
   }
 
-  function searchSchool(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function runMainSearch() {
     const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
     const exactPlayers = publishedPlayerSearchIndex.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase() === keyword);
     const playerMatch = exactPlayers.length === 1 ? exactPlayers[0] : exactPlayers.length === 0 && matchingPlayers.length === 1 ? matchingPlayers[0] : null;
@@ -518,6 +517,23 @@ export default function Home() {
     if (match) setRegion(match.region);
     const sectionId = match ? rosterSectionBySchool[match.name] : undefined;
     requestAnimationFrame(() => jumpToSection(sectionId ?? "schools"));
+  }
+
+  function searchSchool(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    runMainSearch();
+  }
+
+  function openPlayerDirectorySearchResult() {
+    const keyword = playerDirectoryQuery.trim().replace(/\s+/g, "").toLowerCase();
+    if (!keyword) return;
+    const exactPlayers = filteredPlayerDirectory.filter(({ player }) => player.name.replace(/\s+/g, "").toLowerCase() === keyword);
+    const playerMatch = exactPlayers.length === 1
+      ? exactPlayers[0]
+      : exactPlayers.length === 0 && filteredPlayerDirectory.length === 1
+        ? filteredPlayerDirectory[0]
+        : null;
+    if (playerMatch) openSearchedPlayer(playerMatch);
   }
 
   function toggleRegionDraft(item: string) {
@@ -669,6 +685,11 @@ export default function Home() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  runMainSearch();
+                }}
                 placeholder="학교명 또는 선수명 검색"
                 aria-label="학교명 또는 선수명 검색"
               />
@@ -825,6 +846,11 @@ export default function Home() {
               type="search"
               value={playerDirectoryQuery}
               onChange={(event) => setPlayerDirectoryQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                openPlayerDirectorySearchResult();
+              }}
               placeholder="선수 이름, 학교, 포지션 검색"
               aria-label="선수 이름, 학교, 포지션 검색"
             />
