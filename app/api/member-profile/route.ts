@@ -80,7 +80,8 @@ export async function PATCH(request: Request) {
   if (!user) return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   const supabase = createSupabaseAdminClient();
-  if (body.targetUserId && adminRole) {
+  if (body.targetUserId) {
+    if (!adminRole) return Response.json({ error: "운영자 권한이 필요합니다." }, { status: 403 });
     if (Object.prototype.hasOwnProperty.call(body, "linkedPlayerId") || Object.prototype.hasOwnProperty.call(body, "linkedTeamId")) {
       const linkedPlayerId = String(body.linkedPlayerId || "").trim().slice(0, 120);
       const linkedTeamId = String(body.linkedTeamId || "").trim().slice(0, 120);
@@ -90,9 +91,10 @@ export async function PATCH(request: Request) {
     }
     const status = ["pending", "verified", "rejected"].includes(body.identityStatus) ? body.identityStatus : null;
     if (!status) return Response.json({ error: "올바른 인증 상태가 아닙니다." }, { status: 400 });
-    const { error } = await supabase.from("member_profiles").update({ identity_status: status, verified_at: status === "verified" ? new Date().toISOString() : null, verified_by: user.email }).eq("user_id", body.targetUserId);
+    const { data, error } = await supabase.from("member_profiles").update({ identity_status: status, verified_at: status === "verified" ? new Date().toISOString() : null, verified_by: user.email, updated_at: new Date().toISOString() }).eq("user_id", body.targetUserId).select("user_id,identity_status").maybeSingle();
     if (error) return Response.json({ error: error.message }, { status: 500 });
-    return Response.json({ ok: true });
+    if (!data) return Response.json({ error: "대상 회원을 찾지 못했습니다." }, { status: 404 });
+    return Response.json({ ok: true, identityStatus: data.identity_status });
   }
   const displayName = String(body.displayName || "").trim().slice(0, 40);
   const schoolName = String(body.schoolName || "").trim().slice(0, 80);

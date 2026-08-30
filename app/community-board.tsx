@@ -46,6 +46,8 @@ export default function CommunityBoard() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [commentBusy, setCommentBusy] = useState("");
+  const [verificationBusyId, setVerificationBusyId] = useState("");
+  const [adminNotice, setAdminNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   const categoryLabel = useMemo(() => Object.fromEntries(COMMUNITY_CATEGORIES), []);
 
@@ -114,11 +116,24 @@ export default function CommunityBoard() {
     if (response.ok) await load();
   }
 
-  async function verify(targetUserId: string, identityStatus: string) {
-    const response = await fetch("/api/member-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetUserId, identityStatus }) });
-    const payload = await response.json().catch(() => ({}));
-    setNotice(response.ok ? "회원 인증 상태를 변경했습니다." : payload.error || "인증 상태를 변경하지 못했습니다.");
-    if (response.ok) await load();
+  async function verify(member: Profile, identityStatus: "verified" | "rejected") {
+    if (verificationBusyId) return;
+    setVerificationBusyId(member.user_id);
+    setAdminNotice(null);
+    try {
+      const response = await fetch("/api/member-profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetUserId: member.user_id, identityStatus }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "인증 상태를 변경하지 못했습니다.");
+      await load();
+      setAdminNotice({
+        kind: "success",
+        message: `${member.display_name} 회원을 ${identityStatus === "verified" ? "인증 완료" : "인증 반려"}로 변경했습니다.`,
+      });
+    } catch (error) {
+      setAdminNotice({ kind: "error", message: error instanceof Error ? error.message : "인증 상태를 변경하지 못했습니다." });
+    } finally {
+      setVerificationBusyId("");
+    }
   }
 
   async function linkMember(member: Profile) {
@@ -217,10 +232,20 @@ export default function CommunityBoard() {
       </div>
       <div className="member-role-export-grid">{MEMBER_ROLES.map((role) => <button type="button" key={role} onClick={() => downloadMembers(role)}><span>{MEMBER_ROLE_LABELS[role]}</span><strong>{Number(stats?.roleCounts?.[role] || 0).toLocaleString()}명</strong><small>엑셀 받기 ↓</small></button>)}</div>
       <h3>회원 신원 인증</h3>
-      {members.filter((member) => !member.isAdmin).map((member) => <div key={member.user_id}>
-        <span><strong>{member.display_name}</strong><small>{member.school_name || "소속 미입력"} · {member.identityBadge}</small></span>
-        <button onClick={() => verify(member.user_id, "verified")}>인증</button><button onClick={() => verify(member.user_id, "rejected")}>반려</button><button onClick={() => linkMember(member)}>선수 프로필 연결</button>
-      </div>)}
+      {adminNotice && <p className={`member-verification-notice ${adminNotice.kind}`} role="status" aria-live="polite">{adminNotice.message}</p>}
+      <div className="member-verification-list">
+        {members.filter((member) => !member.isAdmin).map((member) => {
+          const isProcessing = verificationBusyId === member.user_id;
+          return <div className="member-verification-row" key={member.user_id}>
+            <span><strong>{member.display_name}</strong><small>{member.school_name || "소속 미입력"} · {member.identityBadge}</small></span>
+            <div className="member-verification-actions">
+              <button type="button" disabled={Boolean(verificationBusyId) || member.identity_status === "verified"} onClick={() => verify(member, "verified")}>{isProcessing ? "처리 중…" : member.identity_status === "verified" ? "인증됨" : "인증"}</button>
+              <button type="button" disabled={Boolean(verificationBusyId) || member.identity_status === "rejected"} onClick={() => verify(member, "rejected")}>{isProcessing ? "처리 중…" : member.identity_status === "rejected" ? "반려됨" : "반려"}</button>
+              <button type="button" disabled={Boolean(verificationBusyId)} onClick={() => linkMember(member)}>선수 프로필 연결</button>
+            </div>
+          </div>;
+        })}
+      </div>
     </div>}
     <div className="community-layout">
       <form className="community-compose" onSubmit={submitPost}>
