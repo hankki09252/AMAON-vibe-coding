@@ -524,6 +524,15 @@ footer p, footer small { color: #777; }
 .video-ranking-empty > span { color: var(--brand-orange); font-size: 32px; }
 .video-ranking-empty strong { margin-top: 8px; font-size: 14px; }
 .video-ranking-empty p { margin: 6px 0 0; color: #777; font-size: 10px; }
+.video-ranking-player-modal { position: fixed; z-index: 300; inset: 0; display: grid; place-items: center; padding: 72px 24px 96px; background: rgba(0,0,0,.96); color: #fff; }
+.video-ranking-player-close { position: fixed; z-index: 302; top: 22px; right: 22px; width: 48px; height: 48px; border: 1px solid rgba(255,255,255,.4); border-radius: 50%; background: rgba(0,0,0,.7); color: #fff; font-size: 30px; line-height: 1; cursor: pointer; }
+.video-ranking-player-stage { width: min(1120px, 100%); max-height: calc(100vh - 190px); aspect-ratio: 16 / 9; display: grid; place-items: center; background: #050505; box-shadow: 0 20px 70px rgba(0,0,0,.7); }
+.video-ranking-player-stage iframe, .video-ranking-player-stage video { width: 100%; height: 100%; border: 0; object-fit: contain; }
+.video-ranking-player-meta { position: fixed; z-index: 301; left: 28px; bottom: 22px; display: flex; flex-direction: column; gap: 4px; text-shadow: 0 2px 8px #000; }
+.video-ranking-player-meta small { color: var(--brand-orange); font-size: 10px; font-weight: 900; }
+.video-ranking-player-meta strong { font-size: 22px; }
+.video-ranking-player-meta strong em { color: var(--brand-orange); font-style: normal; }
+.video-ranking-player-meta span { color: #aaa; font-size: 11px; }
 
 @media (max-width: 800px) {
   .video-ranking-section { padding: 68px 18px; }
@@ -534,6 +543,10 @@ footer p, footer small { color: #777; }
   .video-ranking-preview { height: 76px; }
   .video-ranking-player strong { font-size: 17px; }
   .video-ranking-open { display: none; }
+  .video-ranking-player-modal { padding: 64px 12px 110px; }
+  .video-ranking-player-stage { max-height: calc(100vh - 180px); }
+  .video-ranking-player-close { top: 14px; right: 14px; width: 42px; height: 42px; }
+  .video-ranking-player-meta { left: 18px; right: 18px; bottom: 24px; }
   .topbar { height: 70px; }
   .brand-lockup .amaon-mark { width: 43px; height: 43px; }
   .brand-lockup b { font-size: 16px; }
