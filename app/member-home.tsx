@@ -977,6 +977,30 @@ export default function Home() {
             </ol>
           </section>
 
+          <section className="amaon-guide-install">
+            <div className="amaon-guide-install-copy">
+              <small>INSTALL AMAON · ANDROID CHROME</small>
+              <h3>웹사이트를 넘어,<br /><em>휴대폰 앱처럼 사용하세요.</em></h3>
+              <p>안드로이드 휴대폰의 크롬에서 <strong>www.amaon.kr</strong>을 입력해 접속하면 화면 상단에 ‘아마ON by 한끼방패 설치’ 안내가 나타납니다.</p>
+              <ol>
+                <li><span>1</span><div><strong>크롬에서 www.amaon.kr 접속</strong><p>주소창에 아마ON 공식 주소를 직접 입력합니다.</p></div></li>
+                <li><span>2</span><div><strong>설치 안내의 ‘설치’ 선택</strong><p>안내가 보이지 않으면 크롬 오른쪽 위 메뉴에서 ‘앱 설치’ 또는 ‘홈 화면에 추가’를 선택합니다.</p></div></li>
+                <li><span>3</span><div><strong>홈 화면의 아마ON 아이콘으로 실행</strong><p>설치가 끝나면 휴대폰 홈 화면에 아마ON 아이콘이 생기며, 아이콘을 누르면 바로 실행됩니다.</p></div></li>
+              </ol>
+              <span className="amaon-guide-install-note">별도의 앱스토어 가입이나 Vercel 가입은 필요하지 않습니다.</span>
+            </div>
+            <div className="amaon-guide-install-visuals" aria-label="아마ON 휴대폰 설치 화면 예시">
+              <figure className="amaon-guide-install-screen">
+                <Image src="/guide/amaon-chrome-install.jpg" alt="안드로이드 크롬에서 표시되는 아마ON 설치 안내" width={1440} height={2783} sizes="(max-width: 760px) 80vw, 360px" />
+                <figcaption>01 · 크롬 설치 안내</figcaption>
+              </figure>
+              <figure className="amaon-guide-installed-icon">
+                <Image src="/guide/amaon-installed-app.png" alt="휴대폰 홈 화면에 설치된 아마ON 앱 아이콘" width={125} height={123} />
+                <figcaption><small>02 · 설치 완료</small><strong>홈 화면에서<br />아마ON 바로 실행</strong></figcaption>
+              </figure>
+            </div>
+          </section>
+
           <section className="amaon-guide-share">
             <div><small>YOUR PROFILE · ONE LINK</small><h3>등록된 프로필 링크를<br /><em>자신의 SNS에 올리세요.</em></h3><p>프로필의 ‘프로필 공유’ 기능으로 링크를 복사해 인스타그램 소개, 스토리, 게시물 또는 다른 SNS에 붙여 넣을 수 있습니다. 그 링크를 누르면 학교 목록을 다시 찾지 않아도 선수의 프로필이 바로 열립니다.</p></div>
             <div className="amaon-guide-link-card"><span>AMAON PLAYER LINK</span><strong>나의 프로필로<br />바로 연결</strong><b>PROFILE · STORY · FILM →</b></div>

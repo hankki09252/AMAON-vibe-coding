@@ -1509,6 +1509,28 @@ footer p, footer small { color: #777; }
 .amaon-guide-register li > span { color: var(--brand-orange); font-size: 25px; font-weight: 1000; font-style: italic; text-align: center; }
 .amaon-guide-register li strong { display: block; font-size: 14px; }
 .amaon-guide-register li p { margin: 7px 0 0; color: #999; font-size: 10px; line-height: 1.65; }
+.amaon-guide-install { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(360px,.95fr); gap: clamp(28px,5vw,60px); align-items: center; padding: 55px clamp(28px,6vw,68px); overflow: hidden; background: radial-gradient(circle at 85% 18%, rgba(255,98,0,.19), transparent 30%), #0a0a0a; color: white; }
+.amaon-guide-install-copy > small { color: var(--brand-orange); font-size: 8px; font-weight: 1000; letter-spacing: 1.6px; }
+.amaon-guide-install-copy > h3 { margin: 16px 0; font-size: clamp(28px,4vw,45px); line-height: 1.12; letter-spacing: -2.2px; }
+.amaon-guide-install-copy > h3 em { color: var(--brand-orange); font-style: normal; }
+.amaon-guide-install-copy > p { margin: 0; color: #aaa; font-size: 11px; line-height: 1.85; word-break: keep-all; }
+.amaon-guide-install-copy > p strong { color: white; }
+.amaon-guide-install-copy ol { margin: 25px 0 0; padding: 0; list-style: none; border-top: 1px solid #333; }
+.amaon-guide-install-copy li { display: grid; grid-template-columns: 38px 1fr; gap: 13px; padding: 14px 0; border-bottom: 1px solid #292929; }
+.amaon-guide-install-copy li > span { color: var(--brand-orange); font-size: 17px; font-weight: 1000; font-style: italic; }
+.amaon-guide-install-copy li strong { display: block; font-size: 12px; }
+.amaon-guide-install-copy li p { margin: 5px 0 0; color: #777; font-size: 9px; line-height: 1.65; word-break: keep-all; }
+.amaon-guide-install-note { display: block; margin-top: 17px; color: var(--brand-orange); font-size: 9px; font-weight: 900; }
+.amaon-guide-install-visuals { display: grid; grid-template-columns: minmax(0,1fr) 150px; gap: 13px; align-items: end; }
+.amaon-guide-install-visuals figure { margin: 0; }
+.amaon-guide-install-screen { position: relative; padding: 10px 10px 33px; border: 1px solid #3b3b3b; border-radius: 24px; background: #181818; box-shadow: 14px 14px 0 rgba(255,98,0,.13); }
+.amaon-guide-install-screen img { display: block; width: 100%; max-height: 510px; object-fit: cover; object-position: top; border-radius: 15px; }
+.amaon-guide-install-screen figcaption { position: absolute; left: 18px; bottom: 11px; color: #888; font-size: 8px; font-weight: 1000; letter-spacing: 1px; }
+.amaon-guide-installed-icon { display: flex; flex-direction: column; gap: 15px; padding: 18px; border: 1px solid #3b3b3b; border-top: 3px solid var(--brand-orange); background: #111; }
+.amaon-guide-installed-icon img { width: 82px; height: 82px; object-fit: cover; border-radius: 20px; box-shadow: 0 9px 24px rgba(0,0,0,.45); }
+.amaon-guide-installed-icon figcaption { display: flex; flex-direction: column; gap: 8px; }
+.amaon-guide-installed-icon small { color: var(--brand-orange); font-size: 7px; font-weight: 1000; letter-spacing: 1px; }
+.amaon-guide-installed-icon strong { font-size: 13px; line-height: 1.45; }
 .amaon-guide-share { display: grid; grid-template-columns: 1.3fr .7fr; gap: 30px; padding: 55px clamp(28px, 6vw, 68px); background: #f4f1e9; }
 .amaon-guide-share small { color: var(--brand-orange); font-size: 8px; font-weight: 1000; letter-spacing: 1.6px; }
 .amaon-guide-share h3 { margin: 16px 0; font-size: clamp(28px, 4vw, 45px); line-height: 1.12; letter-spacing: -2.3px; }
@@ -1587,6 +1609,7 @@ footer p, footer small { color: #777; }
   .amaon-guide-head h2 { letter-spacing: -2.8px; }
   .amaon-guide-features { grid-template-columns: 1fr; }
   .amaon-guide-features article { min-height: 180px; }
+  .amaon-guide-install { grid-template-columns: 1fr; }
   .amaon-guide-share { grid-template-columns: 1fr; }
   .amaon-guide-support { grid-template-columns: 1fr; }
   .amaon-guide-link-card { min-height: 195px; }
@@ -1622,6 +1645,13 @@ footer p, footer small { color: #777; }
   .amaon-guide-section-title { grid-template-columns: 1fr; gap: 9px; }
   .amaon-guide-section-title > p { grid-column: auto; }
   .amaon-guide-register li { grid-template-columns: 42px 1fr; gap: 10px; padding: 15px 0; }
+  .amaon-guide-install { padding: 40px 20px; }
+  .amaon-guide-install-visuals { grid-template-columns: minmax(0,1fr) 112px; gap: 9px; }
+  .amaon-guide-install-screen { padding: 7px 7px 29px; border-radius: 19px; }
+  .amaon-guide-install-screen img { max-height: 430px; border-radius: 13px; }
+  .amaon-guide-installed-icon { padding: 12px; }
+  .amaon-guide-installed-icon img { width: 64px; height: 64px; border-radius: 16px; }
+  .amaon-guide-installed-icon strong { font-size: 11px; }
   .amaon-guide-share { padding: 40px 20px; }
   .amaon-guide-support { padding: 40px 20px; }
   .amaon-guide-mission { grid-template-columns: 1fr; gap: 12px; padding: 30px 20px; }
