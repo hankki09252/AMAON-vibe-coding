@@ -41,6 +41,7 @@ import PwaInstallButton from "./pwa-install-button";
 import VideoRankings from "./video-rankings";
 import CommunityBoard from "./community-board";
 import { managedTeamOptions } from "./team-directory";
+import { createSupabaseBrowserClient } from "./supabase/browser";
 
 type School = {
   name: string;
@@ -257,6 +258,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [supportCopyNotice, setSupportCopyNotice] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState("top");
   const [showMobileBack, setShowMobileBack] = useState(false);
 
@@ -575,6 +577,18 @@ export default function Home() {
     }
   }
 
+  async function signOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    const { error } = await createSupabaseBrowserClient().auth.signOut();
+    if (error) {
+      setSigningOut(false);
+      window.alert("로그아웃하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    window.location.replace("/login");
+  }
+
   return (
     <main className="member-home">
       <header className="topbar">
@@ -597,6 +611,7 @@ export default function Home() {
         </nav>
         <PwaInstallButton />
         <button className="outline-button" onClick={() => jumpToSection("community")}>내 회원정보</button>
+        <button type="button" className="logout-button" onClick={() => void signOut()} disabled={signingOut}>{signingOut ? "로그아웃 중…" : "로그아웃"}</button>
         <div className="mobile-top-actions">
           <button type="button" className="mobile-account-button" onClick={() => jumpToSection("community")} aria-label="내 회원정보">
             <span className="mobile-account-glyph" aria-hidden="true" />
@@ -658,6 +673,9 @@ export default function Home() {
               <span>운영자</span><strong>학교·선수 관리</strong><b>→</b>
             </button>
           )}
+          <button type="button" className="mobile-logout-link" onClick={() => void signOut()} disabled={signingOut}>
+            <span><small>ACCOUNT</small><strong>{signingOut ? "로그아웃 중…" : "로그아웃"}</strong></span><b>→</b>
+          </button>
           <p className="mobile-drawer-note">학교와 선수 기록은 기존 데이터 그대로 유지됩니다.</p>
         </aside>
       </div>

@@ -45,6 +45,9 @@ body { background: var(--brand-black); color: #111; font-family: var(--brand-fon
 .topbar nav a { color: #dedede; text-transform: uppercase; }
 .topbar nav a:hover { color: var(--brand-orange); }
 .outline-button { border-color: var(--brand-orange); background: var(--brand-orange); color: #050505; transform: skew(-7deg); }
+.logout-button { min-height: 38px; padding: 0 13px; border: 1px solid #555; background: #0b0b0b; color: #ddd; font: inherit; font-size: 10px; font-weight: 900; cursor: pointer; }
+.logout-button:hover, .logout-button:focus-visible { border-color: var(--brand-orange); color: var(--brand-orange); outline: none; }
+.logout-button:disabled { opacity: .55; cursor: wait; }
 
 .hero { background: #050505; border-bottom: 4px solid var(--brand-orange); }
 .hero-copy { position: relative; isolation: isolate; }
@@ -678,7 +681,8 @@ footer p, footer small { color: #777; }
 
   .topbar > nav,
   .topbar > .pwa-install-button,
-  .topbar > .outline-button {
+  .topbar > .outline-button,
+  .topbar > .logout-button {
     display: none;
   }
 
@@ -1476,6 +1480,12 @@ footer p, footer small { color: #777; }
 .mobile-guide-link small { color: var(--brand-orange); font-size: 7px; letter-spacing: 1.4px; }
 .mobile-guide-link strong { font-size: 13px; }
 .mobile-guide-link > b { color: var(--brand-orange); font-size: 18px; }
+.mobile-logout-link { width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 61px; margin-top: 10px; padding: 11px 16px; border: 1px solid #3a3a3a; background: #0c0c0c; color: white; text-align: left; cursor: pointer; }
+.mobile-logout-link > span { display: grid; gap: 4px; }
+.mobile-logout-link small { color: #777; font-size: 7px; font-weight: 900; letter-spacing: 1.4px; }
+.mobile-logout-link strong { font-size: 13px; }
+.mobile-logout-link > b { color: var(--brand-orange); font-size: 18px; }
+.mobile-logout-link:disabled { opacity: .55; cursor: wait; }
 
 .amaon-guide-backdrop { position: fixed; z-index: 140; inset: 0; display: grid; place-items: center; padding: 22px; overflow-y: auto; background: rgba(0,0,0,.9); backdrop-filter: blur(10px); }
 .amaon-guide-modal { position: relative; width: min(1120px, 100%); max-height: calc(100vh - 44px); overflow-y: auto; background: #f4f1e9; color: #101010; border-top: 6px solid var(--brand-orange); box-shadow: 16px 16px 0 rgba(255,98,0,.22); }
