@@ -1518,6 +1518,18 @@ footer p, footer small { color: #777; }
 .amaon-guide-link-card span { color: #888; font-size: 8px; font-weight: 1000; letter-spacing: 1.5px; }
 .amaon-guide-link-card strong { font-size: 27px; line-height: 1.2; }
 .amaon-guide-link-card b { color: var(--brand-orange); font-size: 8px; letter-spacing: 1.2px; }
+.amaon-guide-support { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(300px,.75fr); gap: 34px; align-items: center; padding: 52px clamp(28px,6vw,68px); background: radial-gradient(circle at 90% 10%, rgba(255,98,0,.16), transparent 32%), #0b0b0b; color: white; }
+.amaon-guide-support > div:first-child > small { color: var(--brand-orange); font-size: 8px; font-weight: 1000; letter-spacing: 1.6px; }
+.amaon-guide-support h3 { margin: 16px 0; font-size: clamp(26px,3.5vw,40px); line-height: 1.18; letter-spacing: -1.8px; }
+.amaon-guide-support h3 em { color: var(--brand-orange); font-style: normal; }
+.amaon-guide-support p { margin: 0; color: #aaa; font-size: 11px; line-height: 1.85; word-break: keep-all; }
+.amaon-guide-support > div:first-child > span { display: block; margin-top: 16px; color: #707070; font-size: 9px; }
+.amaon-guide-support-account { display: flex; flex-direction: column; padding: 25px; border: 1px solid #3b3b3b; border-top: 4px solid var(--brand-orange); background: #141414; }
+.amaon-guide-support-account > small { color: #999; font-size: 9px; font-weight: 900; letter-spacing: 1px; }
+.amaon-guide-support-account > strong { margin-top: 11px; color: white; font-size: clamp(22px,2.7vw,31px); letter-spacing: -.8px; }
+.amaon-guide-support-account > span { margin-top: 6px; color: #aaa; font-size: 11px; }
+.amaon-guide-support-account button { min-height: 46px; margin-top: 22px; border: 1px solid var(--brand-orange); background: var(--brand-orange); color: #080808; font: inherit; font-size: 10px; font-weight: 1000; cursor: pointer; }
+.amaon-guide-support-account button b { margin-left: 8px; }
 .amaon-guide-mission { display: grid; grid-template-columns: .35fr 1fr auto; gap: 25px; align-items: center; padding: 34px clamp(28px, 6vw, 68px); background: var(--brand-orange); color: #080808; }
 .amaon-guide-mission small { font-size: 8px; font-weight: 1000; letter-spacing: 1.4px; }
 .amaon-guide-mission > strong { font-size: 20px; line-height: 1.45; }
@@ -1576,6 +1588,7 @@ footer p, footer small { color: #777; }
   .amaon-guide-features { grid-template-columns: 1fr; }
   .amaon-guide-features article { min-height: 180px; }
   .amaon-guide-share { grid-template-columns: 1fr; }
+  .amaon-guide-support { grid-template-columns: 1fr; }
   .amaon-guide-link-card { min-height: 195px; }
   .support-message h2 { letter-spacing: -2px; }
 }
@@ -1610,6 +1623,7 @@ footer p, footer small { color: #777; }
   .amaon-guide-section-title > p { grid-column: auto; }
   .amaon-guide-register li { grid-template-columns: 42px 1fr; gap: 10px; padding: 15px 0; }
   .amaon-guide-share { padding: 40px 20px; }
+  .amaon-guide-support { padding: 40px 20px; }
   .amaon-guide-mission { grid-template-columns: 1fr; gap: 12px; padding: 30px 20px; }
   .amaon-guide-mission button { grid-column: auto; width: 100%; }
   .support-section { padding-inline: 20px; }

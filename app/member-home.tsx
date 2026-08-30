@@ -956,6 +956,21 @@ export default function Home() {
             <div className="amaon-guide-link-card"><span>AMAON PLAYER LINK</span><strong>나의 프로필로<br />바로 연결</strong><b>PROFILE · STORY · FILM →</b></div>
           </section>
 
+          <section className="amaon-guide-support">
+            <div>
+              <small>KEEP AMAON ON · COFFEE SUPPORT</small>
+              <h3>선수들의 이야기를 계속 알리려면<br /><em>아마ON을 유지하는 비용이 필요합니다.</em></h3>
+              <p>아마ON은 서버 운영, 데이터베이스, 영상·이미지 트래픽, 도메인과 지속적인 유지보수에 비용이 들어갑니다. 아마ON이 도움이 되셨다면 커피 한 잔의 마음으로 응원해 주세요. 보내주신 후원은 더 많은 아마야구 선수의 프로필과 영상을 안정적으로 알리는 데 사용하겠습니다.</p>
+              <span>후원은 전적으로 자유이며, 서비스 이용이나 선수 프로필 등록 여부와는 무관합니다.</span>
+            </div>
+            <div className="amaon-guide-support-account" aria-label="아마ON 커피 후원 계좌">
+              <small>NH농협은행</small>
+              <strong>302-2177-2877-01</strong>
+              <span>한끼방패 브랜드랩</span>
+              <button type="button" onClick={() => void copySupportAccount()}>{supportCopyNotice || "계좌번호 복사"} <b>→</b></button>
+            </div>
+          </section>
+
           <div className="amaon-guide-mission"><small>OUR GOAL</small><strong>아마야구 선수가 자신의 가능성을 보여주는<br /><em>하나의 포트폴리오</em>가 되게 하는 것.</strong><button type="button" onClick={() => { setGuideOpen(false); jumpToSection("players"); }}>선수 프로필 보기 <span>→</span></button></div>
         </section>
       </div>}
