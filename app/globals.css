@@ -33,26 +33,28 @@
 
 .region-settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 8px;
 }
 
-.region-settings-grid label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.region-status-card {
+  display: grid;
+  gap: 10px;
   border: 1px solid #ccc;
   background: #fff;
-  padding: 11px 12px;
-  cursor: pointer;
+  padding: 12px;
 }
 
-.region-settings-grid label.active { border-color: #ff6500; box-shadow: inset 4px 0 #ff6500; }
-.region-settings-grid input { position: absolute; opacity: 0; pointer-events: none; }
-.region-settings-grid span { font-weight: 800; }
-.region-settings-grid small { color: #888; }
-.region-settings-grid label.active small { color: #dc5600; }
+.region-status-card.public { border-color: #ff6500; box-shadow: inset 4px 0 #ff6500; }
+.region-status-card.editing { border-color: #b57700; box-shadow: inset 4px 0 #e4a000; }
+.region-status-card > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.region-status-card > div:first-child strong { font-size: 14px; }
+.region-status-card > div:first-child small { color: #777; font-size: 10px; }
+.region-status-card > div:last-child { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
+.region-status-card button { min-height: 31px; padding: 5px; border: 1px solid #d2d2d2; background: #f4f4f4; color: #666; font-size: 10px; font-weight: 800; cursor: pointer; }
+.region-status-card button.active { border-color: #111; background: #111; color: #fff; }
+.region-status-card.public button.active { border-color: #ff6500; background: #ff6500; color: #111; }
+.region-status-card.editing button.active { border-color: #e4a000; background: #e4a000; color: #111; }
 
 .region-settings-actions {
   display: flex;
@@ -73,11 +75,32 @@
 .region-settings-actions button:disabled { opacity: .55; cursor: wait; }
 .region-settings-actions p { margin: 0; font-size: 13px; font-weight: 700; }
 
+.region-editor-workspace { margin-top: 24px; padding: 20px; border: 1px solid #d4a042; background: #111; color: #fff; }
+.region-editor-head { display: grid; grid-template-columns: 1fr minmax(190px,280px); gap: 22px; align-items: end; }
+.region-editor-head > div { display: grid; gap: 6px; }
+.region-editor-head small { color: #f2a900; font-size: 9px; font-weight: 900; letter-spacing: 1.3px; }
+.region-editor-head strong { font-size: 20px; }
+.region-editor-head p { margin: 0; color: #aaa; font-size: 11px; }
+.region-editor-head label { display: grid; gap: 6px; color: #aaa; font-size: 10px; font-weight: 800; }
+.region-editor-head select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid #555; background: #fff; color: #111; }
+.region-editor-school-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 8px; margin-top: 18px; }
+.region-editor-school-grid > button { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 82px; padding: 13px 14px; border: 1px solid #3d3d3d; background: #191919; color: #fff; text-align: left; cursor: pointer; }
+.region-editor-school-grid > button:hover, .region-editor-school-grid > button:focus-visible { border-color: #f2a900; outline: none; }
+.region-editor-school-grid span { display: grid; gap: 3px; }
+.region-editor-school-grid small { color: #f2a900; font-size: 9px; font-weight: 900; }
+.region-editor-school-grid strong { font-size: 14px; }
+.region-editor-school-grid em { color: #888; font-size: 10px; font-style: normal; }
+.region-editor-school-grid b { color: #f2a900; font-size: 10px; white-space: nowrap; }
+.region-editor-empty { margin: 18px 0 0; color: #888; font-size: 12px; }
+
 @media (max-width: 700px) {
   .region-settings > div:first-child { align-items: flex-start; flex-direction: column; gap: 5px; }
   .region-settings { padding: 16px; }
-  .region-settings-grid { grid-template-columns: repeat(2, 1fr); }
+  .region-settings-grid { grid-template-columns: 1fr; }
   .region-settings-actions { align-items: flex-start; flex-direction: column; }
+  .region-editor-workspace { padding: 15px; }
+  .region-editor-head { grid-template-columns: 1fr; }
+  .region-editor-school-grid { grid-template-columns: 1fr; }
 }
 .member-badge-card .member-profile-edit-toggle{margin-top:8px;width:max-content;background:transparent;color:#ff7a24;border:1px solid #ff6200;padding:8px 10px}.member-profile-edit{max-width:1370px;margin:-12px auto 28px;padding:20px 24px;background:#191919;border:1px solid #353535;display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:14px;align-items:end}.member-profile-edit h3,.member-profile-edit p{margin:0}.member-profile-edit p{margin-top:6px;color:#99a6bc;font-size:13px}.member-profile-edit label{display:grid;gap:7px;font-size:12px;font-weight:900;color:#bac4d4}.member-profile-edit input{box-sizing:border-box;width:100%;border:1px solid #555;background:#fff;color:#111;padding:12px;font:inherit}.member-profile-edit>button{border:0;background:#ff6200;color:#080808;font-weight:900;padding:13px 22px;cursor:pointer}@media(max-width:900px){.member-profile-edit{grid-template-columns:1fr 1fr}.member-profile-edit>div{grid-column:1/-1}}@media(max-width:560px){.member-profile-edit{grid-template-columns:1fr}}
 

@@ -248,6 +248,9 @@ export default function Home() {
   const [playerDirectoryRegion, setPlayerDirectoryRegion] = useState("전체");
   const [visibleRegions, setVisibleRegions] = useState(defaultVisibleRegions);
   const [regionDraft, setRegionDraft] = useState(defaultVisibleRegions);
+  const [editingRegions, setEditingRegions] = useState<string[]>([]);
+  const [regionEditingDraft, setRegionEditingDraft] = useState<string[]>([]);
+  const [regionEditorRegion, setRegionEditorRegion] = useState("서울");
   const [isAdmin, setIsAdmin] = useState(false);
   const [regionSettingsOpen, setRegionSettingsOpen] = useState(false);
   const [savingRegions, setSavingRegions] = useState(false);
@@ -271,6 +274,13 @@ export default function Home() {
       if (Array.isArray(visibility?.visibleRegions) && visibility.visibleRegions.length) {
         setVisibleRegions(visibility.visibleRegions);
         setRegionDraft(visibility.visibleRegions);
+      }
+      if (Array.isArray(visibility?.editingRegions)) {
+        setEditingRegions(visibility.editingRegions);
+        setRegionEditingDraft(visibility.editingRegions);
+        const firstSafeRegion = visibility.editingRegions[0]
+          ?? regions.slice(1).find((item) => !visibility.visibleRegions?.includes(item));
+        if (firstSafeRegion) setRegionEditorRegion(firstSafeRegion);
       }
       setIsAdmin(Boolean(admin?.isAdmin));
       if (Array.isArray(rosterManagement?.items)) setManagedRosterPlayers(rosterManagement.items);
@@ -441,7 +451,13 @@ export default function Home() {
     });
   }, [playerDirectoryQuery, playerDirectoryRegion, publishedPlayerSearchIndex]);
   const visiblePlayerDirectory = useMemo(() => filteredPlayerDirectory.slice(0, 48), [filteredPlayerDirectory]);
-  const activeRosterSchool = activeRosterSection ? publishedSchools.find((school) => rosterSectionBySchool[school.name] === activeRosterSection) : undefined;
+  const regionEditorSchools = useMemo(
+    () => schools.filter((school) => school.region === regionEditorRegion && rosterSectionBySchool[school.name]),
+    [regionEditorRegion],
+  );
+  const activeRosterSchool = activeRosterSection
+    ? (isAdmin ? schools : publishedSchools).find((school) => rosterSectionBySchool[school.name] === activeRosterSection)
+    : undefined;
   const ActiveRosterComponent = activeRosterSection ? customRosterComponents[activeRosterSection] : undefined;
 
   const filteredSchools = useMemo(() => {
@@ -538,9 +554,15 @@ export default function Home() {
     if (playerMatch) openSearchedPlayer(playerMatch);
   }
 
-  function toggleRegionDraft(item: string) {
+  function setRegionStatus(item: string, status: "public" | "editing" | "hidden") {
     setRegionNotice("");
-    setRegionDraft((current) => current.includes(item) ? current.filter((regionName) => regionName !== item) : [...current, item]);
+    setRegionDraft((current) => status === "public"
+      ? [...current.filter((regionName) => regionName !== item), item]
+      : current.filter((regionName) => regionName !== item));
+    setRegionEditingDraft((current) => status === "editing"
+      ? [...current.filter((regionName) => regionName !== item), item]
+      : current.filter((regionName) => regionName !== item));
+    if (status === "editing") setRegionEditorRegion(item);
   }
 
   async function saveRegionVisibility() {
@@ -548,19 +570,23 @@ export default function Home() {
       setRegionNotice("공개할 지역을 한 곳 이상 선택해 주세요.");
       return;
     }
+    const newlyPublic = regionDraft.filter((item) => !visibleRegions.includes(item));
+    if (newlyPublic.length && !window.confirm(`${newlyPublic.join(", ")} 지역을 지금 공개할까요? 공개 즉시 일반 회원의 학교·선수 검색에 표시됩니다.`)) return;
     setSavingRegions(true);
     setRegionNotice("");
     try {
       const response = await fetch("/api/region-visibility", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visibleRegions: regionDraft }),
+        body: JSON.stringify({ visibleRegions: regionDraft, editingRegions: regionEditingDraft }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "설정을 저장하지 못했습니다.");
       setVisibleRegions(result.visibleRegions);
       setRegionDraft(result.visibleRegions);
-      setRegionNotice("공개 지역 설정을 저장했습니다.");
+      setEditingRegions(result.editingRegions || []);
+      setRegionEditingDraft(result.editingRegions || []);
+      setRegionNotice("지역 상태를 저장했습니다. ‘편집 중’ 지역은 운영자에게만 표시됩니다.");
     } catch (error) {
       setRegionNotice(error instanceof Error ? error.message : "설정을 저장하지 못했습니다.");
     } finally {
@@ -780,24 +806,43 @@ export default function Home() {
         </div>
         {isAdmin && (
           <div className="region-admin">
-            <button type="button" className="region-admin-toggle" onClick={() => { setRegionSettingsOpen((open) => !open); setRegionDraft(visibleRegions); setRegionNotice(""); }}>
+            <button type="button" className="region-admin-toggle" onClick={() => { setRegionSettingsOpen((open) => !open); setRegionDraft(visibleRegions); setRegionEditingDraft(editingRegions); setRegionNotice(""); }}>
               지역 공개 설정 {regionSettingsOpen ? "닫기" : "열기"}
             </button>
             {regionSettingsOpen && (
               <div className="region-settings" aria-label="지역 공개 설정">
-                <div><strong>서비스에 공개할 지역</strong><span>숨긴 지역은 학교 목록·검색·선수 프로필에서 표시되지 않습니다.</span></div>
+                <div><strong>지역 상태 관리</strong><span>‘편집 중’과 ‘숨김’ 지역은 일반 회원의 학교 목록·검색·선수 프로필에 표시되지 않습니다.</span></div>
                 <div className="region-settings-grid">
-                  {regions.slice(1).map((item) => (
-                    <label key={item} className={regionDraft.includes(item) ? "active" : ""}>
-                      <input type="checkbox" checked={regionDraft.includes(item)} onChange={() => toggleRegionDraft(item)} />
-                      <span>{item}</span><small>{regionDraft.includes(item) ? "공개" : "숨김"}</small>
-                    </label>
-                  ))}
+                  {regions.slice(1).map((item) => {
+                    const draftStatus = regionDraft.includes(item) ? "public" : regionEditingDraft.includes(item) ? "editing" : "hidden";
+                    const savedStatus = visibleRegions.includes(item) ? "현재 공개" : editingRegions.includes(item) ? "현재 편집 중 · 비공개" : "현재 숨김";
+                    return <article key={item} className={`region-status-card ${draftStatus}`}>
+                      <div><strong>{item}</strong><small>{savedStatus}</small></div>
+                      <div role="group" aria-label={`${item} 지역 상태`}>
+                        <button type="button" className={draftStatus === "public" ? "active" : ""} aria-pressed={draftStatus === "public"} onClick={() => setRegionStatus(item, "public")}>공개</button>
+                        <button type="button" className={draftStatus === "editing" ? "active" : ""} aria-pressed={draftStatus === "editing"} onClick={() => setRegionStatus(item, "editing")}>편집 중</button>
+                        <button type="button" className={draftStatus === "hidden" ? "active" : ""} aria-pressed={draftStatus === "hidden"} onClick={() => setRegionStatus(item, "hidden")}>숨김</button>
+                      </div>
+                    </article>;
+                  })}
                 </div>
                 <div className="region-settings-actions">
-                  <button type="button" onClick={saveRegionVisibility} disabled={savingRegions}>{savingRegions ? "저장 중…" : "설정 저장"}</button>
+                  <button type="button" onClick={saveRegionVisibility} disabled={savingRegions}>{savingRegions ? "저장 중…" : "지역 상태 저장"}</button>
                   {regionNotice && <p>{regionNotice}</p>}
                 </div>
+                <section className="region-editor-workspace" aria-label="비공개 지역 학교와 선수 편집">
+                  <div className="region-editor-head">
+                    <div><small>ADMIN EDIT WORKSPACE</small><strong>비공개 상태로 학교·선수 편집</strong><p>이곳에서 학교를 열어도 지역 공개 상태는 바뀌지 않습니다.</p></div>
+                    <label>편집할 지역<select value={regionEditorRegion} onChange={(event) => setRegionEditorRegion(event.target.value)}>{regions.slice(1).map((item) => <option key={item} value={item}>{item} · {regionDraft.includes(item) ? "공개" : regionEditingDraft.includes(item) ? "편집 중" : "숨김"}</option>)}</select></label>
+                  </div>
+                  <div className="region-editor-school-grid">
+                    {regionEditorSchools.map((school) => {
+                      const sectionId = rosterSectionBySchool[school.name];
+                      return <button type="button" key={school.name} onClick={() => { if (sectionId) jumpToSection(sectionId); }}><span><small>{school.region}</small><strong>{school.name}</strong><em>감독 {school.coach} · {school.players}명</em></span><b>학교·선수 편집 →</b></button>;
+                    })}
+                  </div>
+                  {!regionEditorSchools.length && <p className="region-editor-empty">이 지역에는 편집 가능한 학교 데이터가 없습니다.</p>}
+                </section>
               </div>
             )}
           </div>
