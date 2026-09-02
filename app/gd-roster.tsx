@@ -935,6 +935,17 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     }
   }
 
+  useEffect(() => {
+    const updateLike = (event: Event) => {
+      const detail = (event as CustomEvent<{ key: string; count: number; liked: boolean }>).detail;
+      if (detail?.key && typeof detail.count === "number" && typeof detail.liked === "boolean") {
+        setLikes((current) => ({ ...current, [detail.key]: { count: detail.count, liked: detail.liked } }));
+      }
+    };
+    window.addEventListener("amaon:likes-changed", updateLike);
+    return () => window.removeEventListener("amaon:likes-changed", updateLike);
+  }, []);
+
   async function deleteMedia(item: MediaItem) {
     if (!window.confirm("이 사진 또는 영상을 삭제할까요? 삭제하면 복구할 수 없습니다.")) return;
     const response = await fetch(`/api/media?action=delete&key=${encodeURIComponent(item.key)}`, { method: "DELETE" });

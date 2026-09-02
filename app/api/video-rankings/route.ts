@@ -16,7 +16,7 @@ export async function GET() {
       .in("category", videoCategories)
       .order("uploaded_at", { ascending: false })
       .limit(1000),
-    db.from("media_likes").select("media_key"),
+    db.from("media_likes").select("media_key, visitor_id"),
   ]);
 
   if (mediaError || likesError) {
@@ -24,7 +24,11 @@ export async function GET() {
   }
 
   const counts = new Map<string, number>();
-  for (const row of likeRows || []) counts.set(row.media_key, (counts.get(row.media_key) || 0) + 1);
+  const likedKeys = new Set<string>();
+  for (const row of likeRows || []) {
+    counts.set(row.media_key, (counts.get(row.media_key) || 0) + 1);
+    if (row.visitor_id === user.id) likedKeys.add(row.media_key);
+  }
 
   const ranked = [...(media || [])]
     .map((row) => ({ ...row, like_count: counts.get(row.storage_key) || 0 }))
@@ -42,6 +46,7 @@ export async function GET() {
       contentType: row.content_type,
       uploadedAt: row.uploaded_at,
       likeCount: row.like_count,
+      liked: likedKeys.has(row.storage_key),
       source: "youtube",
       videoId: youtube[2],
       url: youtubeEmbedUrl(youtube[2]),
@@ -55,6 +60,7 @@ export async function GET() {
       contentType: row.content_type,
       uploadedAt: row.uploaded_at,
       likeCount: row.like_count,
+      liked: likedKeys.has(row.storage_key),
       url: signed?.signedUrl || "",
       source: "upload",
       thumbnailUrl: "",
