@@ -109,6 +109,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [notice, setNotice] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("photo");
   const [likes, setLikes] = useState<Record<string, LikeState>>({});
+  const [likingKeys, setLikingKeys] = useState<Set<string>>(new Set());
   const [isAdmin, setIsAdmin] = useState(false);
   const [emblem, setEmblem] = useState<TeamEmblem | null>(null);
   const [emblemUploading, setEmblemUploading] = useState(false);
@@ -907,15 +908,31 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   }
 
   async function toggleLike(item: MediaItem) {
-    const response = await fetch("/api/likes", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ key: item.key }),
-    });
-    if (!response.ok) return;
-    const data = await response.json() as { key: string; count: number; liked: boolean };
-    setLikes((current) => ({ ...current, [data.key]: { count: data.count, liked: data.liked } }));
-    window.dispatchEvent(new CustomEvent("amaon:likes-changed"));
+    if (likingKeys.has(item.key)) return;
+    setLikingKeys((current) => new Set(current).add(item.key));
+    setNotice("");
+    try {
+      const response = await fetch("/api/likes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: item.key }),
+      });
+      const data = await response.json().catch(() => null) as { key?: string; count?: number; liked?: boolean; error?: string } | null;
+      if (!response.ok || !data?.key || typeof data.count !== "number" || typeof data.liked !== "boolean") {
+        throw new Error(data?.error ?? (response.status === 401 ? "로그인 후 좋아요를 누를 수 있습니다." : "좋아요를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."));
+      }
+      setLikes((current) => ({ ...current, [data.key!]: { count: data.count!, liked: data.liked! } }));
+      setNotice(data.liked ? "좋아요를 눌렀습니다." : "좋아요를 취소했습니다.");
+      window.dispatchEvent(new CustomEvent("amaon:likes-changed"));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "좋아요를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setLikingKeys((current) => {
+        const next = new Set(current);
+        next.delete(item.key);
+        return next;
+      });
+    }
   }
 
   async function deleteMedia(item: MediaItem) {
@@ -1246,7 +1263,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             <div className="gd-media-grid">
               {selectedCategoryMedia.map((item) => {
                 const like = likes[item.key] ?? { count: 0, liked: false };
-                return <figure className={item.orientation === "portrait" ? "portrait" : "landscape"} key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} loading="lazy" decoding="async" /> : item.source === "youtube" && item.videoId ? <div className="gd-youtube-player"><iframe src={youtubeEmbedUrl(item.videoId)} title={`${selectedDisplay.name} ${activeCategory.label}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}{item.source === "youtube" ? " · YOUTUBE" : ""}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
+                const liking = likingKeys.has(item.key);
+                return <figure className={item.orientation === "portrait" ? "portrait" : "landscape"} key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} loading="lazy" decoding="async" /> : item.source === "youtube" && item.videoId ? <div className="gd-youtube-player"><iframe src={youtubeEmbedUrl(item.videoId)} title={`${selectedDisplay.name} ${activeCategory.label}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}{item.source === "youtube" ? " · YOUTUBE" : ""}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={liking ? "좋아요 처리 중" : like.liked ? "좋아요 취소" : "좋아요"} aria-busy={liking} disabled={liking}>♥ <span>{liking ? "…" : like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
               })}
               {!selectedCategoryMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 {activeCategory.label}이 없습니다.</strong><p>{selectedCategory === "photo" ? "JPG·PNG·WEBP 사진을 올려주세요." : "공개 유튜브 영상 주소를 등록해 주세요."}</p></div>}
             </div>
@@ -1261,11 +1279,12 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
           <div className="gd-media-feed-scroll" ref={mediaFeedRef} onScroll={(event) => setActiveMediaIndex(Math.min(Math.round(event.currentTarget.scrollTop / event.currentTarget.clientHeight), selectedCategoryMedia.length - 1))}>
             {selectedCategoryMedia.map((item, index) => {
               const like = likes[item.key] ?? { count: 0, liked: false };
+              const liking = likingKeys.has(item.key);
               return <article className="gd-media-feed-slide" key={item.key} aria-label={`${index + 1}번째 미디어`}>
                 <div className="gd-media-feed-stage">
                   {item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} loading="lazy" decoding="async" /> : item.source === "youtube" && item.videoId ? <div className={`gd-youtube-feed-player ${item.orientation === "portrait" ? "portrait" : "landscape"}`}><iframe src={youtubeEmbedUrl(item.videoId, index === activeMediaIndex)} title={`${selectedDisplay.name} ${activeCategory.label} ${index + 1}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video ref={(node) => { mediaVideoRefs.current[index] = node; }} src={item.url} controls playsInline muted loop preload={Math.abs(index - activeMediaIndex) <= 1 ? "metadata" : "none"} />}
                 </div>
-                <div className="gd-media-feed-meta"><div><small>{activeCategory.shortLabel}</small><strong>{selectedDisplay.number}. {selectedDisplay.name}</strong><span>{teamLabel}</span></div><div className="gd-media-feed-actions"><button type="button" className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={like.liked ? "좋아요 취소" : "좋아요"}>♥ <span>{like.count}</span></button>{isAdmin && <button type="button" className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></div>
+                <div className="gd-media-feed-meta"><div><small>{activeCategory.shortLabel}</small><strong>{selectedDisplay.number}. {selectedDisplay.name}</strong><span>{teamLabel}</span></div><div className="gd-media-feed-actions"><button type="button" className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={liking ? "좋아요 처리 중" : like.liked ? "좋아요 취소" : "좋아요"} aria-busy={liking} disabled={liking}>♥ <span>{liking ? "…" : like.count}</span></button>{isAdmin && <button type="button" className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></div>
               </article>;
             })}
           </div>

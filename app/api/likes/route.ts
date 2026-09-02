@@ -28,11 +28,14 @@ export async function POST(request: Request) {
   if (!isMediaKey(key)) return Response.json({ error: "올바르지 않은 미디어입니다." }, { status: 400 });
   const db = createSupabaseAdminClient();
   const existing = await db.from("media_likes").select("media_key").eq("media_key", key).eq("visitor_id", user.id).maybeSingle();
+  if (existing.error) return Response.json({ error: existing.error.message }, { status: 500 });
   if (existing.data) {
-    await db.from("media_likes").delete().eq("media_key", key).eq("visitor_id", user.id);
+    const { error } = await db.from("media_likes").delete().eq("media_key", key).eq("visitor_id", user.id);
+    if (error) return Response.json({ error: error.message }, { status: 500 });
     await db.from("member_notifications").delete().eq("notification_type", "media_like").eq("media_key", key).eq("actor_id", user.id);
   } else {
-    await db.from("media_likes").insert({ media_key: key, visitor_id: user.id });
+    const { error } = await db.from("media_likes").insert({ media_key: key, visitor_id: user.id });
+    if (error) return Response.json({ error: error.message }, { status: 500 });
     const { data: media } = await db.from("media_items").select("player_id").eq("storage_key", key).maybeSingle();
     const playerId = String(media?.player_id || key.split("/")[1] || "");
     if (playerId) {
@@ -48,6 +51,7 @@ export async function POST(request: Request) {
       if (rows.length) await db.from("member_notifications").insert(rows);
     }
   }
-  const { count } = await db.from("media_likes").select("*", { count: "exact", head: true }).eq("media_key", key);
+  const { count, error: countError } = await db.from("media_likes").select("*", { count: "exact", head: true }).eq("media_key", key);
+  if (countError) return Response.json({ error: countError.message }, { status: 500 });
   return Response.json({ key, count: count || 0, liked: !existing.data });
 }

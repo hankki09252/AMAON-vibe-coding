@@ -465,6 +465,7 @@ footer p, footer small { color: #777; }
 .gd-media-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
 .gd-media-actions button { min-height: 31px; padding: 6px 9px; border: 0; background: rgba(255,255,255,.92); color: #222; font-size: 11px; font-weight: 1000; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
 .gd-media-actions button.liked { background: var(--brand-orange); color: #050505; }
+.gd-media-actions button:disabled, .gd-media-feed-actions button:disabled { cursor: wait; opacity: .72; }
 .gd-media-actions button.delete { background: rgba(10,10,10,.86); color: #fff; font-size: 9px; }
 .gd-media-empty { grid-column: 1 / -1; min-height: 175px; display: grid; place-content: center; text-align: center; border: 1px dashed #aaa; color: #777; }
 .gd-media-empty span { color: var(--brand-orange); font-size: 35px; line-height: 1; }
