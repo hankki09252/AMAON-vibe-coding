@@ -11,18 +11,17 @@ function publicDisplayName(profile: { display_name?: string | null; email?: stri
 
 export async function GET() {
   const user = await apiUser();
-  if (!user) return Response.json({ error: "로그인이 필요합니다." }, { status: 401 });
   const supabase = createSupabaseAdminClient();
   const [{ data: blocked }, { data: posts, error }] = await Promise.all([
-    supabase.from("community_blocks").select("blocked_user_id").eq("user_id", user.id),
-    supabase.from("community_posts").select("*").eq("hidden", false).order("created_at", { ascending: false }).limit(100),
+    user ? supabase.from("community_blocks").select("blocked_user_id").eq("user_id", user.id) : Promise.resolve({ data: [] }),
+    supabase.from("community_posts").select("id,author_id,category,title,content,created_at").eq("hidden", false).order("created_at", { ascending: false }).limit(100),
   ]);
   if (error) return Response.json({ error: error.message }, { status: 500 });
   const blockedIds = new Set((blocked || []).map((item) => item.blocked_user_id));
   const visible = (posts || []).filter((post) => !blockedIds.has(post.author_id));
   const postIds = visible.map((post) => post.id);
   const { data: comments } = postIds.length
-    ? await supabase.from("community_comments").select("*").in("post_id", postIds).order("created_at", { ascending: false }).limit(500)
+    ? await supabase.from("community_comments").select("id,post_id,author_id,content,created_at").in("post_id", postIds).order("created_at", { ascending: false }).limit(500)
     : { data: [] };
   const visibleComments = (comments || []).filter((comment) => !blockedIds.has(comment.author_id));
   const authorIds = [...new Set([
@@ -31,7 +30,6 @@ export async function GET() {
   ])];
   const { data: profiles } = authorIds.length ? await supabase.from("member_profiles").select("user_id,display_name,member_role,identity_status,activity_points,email").in("user_id", authorIds) : { data: [] };
   const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, {
-    user_id: profile.user_id,
     display_name: publicDisplayName(profile),
     member_role: profile.member_role,
     identity_status: profile.identity_status,
@@ -52,11 +50,12 @@ export async function GET() {
   return Response.json({
     items: visible.map((post) => ({
       ...post,
+      author_id: user ? post.author_id : undefined,
       author: profileMap.get(post.author_id) || null,
-      comments: commentsByPost.get(post.id) || [],
+      comments: (commentsByPost.get(post.id) || []).map((comment) => ({ ...comment, author_id: user ? comment.author_id : undefined })),
     })),
-    userId: user.id,
-    isAdmin: Boolean(configuredAdminRole(user.email)),
+    userId: user?.id || null,
+    isAdmin: Boolean(configuredAdminRole(user?.email)),
   });
 }
 

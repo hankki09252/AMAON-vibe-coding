@@ -1,15 +1,17 @@
-import { apiAdmin, apiUser, validPlayerId, validTeamId } from "../../api-auth";
+import { publicAccess } from "../../public-access";
+import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 
 type Origin = { region?: string; school?: string; year?: number; position?: string };
 
 export async function GET(request: Request) {
-  if (!await apiUser()) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
+  const { role } = await apiAdmin();
+  const access = role ? null : await publicAccess();
   const teamId = new URL(request.url).searchParams.get("teamId") || "";
   if (!validTeamId(teamId)) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
   const { data, error } = await createSupabaseAdminClient().from("player_origin_schools").select("*").eq("team_id", teamId).order("sequence");
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json({ items: (data || []).map((item) => ({ playerId: item.player_id, sequence: item.sequence, region: item.region, school: item.school, year: item.year, position: item.position })) }, { headers: { "cache-control": "no-store" } });
+  return Response.json({ items: (data || []).filter((item) => !access || access.player(item.player_id, teamId)).map((item) => ({ playerId: item.player_id, sequence: item.sequence, region: item.region, school: item.school, year: item.year, position: item.position })) }, { headers: { "cache-control": "no-store" } });
 }
 
 export async function PUT(request: Request) {

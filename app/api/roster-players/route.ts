@@ -1,4 +1,5 @@
-import { apiAdmin, apiUser, validPlayerId, validTeamId } from "../../api-auth";
+import { publicAccess } from "../../public-access";
+import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { managedTeamLabel } from "../../team-directory";
 
@@ -187,8 +188,13 @@ async function migratePlayerDetails(playerId: string, fromTeamId: string, toTeam
 }
 
 export async function GET() {
-  if (!await apiUser()) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
-  return Response.json({ items: await readItems() }, { headers: { "cache-control": "no-store" } });
+  const { role } = await apiAdmin();
+  const items = await readTableItems();
+  const access = role ? null : await publicAccess();
+  const publicItems = items.map((item) => access && !access.player(item.playerId)
+    ? { playerId: item.playerId, teamId: item.teamId, originTeamId: item.originTeamId, hidden: true }
+    : role ? item : { ...item, updatedBy: "" });
+  return Response.json({ items: publicItems }, { headers: { "cache-control": "no-store" } });
 }
 
 export async function POST(request: Request) {

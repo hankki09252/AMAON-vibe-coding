@@ -90,7 +90,7 @@ const server = http.createServer(async (req, res) => {
     await page.getByRole("status").filter({ hasText: "저장하지 못했습니다" }).waitFor();
     assert.equal(await heart.getAttribute("aria-pressed"), "true", "Failure must not fake success");
     mode = "unauthorized"; await heart.click();
-    await page.getByRole("status").filter({ hasText: "로그인이 만료" }).waitFor();
+    await page.getByRole("status").filter({ hasText: "로그인 후 좋아요" }).waitFor();
     mode = "success";
     await page.setViewportSize({ width: 390, height: 844 });
     await heart.click();

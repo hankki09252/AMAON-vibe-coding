@@ -1,4 +1,5 @@
-import { apiAdmin, apiUser, validTeamId } from "./api-auth";
+import { publicAccess } from "./public-access";
+import { apiAdmin, validTeamId } from "./api-auth";
 import { createSupabaseAdminClient } from "./supabase/admin";
 
 const signedUrlTtlSeconds = 60 * 60 * 24 * 7;
@@ -62,7 +63,8 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
   const pathPrefix = (teamId: string) => `teams/${teamId}/${kind}/`;
 
   async function GET(request: Request) {
-    if (!await apiUser()) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
+    const { role } = await apiAdmin();
+    const access = role ? null : await publicAccess();
     const searchParams = new URL(request.url).searchParams;
     const teamId = searchParams.get("teamId") || "";
     const teamIds = [...new Set((searchParams.get("teamIds") || "").split(",").filter(Boolean))];
@@ -73,6 +75,7 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
     const db = createSupabaseAdminClient();
 
     async function loadAsset(id: string) {
+      if (access && !access.team(id)) return null;
       const { data } = await db.storage.from("media").list(pathPrefix(id), { limit: 20, sortBy: { column: "created_at", order: "desc" } });
       const object = data?.[0];
       if (!object) return restoredAsset(kind, id);

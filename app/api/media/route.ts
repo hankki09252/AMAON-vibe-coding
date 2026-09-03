@@ -1,4 +1,5 @@
-import { apiAdmin, apiUser, validPlayerId } from "../../api-auth";
+import { publicAccess } from "../../public-access";
+import { apiAdmin, validPlayerId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { extractYouTubeVideoId, youtubeEmbedUrl, youtubeThumbnailUrl, type VideoOrientation } from "../../youtube";
 
@@ -18,8 +19,8 @@ function youtubeInfo(key: string, contentType: string) {
 }
 
 export async function GET(request: Request) {
-  const user = await apiUser();
-  if (!user) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
+  const { role } = await apiAdmin();
+  const access = role ? null : await publicAccess();
   const url = new URL(request.url);
   const playerId = url.searchParams.get("playerId");
   const playerIds = [...new Set((url.searchParams.get("playerIds") || "").split(",").filter(Boolean))];
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
   else if (playerIds.length) query = query.in("player_id", playerIds);
   const { data, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  const items = await Promise.all((data || []).map(async (row) => {
+  const items = await Promise.all((data || []).filter((row) => !access || access.player(row.player_id)).map(async (row) => {
     const youtube = youtubeInfo(row.storage_key, row.content_type);
     if (youtube) return {
       key: row.storage_key,

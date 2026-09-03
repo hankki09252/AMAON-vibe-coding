@@ -26,7 +26,7 @@ type MemberStats = {
   roleCounts: Record<string, number>;
 };
 
-export default function CommunityBoard() {
+export default function CommunityBoard({ signedIn = false }: { signedIn?: boolean }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [members, setMembers] = useState<Profile[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -53,10 +53,10 @@ export default function CommunityBoard() {
 
   async function load() {
     const [memberResponse, postResponse, statsResponse, notificationResponse] = await Promise.all([
-      fetch("/api/member-profile", { cache: "no-store" }),
+      signedIn ? fetch("/api/member-profile", { cache: "no-store" }) : Promise.resolve(Response.json({})),
       fetch("/api/community/posts", { cache: "no-store" }),
       fetch("/api/member-stats", { cache: "no-store" }),
-      fetch("/api/community/notifications", { cache: "no-store" }),
+      signedIn ? fetch("/api/community/notifications", { cache: "no-store" }) : Promise.resolve(Response.json({})),
     ]);
     const memberPayload = await memberResponse.json().catch(() => ({}));
     const postPayload = await postResponse.json().catch(() => ({}));
@@ -197,19 +197,20 @@ export default function CommunityBoard() {
   return <section className="community-section" id="community">
     <div className="section-console-bar inverted">
       <span><i /> 04 · COMMUNITY CLUBHOUSE</span>
-      <small>MEMBERS ONLY · SAFE SPACE</small>
+      <small>OPEN TO READ · MEMBERS TO WRITE</small>
     </div>
     <div className="community-heading">
       <div><p className="kicker"><span /> AMAON COMMUNITY</p><h2>야구로 연결되는<br /><em>우리들의 라커룸</em></h2></div>
       <div className="community-follower-count"><strong>{totalMembers.toLocaleString()}</strong><span>아마ON 팔로워</span><small>회원가입 완료 계정 기준</small></div>
     </div>
-    <div className="member-badge-card">
+    {!signedIn && <div className="member-badge-card"><div><strong>누구나 읽고, 회원으로 참여하세요</strong><p>게시글·댓글 작성, 좋아요와 신고는 로그인 후 이용할 수 있습니다.</p><a href="/login?returnTo=%2F%23community">로그인</a><a href="/login?mode=signup&returnTo=%2F%23community">회원가입</a></div></div>}
+    {signedIn && <div className="member-badge-card">
       <div><span className="identity-badge">{profile?.identityBadge || "회원 확인 중"}</span><strong>{profile?.display_name || "아마ON 회원"}</strong><small>{profile?.school_name || "소속 정보 미입력"}</small><button className="member-profile-edit-toggle" type="button" onClick={() => setProfileEditOpen((open) => !open)}>{profileEditOpen ? "수정 닫기" : "닉네임·소속 수정"}</button></div>
       <div><span>활동 등급</span><strong>{profile?.activityLevel || "루키"}</strong><small>{Number(profile?.activity_points || 0).toLocaleString()} P</small></div>
       <p>신원 배지는 운영팀 확인 후 부여되며, 활동 등급과는 별도로 표시됩니다.</p>
       {profile?.isAdmin && <button type="button" onClick={() => setAdminOpen((open) => !open)}>{adminOpen ? "회원 관리 닫기" : "회원 데이터·인증 관리"}</button>}
       <button className="community-notification-toggle" type="button" aria-expanded={notificationOpen} onClick={toggleNotifications}>알림 <strong>{notifications.filter((item) => !item.read_at).length}</strong></button>
-    </div>
+    </div>}
     {notificationOpen && <div className="community-notification-panel">
       <div><h3>내 알림</h3><button type="button" onClick={() => setNotificationOpen(false)}>닫기</button></div>
       {notifications.map((item) => <button className={item.read_at ? "" : "unread"} type="button" key={item.id} onClick={() => openNotification(item)}>
@@ -247,15 +248,15 @@ export default function CommunityBoard() {
         })}
       </div>
     </div>}
-    <div className="community-layout">
-      <form className="community-compose" onSubmit={submitPost}>
+    <div className={signedIn ? "community-layout" : "community-layout community-guest"}>
+      {signedIn && <form className="community-compose" onSubmit={submitPost}>
         <h3>새 이야기 남기기</h3>
         <label>게시판<select value={category} onChange={(event) => setCategory(event.target.value)}>{COMMUNITY_CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>제목<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} required placeholder="서로를 존중하는 제목을 적어주세요" /></label>
         <label>내용<textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={2000} required placeholder="선수 개인정보, 연락처, 주소, SNS 아이디는 적지 마세요." /></label>
         <button disabled={busy}>{busy ? "등록 중…" : "게시글 등록"}</button>
         {notice && <p className="community-notice">{notice}</p>}
-      </form>
+      </form>}
       <div className="community-feed">
         <div className="community-feed-head">
           <div><small>LIVE BOARD</small><strong>{categoryLabel[category]}</strong></div>
@@ -269,7 +270,7 @@ export default function CommunityBoard() {
             <header><span className="identity-badge small">{badge}</span><strong>{author?.display_name || "아마ON 회원"}</strong><small>{activityLevel(author?.activity_points || 0)} · {new Date(post.created_at).toLocaleDateString("ko-KR")}</small></header>
             <span className="post-category">{categoryLabel[post.category]}</span><h3>{post.title}</h3><p>{post.content}</p>
             <footer>
-              {post.author_id !== userId && <><button onClick={() => moderate("report", post)}>신고</button><button onClick={() => moderate("block", post)}>작성자 차단</button></>}
+              {signedIn && post.author_id !== userId && <><button onClick={() => moderate("report", post)}>신고</button><button onClick={() => moderate("block", post)}>작성자 차단</button></>}
               {profile?.isAdmin && <><button onClick={() => moderate("hide", post)}>운영자 숨김</button><button onClick={() => moderate("suspend", post)}>7일 정지</button></>}
             </footer>
             <div className="community-comments">
@@ -279,10 +280,10 @@ export default function CommunityBoard() {
                 <span>{comment.content}</span>
                 {(comment.author_id === userId || profile?.isAdmin) && <button type="button" onClick={() => deleteComment(comment.id)}>삭제</button>}
               </div>)}</div>
-              <form onSubmit={(event) => submitComment(event, post.id)}>
+              {signedIn ? <form onSubmit={(event) => submitComment(event, post.id)}>
                 <input aria-label="댓글 내용" value={commentDrafts[post.id] || ""} onChange={(event) => setCommentDrafts((drafts) => ({ ...drafts, [post.id]: event.target.value }))} maxLength={500} placeholder="서로를 존중하는 댓글을 남겨주세요" />
                 <button disabled={commentBusy === post.id}>{commentBusy === post.id ? "등록 중…" : "댓글 등록"}</button>
-              </form>
+              </form> : <a href="/login?returnTo=%2F%23community">로그인하고 댓글 남기기 →</a>}
             </div>
           </article>;
         })}

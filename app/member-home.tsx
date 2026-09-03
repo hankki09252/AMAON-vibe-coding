@@ -1,8 +1,9 @@
 "use client";
 
-// The signed-in member experience. Authentication is enforced by app/page.tsx.
+// Public browsing; member actions remain protected by server API checks.
 
 import Image from "next/image";
+import { schools } from "./school-catalog";
 import { FormEvent, useEffect, useMemo, useState, type ComponentType } from "react";
 import GdRoster, { gdPlayers, TeamRoster, type ManagedRosterPlayer } from "./gd-roster";
 import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
@@ -43,122 +44,11 @@ import CommunityBoard from "./community-board";
 import { managedTeamOptions } from "./team-directory";
 import { createSupabaseBrowserClient } from "./supabase/browser";
 
-type School = {
-  name: string;
-  region: string;
-  players: number;
-  coach: string;
-  featured?: boolean;
-};
 
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
 type TeamDirectoryAssets = Record<string, { banner?: string; emblem?: string }>;
 
-const schools: School[] = [
-  { name: "GD챌린저스BC(U-18)", region: "서울", players: 20, coach: "송구홍", featured: true },
-  { name: "경기고", region: "서울", players: 60, coach: "오규택", featured: true },
-  { name: "경기상업고", region: "서울", players: 53, coach: "최덕현" },
-  { name: "경동고", region: "서울", players: 55, coach: "조정권" },
-  { name: "덕수고", region: "서울", players: 45, coach: "정윤진", featured: true },
-  { name: "명지BC(U-18)", region: "서울", players: 21, coach: "민상기" },
-  { name: "배명고", region: "서울", players: 56, coach: "김경섭" },
-  { name: "배재고", region: "서울", players: 34, coach: "권오영" },
-  { name: "서울HG야구단(U-18)", region: "서울", players: 20, coach: "박상근" },
-  { name: "서울HK야구단(U-18)", region: "서울", players: 37, coach: "김진원" },
-  { name: "서울고", region: "서울", players: 51, coach: "김동수", featured: true },
-  { name: "서울동산고", region: "서울", players: 45, coach: "곽동성" },
-  { name: "서울디자인고", region: "서울", players: 42, coach: "이호" },
-  { name: "서울아이티고BC", region: "서울", players: 22, coach: "조용준" },
-  { name: "서울자동차고", region: "서울", players: 32, coach: "이우종" },
-  { name: "서울컨벤션고", region: "서울", players: 36, coach: "유영원" },
-  { name: "선린인터넷고", region: "서울", players: 36, coach: "박덕희" },
-  { name: "성남고", region: "서울", players: 35, coach: "박혁" },
-  { name: "세명컴퓨터고야구단", region: "서울", players: 27, coach: "안승찬" },
-  { name: "신일고", region: "서울", players: 34, coach: "하지호" },
-  { name: "우신고", region: "서울", players: 49, coach: "지병호" },
-  { name: "장충고", region: "서울", players: 49, coach: "신성우" },
-  { name: "중앙고", region: "서울", players: 32, coach: "남인환" },
-  { name: "청원고", region: "서울", players: 53, coach: "김수관" },
-  { name: "충암고", region: "서울", players: 51, coach: "이영복", featured: true },
-  { name: "한광BC(U-18)", region: "서울", players: 21, coach: "유정민" },
-  { name: "휘문고", region: "서울", players: 42, coach: "오태근", featured: true },
-  { name: "경기항공고", region: "경기", players: 43, coach: "이동수" },
-  { name: "경민IT고", region: "경기", players: 28, coach: "김종석" },
-  { name: "김포과학기술고", region: "경기", players: 30, coach: "김희상" },
-  { name: "라온고", region: "경기", players: 70, coach: "강봉수" },
-  { name: "백송고", region: "경기", players: 51, coach: "박종호" },
-  { name: "부원고야구단", region: "경기", players: 30, coach: "김상현" },
-  { name: "비봉고", region: "경기", players: 39, coach: "신현철" },
-  { name: "상우고야구단", region: "경기", players: 30, coach: "신명철" },
-  { name: "세원고", region: "경기", players: 30, coach: "오현민" },
-  { name: "소래고", region: "경기", players: 43, coach: "김석인" },
-  { name: "수원야구단(U-18)", region: "경기", players: 21, coach: "이덕진" },
-  { name: "신흥고", region: "경기", players: 30, coach: "곽연수" },
-  { name: "안산공업고", region: "경기", players: 40, coach: "하성진" },
-  { name: "야탑고", region: "경기", players: 38, coach: "최경훈", featured: true },
-  { name: "유신고", region: "경기", players: 42, coach: "홍석무", featured: true },
-  { name: "율곡고야구단", region: "경기", players: 35, coach: "문용수" },
-  { name: "의왕BC(U-18)", region: "경기", players: 27, coach: "김윤섭" },
-  { name: "인창고", region: "경기", players: 31, coach: "송성수" },
-  { name: "장안고", region: "경기", players: 40, coach: "박건민" },
-  { name: "진영고", region: "경기", players: 38, coach: "최승순" },
-  { name: "청담고", region: "경기", players: 50, coach: "유호재" },
-  { name: "충훈고", region: "경기", players: 43, coach: "정회선" },
-  { name: "화성동탄B(U-18)", region: "경기", players: 28, coach: "이주희" },
-  { name: "동산고", region: "인천", players: 41, coach: "이양기" },
-  { name: "인천고", region: "인천", players: 46, coach: "계기범", featured: true },
-  { name: "제물포고", region: "인천", players: 65, coach: "강필선" },
-  { name: "개성고", region: "부산", players: 43, coach: "홍민국" },
-  { name: "경남고", region: "부산", players: 53, coach: "전광열", featured: true },
-  { name: "부경고", region: "부산", players: 38, coach: "채종범" },
-  { name: "부산고", region: "부산", players: 45, coach: "박계원", featured: true },
-  { name: "부산공업고", region: "부산", players: 41, coach: "이승학" },
-  { name: "경북고", region: "대구", players: 63, coach: "이준호", featured: true },
-  { name: "대구고", region: "대구", players: 59, coach: "손경호" },
-  { name: "대구북구SC(U-18)", region: "대구", players: 25, coach: "이시원" },
-  { name: "대구상원고", region: "대구", players: 63, coach: "김승관", featured: true },
-  { name: "대전고", region: "대전", players: 48, coach: "김의수", featured: true },
-  { name: "대전제일고", region: "대전", players: 36, coach: "길태근" },
-  { name: "울산BC(U-18)", region: "울산", players: 24, coach: "정정오", featured: true },
-  { name: "강릉고", region: "강원", players: 43, coach: "최재호", featured: true },
-  { name: "강원고", region: "강원", players: 23, coach: "김정수" },
-  { name: "상동고", region: "강원", players: 44, coach: "백재호" },
-  { name: "설악고", region: "강원", players: 31, coach: "윤형국" },
-  { name: "원주고", region: "강원", players: 27, coach: "정성민" },
-  { name: "세광고", region: "충북", players: 48, coach: "방진호", featured: true },
-  { name: "청주고", region: "충북", players: 40, coach: "김인철" },
-  { name: "공주고", region: "충남", players: 40, coach: "오주상", featured: true },
-  { name: "북일고", region: "충남", players: 37, coach: "임재철" },
-  { name: "아산BC(U-18)", region: "충남", players: 18, coach: "김재우" },
-  { name: "천안CSBC(U-18)", region: "충남", players: 20, coach: "윤강민" },
-  { name: "군산상일고", region: "전북", players: 48, coach: "석수철", featured: true },
-  { name: "인상고", region: "전북", players: 28, coach: "최한림" },
-  { name: "전북인공지능고", region: "전북", players: 28, coach: "길휘종" },
-  { name: "전주고", region: "전북", players: 43, coach: "최대근" },
-  { name: "한국마사고BC", region: "전북", players: 23, coach: "박대희" },
-  { name: "광남고BC", region: "전남", players: 28, coach: "허세환", featured: true },
-  { name: "순천효천고BC", region: "전남", players: 47, coach: "정진" },
-  { name: "화순고", region: "전남", players: 31, coach: "최길환" },
-  { name: "경주고", region: "경북", players: 31, coach: "임원수", featured: true },
-  { name: "도개고", region: "경북", players: 24, coach: "이효근" },
-  { name: "예일메디텍고", region: "경북", players: 30, coach: "권시훈" },
-  { name: "의성고", region: "경북", players: 44, coach: "김형근" },
-  { name: "포항제철고", region: "경북", players: 31, coach: "김백만" },
-  { name: "거제BC(U-18)", region: "경남", players: 24, coach: "권두조", featured: true },
-  { name: "금남고", region: "경남", players: 22, coach: "전봉석" },
-  { name: "김해고", region: "경남", players: 41, coach: "오성민" },
-  { name: "마산고", region: "경남", players: 52, coach: "고윤성" },
-  { name: "마산용마고", region: "경남", players: 44, coach: "진민수" },
-  { name: "물금고", region: "경남", players: 41, coach: "강승영" },
-  { name: "밀양BC(U-18)", region: "경남", players: 19, coach: "최동욱" },
-  { name: "야로고BC", region: "경남", players: 19, coach: "장인욱" },
-  { name: "창원공고야구단", region: "경남", players: 35, coach: "차정민" },
-  { name: "제주고", region: "제주", players: 25, coach: "박재현", featured: true },
-  { name: "세종BC(U-18)", region: "세종", players: 20, coach: "신진호", featured: true },
-  { name: "광주동성고", region: "광주", players: 32, coach: "김재덕" },
-  { name: "광주제일고", region: "광주", players: 38, coach: "조윤채", featured: true },
-  { name: "광주진흥고", region: "광주", players: 38, coach: "김인호" },
-];
+
 
 const regions = ["전체", "서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주", "세종"];
 const defaultVisibleRegions = ["경기", "인천"];
@@ -241,7 +131,7 @@ const playerSearchIndex = [
   ...ansanTechnicalPlayers.map((player) => ({ player, school: "안산공업고", sectionId: "ansan-technical-roster" })),
 ];
 
-export default function Home() {
+export default function Home({ signedIn = false }: { signedIn?: boolean }) {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("전체");
   const [playerDirectoryQuery, setPlayerDirectoryQuery] = useState("");
@@ -612,7 +502,7 @@ export default function Home() {
       window.alert("로그아웃하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       return;
     }
-    window.location.replace("/login");
+    window.location.replace("/");
   }
 
   return (
@@ -636,10 +526,10 @@ export default function Home() {
           <a href="#community">커뮤니티</a>
         </nav>
         <PwaInstallButton />
-        <button className="outline-button" onClick={() => jumpToSection("community")}>내 회원정보</button>
-        <button type="button" className="logout-button" onClick={() => void signOut()} disabled={signingOut}>{signingOut ? "로그아웃 중…" : "로그아웃"}</button>
+        {signedIn ? <button className="outline-button" onClick={() => jumpToSection("community")}>내 회원정보</button> : <a className="outline-button" href="/login">로그인</a>}
+        {signedIn ? <button type="button" className="logout-button" onClick={() => void signOut()} disabled={signingOut}>{signingOut ? "로그아웃 중…" : "로그아웃"}</button> : <a className="logout-button" href="/login?mode=signup">회원가입</a>}
         <div className="mobile-top-actions">
-          <button type="button" className="mobile-account-button" onClick={() => jumpToSection("community")} aria-label="내 회원정보">
+          <button type="button" className="mobile-account-button" onClick={() => signedIn ? jumpToSection("community") : window.location.assign("/login")} aria-label={signedIn ? "내 회원정보" : "로그인"}>
             <span className="mobile-account-glyph" aria-hidden="true" />
           </button>
           <button
@@ -661,9 +551,9 @@ export default function Home() {
             <div><small>AMAON MENU</small><strong>메뉴</strong></div>
             <button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="메뉴 닫기">×</button>
           </div>
-          <button type="button" className="mobile-member-card" onClick={() => jumpToSection("community")}>
+          <button type="button" className="mobile-member-card" onClick={() => signedIn ? jumpToSection("community") : window.location.assign("/login")}>
             <span className="mobile-account-glyph" aria-hidden="true" />
-            <span><small>MEMBER</small><strong>내 회원정보</strong></span>
+            <span><small>MEMBER</small><strong>{signedIn ? "내 회원정보" : "로그인"}</strong></span>
             <b>→</b>
             </button>
             <nav className="mobile-drawer-nav" aria-label="전체 메뉴 항목">
@@ -699,8 +589,8 @@ export default function Home() {
               <span>운영자</span><strong>학교·선수 관리</strong><b>→</b>
             </button>
           )}
-          <button type="button" className="mobile-logout-link" onClick={() => void signOut()} disabled={signingOut}>
-            <span><small>ACCOUNT</small><strong>{signingOut ? "로그아웃 중…" : "로그아웃"}</strong></span><b>→</b>
+          <button type="button" className="mobile-logout-link" onClick={() => signedIn ? void signOut() : window.location.assign("/login?mode=signup")} disabled={signingOut}>
+            <span><small>ACCOUNT</small><strong>{signedIn ? signingOut ? "로그아웃 중…" : "로그아웃" : "회원가입"}</strong></span><b>→</b>
           </button>
           <p className="mobile-drawer-note">학교와 선수 기록은 기존 데이터 그대로 유지됩니다.</p>
         </aside>
@@ -787,7 +677,7 @@ export default function Home() {
 
       <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} />
 
-      <CommunityBoard />
+      <CommunityBoard signedIn={signedIn} />
 
       <section className="school-section" id="schools">
         <div className="section-console-bar">
@@ -957,7 +847,7 @@ export default function Home() {
           </div>
           <p className="kicker dark"><span /> TRUSTED PROFILE SYSTEM</p>
           <h2>가입 즉시 함께하고,<br />신원은 안전하게 확인합니다.</h2>
-          <p>회원은 학교·선수 검색과 커뮤니티를 이용하고, 운영팀 확인을 거치면 선수·보호자·지도자 신원 배지가 표시됩니다.</p>
+          <p>학교·선수 프로필·사진·영상과 게시판은 로그인 없이 볼 수 있습니다. 글쓰기·댓글·좋아요·신고는 로그인 후 이용하며, 운영팀 확인을 거치면 선수·보호자·지도자 신원 배지가 표시됩니다.</p>
           <button className="solid-button" onClick={() => jumpToSection("community")}>커뮤니티 참여하기 <span>↗</span></button>
         </div>
         <ol className="steps">
@@ -1050,7 +940,7 @@ export default function Home() {
                 <li><span>2</span><div><strong>설치 안내의 ‘설치’ 선택</strong><p>안내가 보이지 않으면 크롬 오른쪽 위 메뉴에서 ‘앱 설치’ 또는 ‘홈 화면에 추가’를 선택합니다.</p></div></li>
                 <li><span>3</span><div><strong>홈 화면의 아마ON 아이콘으로 실행</strong><p>설치가 끝나면 휴대폰 홈 화면에 아마ON 아이콘이 생기며, 아이콘을 누르면 바로 실행됩니다.</p></div></li>
               </ol>
-              <span className="amaon-guide-install-note">별도의 앱스토어 가입이나 Vercel 가입은 필요하지 않습니다.</span>
+              <span className="amaon-guide-install-note">별도의 앱스토어 가입이나 Vercel 가입은 필요하지 않습니다. 학교·선수 프로필·사진·영상과 게시판 읽기는 로그인 없이 이용하세요. 글쓰기·댓글·좋아요·신고는 아마ON 회원 로그인 후 이용할 수 있습니다.</span>
             </div>
             <div className="amaon-guide-install-visuals" aria-label="아마ON 휴대폰 설치 화면 예시">
               <figure className="amaon-guide-install-screen">

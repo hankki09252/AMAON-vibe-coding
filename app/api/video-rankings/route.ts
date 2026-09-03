@@ -1,3 +1,4 @@
+import { publicAccess } from "../../public-access";
 import { apiUser } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { youtubeEmbedUrl, youtubeThumbnailUrl } from "../../youtube";
@@ -6,7 +7,7 @@ const videoCategories = ["pitching", "batting", "fielding"];
 
 export async function GET() {
   const user = await apiUser();
-  if (!user) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
+  const access = await publicAccess();
 
   const db = createSupabaseAdminClient();
   const [{ data: media, error: mediaError }, { data: likeRows, error: likesError }] = await Promise.all([
@@ -27,10 +28,10 @@ export async function GET() {
   const likedKeys = new Set<string>();
   for (const row of likeRows || []) {
     counts.set(row.media_key, (counts.get(row.media_key) || 0) + 1);
-    if (row.visitor_id === user.id) likedKeys.add(row.media_key);
+    if (user && row.visitor_id === user.id) likedKeys.add(row.media_key);
   }
 
-  const ranked = [...(media || [])]
+  const ranked = [...(media || [])].filter((row) => access.player(row.player_id))
     .map((row) => ({ ...row, like_count: counts.get(row.storage_key) || 0 }))
     .sort((a, b) => b.like_count - a.like_count || Date.parse(b.uploaded_at) - Date.parse(a.uploaded_at))
     // Return enough candidates for the client to remove currently hidden regions

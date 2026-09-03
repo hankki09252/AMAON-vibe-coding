@@ -44,7 +44,8 @@ export default function LoginPage() {
       <div className="auth-mode-heading">
         <small>{mode === "login" ? "WELCOME BACK" : "JOIN AMAON"}</small>
         <h2>{mode === "login" ? "회원 로그인" : "아마ON 회원가입"}</h2>
-        <p>{mode === "login" ? "가입한 계정으로 학교와 선수 프로필을 확인하세요." : "선수·보호자·지도자·관계자·야구팬 누구나 가입할 수 있습니다."}</p>
+        <p>{mode === "login" ? "학교와 선수 프로필은 로그인 없이 볼 수 있습니다. 글쓰기·댓글·좋아요에 참여하려면 로그인하세요." : "선수·보호자·지도자·관계자·야구팬 누구나 가입할 수 있습니다."}</p>
+        <a href="/">로그인 없이 아마ON 둘러보기 →</a>
       </div>
       <form onSubmit={submit}>
         {mode === "signup" && <>

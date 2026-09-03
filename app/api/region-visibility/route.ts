@@ -1,33 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { apiAdmin, apiUser } from "../../api-auth";
+import { apiAdmin } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 
+import { readRegionSettings, ALL_REGIONS } from "../../region-settings";
 const SETTINGS_FILE = "site-settings/region-visibility.json";
-const ALL_REGIONS = ["서울", "경기", "인천", "부산", "대구", "대전", "광주", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주", "세종"];
-const DEFAULT_VISIBLE_REGIONS = ["경기", "인천"];
-
-async function readRegionSettings() {
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.storage.from("media").download(SETTINGS_FILE);
-  if (error || !data) return { visibleRegions: DEFAULT_VISIBLE_REGIONS, editingRegions: [] as string[] };
-
-  try {
-    const parsed = JSON.parse(await data.text());
-    const values = Array.isArray(parsed?.visibleRegions) ? parsed.visibleRegions : [];
-    const visibleRegions = ALL_REGIONS.filter((region) => values.includes(region));
-    const editingValues = Array.isArray(parsed?.editingRegions) ? parsed.editingRegions : [];
-    const editingRegions = ALL_REGIONS.filter((region) => editingValues.includes(region) && !visibleRegions.includes(region));
-    return { visibleRegions: visibleRegions.length ? visibleRegions : DEFAULT_VISIBLE_REGIONS, editingRegions };
-  } catch {
-    return { visibleRegions: DEFAULT_VISIBLE_REGIONS, editingRegions: [] as string[] };
-  }
-}
 
 export async function GET() {
-  const user = await apiUser();
-  if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-
-  return NextResponse.json(await readRegionSettings(), { headers: { "Cache-Control": "no-store" } });
+  const { role } = await apiAdmin();
+  const settings = await readRegionSettings();
+  return NextResponse.json(role ? settings : { visibleRegions: settings.visibleRegions }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function PUT(request: NextRequest) {

@@ -5,6 +5,7 @@ import * as tus from "tus-js-client";
 import { createSupabaseBrowserClient } from "./supabase/browser";
 import { managedTeamOptions } from "./team-directory";
 import { youtubeEmbedUrl, type VideoOrientation } from "./youtube";
+import { offerMemberLogin } from "./member-login";
 
 export type TeamPlayer = {
   id: string;
@@ -919,6 +920,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
       });
       const data = await response.json().catch(() => null) as { key?: string; count?: number; liked?: boolean; error?: string } | null;
       if (!response.ok || !data?.key || typeof data.count !== "number" || typeof data.liked !== "boolean") {
+        if (response.status === 401) offerMemberLogin();
         throw new Error(data?.error ?? (response.status === 401 ? "로그인 후 좋아요를 누를 수 있습니다." : "좋아요를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."));
       }
       setLikes((current) => ({ ...current, [data.key!]: { count: data.count!, liked: data.liked! } }));

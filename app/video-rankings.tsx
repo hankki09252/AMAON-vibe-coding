@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TeamPlayer } from "./gd-roster";
 import { youtubeEmbedUrl } from "./youtube";
+import { offerMemberLogin } from "./member-login";
 
 type PlayerIndexItem = { player: TeamPlayer; school: string; sectionId: string };
 type RankingItem = {
@@ -58,7 +59,8 @@ export default function VideoRankings({ players, visibleRegions, schoolRegions }
       });
       const data = await response.json().catch(() => null) as { key?: string; count?: number; liked?: boolean; error?: string } | null;
       if (!response.ok || data?.key !== item.key || typeof data.count !== "number" || typeof data.liked !== "boolean") {
-        throw new Error(response.status === 401 ? "로그인이 만료되었습니다. 다시 로그인한 뒤 좋아요를 눌러주세요." : "좋아요를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        if (response.status === 401) offerMemberLogin();
+        throw new Error(response.status === 401 ? "로그인 후 좋아요를 누를 수 있습니다." : "좋아요를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       }
       const update = { likeCount: data.count, liked: data.liked };
       setItems((current) => current.map((entry) => entry.key === item.key ? { ...entry, ...update } : entry));

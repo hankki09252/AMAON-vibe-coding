@@ -1,3 +1,4 @@
+import { publicAccess } from "../../public-access";
 import { apiUser } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 
@@ -7,15 +8,16 @@ function isMediaKey(value: string) {
 
 export async function GET() {
   const user = await apiUser();
-  if (!user) return Response.json({ error: "회원 로그인이 필요합니다." }, { status: 401 });
+  const access = await publicAccess();
   const db = createSupabaseAdminClient();
   const { data, error } = await db.from("media_likes").select("media_key, visitor_id");
   if (error) return Response.json({ error: error.message }, { status: 500 });
   const grouped = new Map<string, { count: number; liked: boolean }>();
   for (const row of data || []) {
+    if (!access.media(row.media_key)) continue;
     const current = grouped.get(row.media_key) || { count: 0, liked: false };
     current.count += 1;
-    if (row.visitor_id === user.id) current.liked = true;
+    if (user && row.visitor_id === user.id) current.liked = true;
     grouped.set(row.media_key, current);
   }
   return Response.json({ items: [...grouped].map(([key, value]) => ({ key, ...value })) }, { headers: { "cache-control": "no-store" } });
