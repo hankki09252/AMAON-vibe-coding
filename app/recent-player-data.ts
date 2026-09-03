@@ -9,7 +9,7 @@ export type RecentPlayerProfile = {
   updateType: "신규 등록" | "프로필 업데이트" | "사진 업데이트" | "영상 추가" | "선수 정보 업데이트";
   updatedAt: string;
   updatedLabel: string;
-  profileImageUrl: string;
+  cardImageUrl: string;
 };
 
 type RecentEvent = {
@@ -80,20 +80,26 @@ export async function readRecentPlayerProfiles(): Promise<RecentPlayerProfile[]>
   if (!visible.length) return [];
 
   const visibleIds = visible.map((event) => event.playerId);
-  const { data: portraits, error: portraitError } = await db
+  const { data: previews, error: previewError } = await db
     .from("media_items")
     .select("storage_key,player_id,category,content_type,uploaded_at")
-    .eq("category", "profile")
     .in("player_id", visibleIds)
     .order("uploaded_at", { ascending: false })
-    .limit(displayLimit * 5);
-  if (portraitError) throw new Error("최근 선수 대표 사진을 불러오지 못했습니다.");
-  const newestPortraits = new Map<string, MediaRow>();
-  for (const row of (portraits || []) as MediaRow[]) {
-    if (!newestPortraits.has(row.player_id)) newestPortraits.set(row.player_id, row);
+    .limit(displayLimit * 20);
+  if (previewError) throw new Error("최근 선수 미리보기를 불러오지 못했습니다.");
+  const previewsByPlayer = new Map<string, MediaRow[]>();
+  for (const row of (previews || []) as MediaRow[]) {
+    previewsByPlayer.set(row.player_id, [...(previewsByPlayer.get(row.player_id) || []), row]);
   }
-  const presentedPortraits = await presentMedia([...newestPortraits.values()]);
-  const portraitByPlayer = new Map(presentedPortraits.map((item) => [item.playerId, item.url]));
+  const selectedPreviews = visible.flatMap((event) => {
+    const items = previewsByPlayer.get(event.playerId) || [];
+    const row = items.find((item) => item.category === "profile")
+      || items.find((item) => item.category === "photo")
+      || items.find((item) => item.storage_key.startsWith("youtube/"));
+    return row ? [row] : [];
+  });
+  const presentedPreviews = await presentMedia(selectedPreviews);
+  const previewByPlayer = new Map(presentedPreviews.map((item) => [item.playerId, item.thumbnailUrl || item.url]));
 
   return visible.map((event) => ({
     playerId: event.playerId,
@@ -101,6 +107,6 @@ export async function readRecentPlayerProfiles(): Promise<RecentPlayerProfile[]>
     updateType: event.updateType,
     updatedAt: event.updatedAt,
     updatedLabel: updateLabel(event.updatedAt),
-    profileImageUrl: portraitByPlayer.get(event.playerId) || "",
+    cardImageUrl: previewByPlayer.get(event.playerId) || "",
   }));
 }

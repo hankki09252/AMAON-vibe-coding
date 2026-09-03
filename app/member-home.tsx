@@ -758,7 +758,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             {recentPlayerCards.map(({ recent, directoryEntry }, index) => (
               <button type="button" className="recent-player-card" key={`${recent.teamId}-${recent.playerId}`} onClick={() => openSearchedPlayer(directoryEntry)}>
                 <span className="recent-player-photo">
-                  {recent.profileImageUrl ? <Image src={recent.profileImageUrl} alt={`${directoryEntry.player.name} 선수 대표 사진`} width={320} height={400} sizes="(max-width: 760px) 68vw, 260px" loading={index < 2 ? "eager" : "lazy"} /> : <b aria-hidden="true"><small>{directoryEntry.school.slice(0, 2)}</small>{directoryEntry.player.number}</b>}
+                  {recent.cardImageUrl ? <Image src={recent.cardImageUrl} alt={`${directoryEntry.player.name} 선수 프로필 미리보기`} width={320} height={400} sizes="(max-width: 760px) 68vw, 260px" loading={index < 2 ? "eager" : "lazy"} /> : <b aria-hidden="true"><small>{directoryEntry.school.slice(0, 2)}</small>{directoryEntry.player.number}</b>}
                   <em>{recent.updateType}</em>
                 </span>
                 <span className="recent-player-info">
