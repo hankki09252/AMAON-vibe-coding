@@ -269,10 +269,10 @@ export default function CommunityBoard({ signedIn = false }: { signedIn?: boolea
           return <article className="community-post" id={`community-post-${post.id}`} key={post.id}>
             <header><span className="identity-badge small">{badge}</span><strong>{author?.display_name || "아마ON 회원"}</strong><small>{activityLevel(author?.activity_points || 0)} · {new Date(post.created_at).toLocaleDateString("ko-KR")}</small></header>
             <span className="post-category">{categoryLabel[post.category]}</span><h3>{post.title}</h3><p>{post.content}</p>
-            <footer>
+            {signedIn && <footer>
               {signedIn && post.author_id !== userId && <><button onClick={() => moderate("report", post)}>신고</button><button onClick={() => moderate("block", post)}>작성자 차단</button></>}
               {profile?.isAdmin && <><button onClick={() => moderate("hide", post)}>운영자 숨김</button><button onClick={() => moderate("suspend", post)}>7일 정지</button></>}
-            </footer>
+            </footer>}
             <div className="community-comments">
               <h4>댓글 <span>{post.comments?.length || 0}</span></h4>
               <div className="community-comment-list">{post.comments?.map((comment) => <div key={comment.id}>
