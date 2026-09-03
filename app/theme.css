@@ -436,6 +436,7 @@ footer p, footer small { color: #777; }
 .gd-media-head label.disabled { opacity: .55; cursor: wait; }
 .gd-media-head input { display: none; }
 .gd-media-head label span { display: block; padding: 12px 15px; background: var(--brand-orange); color: #050505; font-size: 10px; font-weight: 1000; }
+.gd-media-head label.gd-main-photo-upload span { border: 1px solid var(--brand-orange); background: #101010; color: var(--brand-orange); }
 .gd-feed-open { min-height: 36px; padding: 10px 13px; border: 1px solid #111; background: #111; color: white; font-size: 10px; font-weight: 1000; cursor: pointer; }
 .gd-feed-open span { margin-left: 8px; color: var(--brand-orange); font-size: 14px; }
 .gd-feed-open:disabled { border-color: #bbb; background: transparent; color: #999; cursor: not-allowed; }

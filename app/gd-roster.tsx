@@ -937,6 +937,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
         fetch(`/api/media?action=delete&key=${encodeURIComponent(item.key)}`, { method: "DELETE" }).catch(() => null)
       ));
       await loadMedia();
+      setNotice(`${player.name} 선수의 대표 프로필 사진을 변경했습니다.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "사진 업로드 중 오류가 발생했습니다.");
     } finally {
@@ -1007,7 +1008,6 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const selectedDetails = selectedDisplay ? profileOverrides[selectedDisplay.id] : undefined;
   const selectedProfilePortrait = selected
     ? newestMediaFirst(selectedMedia.filter((item) => item.type === "image" && item.category === "profile"))[0]
-      ?? newestMediaFirst(selectedMedia.filter((item) => item.type === "image" && item.category === "photo"))[0]
     : undefined;
   useEffect(() => {
     if (!profileLoadComplete) return;
@@ -1308,7 +1308,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               </div> : <p className="gd-origin-empty">등록된 출신학교가 없습니다.</p>}
             </section>
 
-            <div className="gd-media-head" id={`${sectionId}-${selectedDisplay.id}-media`}><div><h3>사진 · 경기 영상</h3><p>카테고리를 선택한 뒤 전체화면에서 위아래로 넘겨볼 수 있습니다.</p></div><div className="gd-media-head-actions"><button type="button" className="gd-feed-open" onClick={openMediaFeed} disabled={!selectedCategoryMedia.length}>릴스처럼 보기 <span>↕</span></button>{isAdmin ? selectedCategory === "photo" ? <label className={uploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={uploadFiles} disabled={uploading} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : "+ 사진 올리기"}</span></label> : <button type="button" className="gd-youtube-open" onClick={() => setYoutubeFormOpen((open) => !open)}>+ 유튜브 영상 등록</button> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div></div>
+            <div className="gd-media-head" id={`${sectionId}-${selectedDisplay.id}-media`}><div><h3>사진 · 경기 영상</h3><p>대표 프로필 사진과 일반 경기 사진은 서로 구분해 등록합니다.</p></div><div className="gd-media-head-actions"><button type="button" className="gd-feed-open" onClick={openMediaFeed} disabled={!selectedCategoryMedia.length}>릴스처럼 보기 <span>↕</span></button>{isAdmin ? selectedCategory === "photo" ? <><label className={`gd-main-photo-upload${uploadingPlayerId === selectedDisplay.id ? " disabled" : ""}`}><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadPlayerPhoto(selectedDisplay, event)} disabled={uploadingPlayerId !== null || uploading} /><span>{uploadingPlayerId === selectedDisplay.id ? "대표 사진 올리는 중…" : selectedProfilePortrait ? "대표 프로필 사진 교체" : "+ 대표 프로필 사진 올리기"}</span></label><label className={uploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={uploadFiles} disabled={uploading || uploadingPlayerId !== null} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : "+ 일반 사진 올리기"}</span></label></> : <button type="button" className="gd-youtube-open" onClick={() => setYoutubeFormOpen((open) => !open)}>+ 유튜브 영상 등록</button> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div></div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
               {mediaCategories.map((category) => (
                 <button key={category.id} className={selectedCategory === category.id ? "active" : ""} onClick={() => { setSelectedCategory(category.id); setYoutubeFormOpen(false); setNotice(""); }}>

@@ -30,7 +30,7 @@ const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         const url = new URL(route.request().url());
         let data = { items: [] }, status = 200;
         if (url.pathname === "/api/region-visibility") data = { visibleRegions: ["경기", "인천"] };
-        if (url.pathname === "/api/admin") { data = { isAdmin: false }; status = 401; }
+        if (url.pathname === "/api/admin") { data = { isAdmin: mode === "admin" }; status = mode === "admin" ? 200 : 401; }
         if (url.pathname === "/api/roster-players") {
           if (!url.searchParams.has("playerId") && await page.locator(".profile-entry-gate").count()) earlyFullRoster = true;
           if (url.searchParams.has("playerId")) targetedRequests.push(url.pathname);
@@ -87,6 +87,12 @@ const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         assert.equal(await page.locator(".profile-entry-gate").count(), 0);
         await page.screenshot({ path: path.join(os.tmpdir(), "amaon-profile-entry-" + width + ".png") });
       }
+      mode = "admin";
+      await page.goto(origin + "/?team=ansan-technical-roster&player=custom-test&test=admin#ansan-technical-roster");
+      await page.getByRole("dialog", { name: "테스트선수 선수 프로필", exact: true }).waitFor({ timeout: 15000 });
+      await page.getByText("+ 대표 프로필 사진 올리기", { exact: true }).waitFor();
+      await page.getByText("+ 일반 사진 올리기", { exact: true }).waitFor();
+      mode = "valid";
       await page.goto(origin + "/?team=ansan-technical-roster&player=missing#ansan-technical-roster");
       await page.getByRole("alert").filter({ hasText: "찾을 수 없습니다" }).waitFor({ timeout: 15000 });
       assert.ok(!(await page.evaluate(() => window.entryFrames)).includes("home"));
@@ -96,7 +102,7 @@ const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
       await page.goto(origin + "/?team=ansan-technical-roster&player=custom-test#ansan-technical-roster");
       await page.getByRole("alert").waitFor();
       assert.deepEqual(errors, [], "no client or hydration errors");
-      console.log("PASS", width, "SSR gate, delayed static/custom profiles, single reveal, one media request, missing/private/failed links");
+      console.log("PASS", width, "profile entry and distinct representative/general photo controls; missing/private/failed links");
       await page.close();
     }
   } finally {
