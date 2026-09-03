@@ -687,6 +687,16 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
               </div>
             )}
           </div>
+          <aside className="hero-instagram-cta" aria-label="한끼방패 인스타그램 선수 등록 안내">
+            <div>
+              <small>PLAYER REGISTRATION · INSTAGRAM DM</small>
+              <strong>선수 영상·사진·프로필을 보내주세요.</strong>
+              <p>한끼방패 인스타그램 DM으로 보내주시면, 확인 후 아마ON 선수 프로필과 공유 링크를 만들어드립니다.</p>
+            </div>
+            <a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">
+              <span>인스타그램 DM으로 등록 신청</span><b aria-hidden="true">↗</b>
+            </a>
+          </aside>
           <button type="button" className="amaon-guide-trigger" onClick={() => setGuideOpen(true)}>
             <span>AMAON GUIDE</span>
             <strong>아마ON 사용설명서</strong>
