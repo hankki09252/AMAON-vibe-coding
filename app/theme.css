@@ -1500,6 +1500,34 @@ footer p, footer small { color: #777; }
 .hero-instagram-cta a { min-height: 66px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 16px; background: var(--brand-orange); color: #080808; text-decoration: none; font-size: 10px; font-weight: 1000; line-height: 1.35; text-align: center; transition: transform .18s ease, box-shadow .18s ease; }
 .hero-instagram-cta a b { font-size: 17px; }
 .hero-instagram-cta a:hover, .hero-instagram-cta a:focus-visible { transform: translateY(-2px); box-shadow: 0 9px 22px rgba(255,101,0,.25); outline: 2px solid #fff; outline-offset: 2px; }
+.recent-player-section { padding: 78px clamp(24px, 5vw, 76px) 70px; overflow: hidden; border-top: 1px solid #242424; border-bottom: 1px solid #2c2c2c; background: radial-gradient(circle at 85% 0, rgba(255,101,0,.16), transparent 35%), #080808; color: #fff; }
+.recent-player-head { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-bottom: 28px; }
+.recent-player-head small { color: var(--brand-orange); font-size: 8px; font-weight: 1000; letter-spacing: 1.8px; }
+.recent-player-head small i { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: var(--brand-orange); box-shadow: 0 0 12px var(--brand-orange); }
+.recent-player-head h2 { margin: 10px 0 7px; font-size: clamp(28px, 3vw, 43px); letter-spacing: -2px; }
+.recent-player-head p { margin: 0; color: #8f8f8f; font-size: 10px; }
+.recent-player-controls { display: flex; align-items: center; gap: 10px; }
+.recent-player-controls button { width: 44px; height: 44px; border: 1px solid #454545; border-radius: 50%; background: #111; color: #fff; cursor: pointer; font-size: 17px; }
+.recent-player-controls button:hover, .recent-player-controls button:focus-visible { border-color: var(--brand-orange); color: var(--brand-orange); outline: none; }
+.recent-player-controls span { color: #777; font-size: 8px; font-weight: 900; letter-spacing: 1px; }
+.recent-player-track { display: flex; gap: 16px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 2px 1px 14px; }
+.recent-player-track::-webkit-scrollbar { display: none; }
+.recent-player-card { flex: 0 0 clamp(210px, 20vw, 270px); scroll-snap-align: start; padding: 0; overflow: hidden; border: 1px solid #333; background: #111; color: #fff; text-align: left; cursor: pointer; transition: transform .2s ease, border-color .2s ease; }
+.recent-player-card:hover, .recent-player-card:focus-visible { transform: translateY(-5px); border-color: var(--brand-orange); outline: none; }
+.recent-player-photo { position: relative; display: block; aspect-ratio: 4 / 5; overflow: hidden; background: linear-gradient(145deg, #221309, #050505 60%); }
+.recent-player-photo > img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center top; transition: transform .35s ease; }
+.recent-player-card:hover .recent-player-photo > img { transform: scale(1.035); }
+.recent-player-photo > b { width: 82%; height: 88%; display: grid; place-content: center; gap: 8px; margin: 12% auto 0; clip-path: polygon(18% 0,38% 9%,62% 9%,82% 0,100% 23%,86% 37%,85% 100%,15% 100%,14% 37%,0 23%); background: #171717; color: var(--brand-orange); font-size: 68px; line-height: 1; text-align: center; }
+.recent-player-photo > b small { color: #777; font-size: 9px; letter-spacing: 2px; }
+.recent-player-photo > em { position: absolute; left: 12px; top: 12px; padding: 7px 9px; background: var(--brand-orange); color: #080808; font-size: 8px; font-style: normal; font-weight: 1000; }
+.recent-player-info { display: block; padding: 16px; }
+.recent-player-info > small { display: block; overflow: hidden; color: #898989; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.recent-player-info > strong { display: block; margin: 8px 0 14px; font-size: 20px; }
+.recent-player-info > strong em { margin-right: 4px; color: var(--brand-orange); font-style: normal; }
+.recent-player-info > span { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding-top: 12px; border-top: 1px solid #2b2b2b; color: #777; font-size: 8px; }
+.recent-player-info > span b { color: #ddd; font-weight: 800; }
+.recent-player-swipe { display: none; margin: 5px 0 0; color: #777; font-size: 8px; text-align: right; }
+.recent-player-swipe span { color: var(--brand-orange); font-size: 14px; }
 .mobile-guide-link { width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 67px; margin-top: 10px; padding: 12px 16px; border: 1px solid rgba(255,98,0,.55); background: rgba(255,98,0,.09); color: white; text-align: left; cursor: pointer; }
 .mobile-guide-link > span { display: grid; gap: 4px; }
 .mobile-guide-link small { color: var(--brand-orange); font-size: 7px; letter-spacing: 1.4px; }
@@ -1679,6 +1707,14 @@ footer p, footer small { color: #777; }
   .amaon-guide-trigger > small { grid-column: 1 / -1; display: none; }
   .hero-instagram-cta { grid-template-columns: 1fr; gap: 14px; padding: 17px; }
   .hero-instagram-cta a { min-height: 54px; }
+  .recent-player-section { padding: 54px 20px 46px; }
+  .recent-player-head { display: block; margin-bottom: 22px; }
+  .recent-player-head h2 { font-size: 29px; }
+  .recent-player-head p { max-width: 290px; line-height: 1.6; }
+  .recent-player-controls { display: none; }
+  .recent-player-track { gap: 12px; margin-right: -20px; padding-right: 20px; }
+  .recent-player-card { flex-basis: min(72vw, 268px); }
+  .recent-player-swipe { display: block; }
   .amaon-guide-head { padding: 44px 20px 38px; }
   .amaon-guide-head > div { align-items: flex-start; flex-direction: column; }
   .amaon-guide-head h2 { margin-top: 25px; font-size: clamp(39px, 12vw, 54px); }

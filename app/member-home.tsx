@@ -4,7 +4,7 @@
 
 import Image from "next/image";
 import { schools } from "./school-catalog";
-import { FormEvent, useEffect, useMemo, useState, type ComponentType } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import GdRoster, { gdPlayers, TeamRoster, type ManagedRosterPlayer } from "./gd-roster";
 import GyeonggiRoster, { players as gyeonggiPlayers } from "./gyeonggi-roster";
 import GyeongsangRoster, { players as gyeongsangPlayers } from "./gyeongsang-roster";
@@ -44,6 +44,7 @@ import CommunityBoard from "./community-board";
 import { managedTeamOptions } from "./team-directory";
 import { createSupabaseBrowserClient } from "./supabase/browser";
 import { ProfileEntryContext, type ProfileEntryData } from "./profile-entry-context";
+import type { RecentPlayerProfile } from "./recent-player-data";
 
 
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
@@ -134,7 +135,7 @@ const playerSearchIndex = [
 
 type ProfileTarget = { team: string; player: string };
 
-export default function Home({ signedIn = false, initialProfile = null, profileEntry = null }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null }) {
+export default function Home({ signedIn = false, initialProfile = null, profileEntry = null, recentPlayers = [] }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null; recentPlayers?: RecentPlayerProfile[] }) {
   const [pendingProfile, setPendingProfile] = useState<ProfileTarget | null>(profileEntry ? null : initialProfile);
   const [profileEntryError, setProfileEntryError] = useState("");
   const [query, setQuery] = useState("");
@@ -159,6 +160,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   const [signingOut, setSigningOut] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState("top");
   const [showMobileBack, setShowMobileBack] = useState(false);
+  const recentPlayersRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     Promise.all([
@@ -368,6 +370,11 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
     () => publishedPlayerSearchIndex.length,
     [publishedPlayerSearchIndex],
   );
+  const recentPlayerCards = useMemo(() => recentPlayers.flatMap((recent) => {
+    const directoryEntry = currentPlayerSearchIndex.find((item) => item.player.id === recent.playerId && item.sectionId === recent.teamId);
+    if (!directoryEntry || !visibleRegions.includes(schoolRegionByName[directoryEntry.school])) return [];
+    return [{ recent, directoryEntry }];
+  }).slice(0, 10), [currentPlayerSearchIndex, recentPlayers, visibleRegions]);
   const filteredPlayerDirectory = useMemo(() => {
     const keyword = playerDirectoryQuery.trim().replace(/\s+/g, "").toLowerCase();
     return publishedPlayerSearchIndex.filter(({ player, school }) => {
@@ -465,6 +472,12 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
     if (match) setRegion(match.region);
     const sectionId = match ? rosterSectionBySchool[match.name] : undefined;
     requestAnimationFrame(() => jumpToSection(sectionId ?? "schools"));
+  }
+
+  function scrollRecentPlayers(direction: -1 | 1) {
+    const track = recentPlayersRef.current;
+    if (!track) return;
+    track.scrollBy({ left: direction * Math.max(280, track.clientWidth * .82), behavior: "smooth" });
   }
 
   function searchSchool(event: FormEvent<HTMLFormElement>) {
@@ -730,6 +743,35 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           </div>
         </div>
       </section>
+
+      {!pendingProfile && recentPlayerCards.length > 0 && (
+        <section className="recent-player-section" aria-labelledby="recent-player-title">
+          <header className="recent-player-head">
+            <div><small><i /> LIVE UPDATE</small><h2 id="recent-player-title">최근 업데이트된 선수 프로필</h2><p>새롭게 등록되거나 사진·영상·프로필이 업데이트된 선수를 만나보세요.</p></div>
+            <div className="recent-player-controls" aria-label="최근 선수 프로필 슬라이드 이동">
+              <button type="button" onClick={() => scrollRecentPlayers(-1)} aria-label="이전 선수 보기">←</button>
+              <span>{String(recentPlayerCards.length).padStart(2, "0")} PLAYERS</span>
+              <button type="button" onClick={() => scrollRecentPlayers(1)} aria-label="다음 선수 보기">→</button>
+            </div>
+          </header>
+          <div className="recent-player-track" ref={recentPlayersRef}>
+            {recentPlayerCards.map(({ recent, directoryEntry }, index) => (
+              <button type="button" className="recent-player-card" key={`${recent.teamId}-${recent.playerId}`} onClick={() => openSearchedPlayer(directoryEntry)}>
+                <span className="recent-player-photo">
+                  {recent.profileImageUrl ? <Image src={recent.profileImageUrl} alt={`${directoryEntry.player.name} 선수 대표 사진`} width={320} height={400} sizes="(max-width: 760px) 68vw, 260px" loading={index < 2 ? "eager" : "lazy"} /> : <b aria-hidden="true"><small>{directoryEntry.school.slice(0, 2)}</small>{directoryEntry.player.number}</b>}
+                  <em>{recent.updateType}</em>
+                </span>
+                <span className="recent-player-info">
+                  <small>{directoryEntry.school} · {directoryEntry.player.position}</small>
+                  <strong><em>{directoryEntry.player.number}</em> {directoryEntry.player.name}</strong>
+                  <span>{directoryEntry.player.grade}<b>{recent.updatedLabel} 업데이트 →</b></span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="recent-player-swipe">좌우로 밀어 선수 프로필을 더 볼 수 있습니다. <span>↔</span></p>
+        </section>
+      )}
 
       {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} />}
 
