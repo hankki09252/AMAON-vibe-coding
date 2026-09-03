@@ -1,21 +1,14 @@
 import { publicAccess } from "../../public-access";
 import { apiAdmin, validPlayerId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
-import { extractYouTubeVideoId, youtubeEmbedUrl, youtubeThumbnailUrl, type VideoOrientation } from "../../youtube";
+import { extractYouTubeVideoId, type VideoOrientation } from "../../youtube";
+import { presentMedia } from "../../media-read";
 
 const categories = new Set(["pitching", "batting", "fielding", "photo", "profile"]);
 const imageCategories = new Set(["photo", "profile"]);
-const signedUrlTtlSeconds = 60 * 60 * 24 * 7;
 
 function validKey(key: string) {
   return /^(gd\/[A-Za-z0-9-]+\/(pitching|batting|fielding|photo|profile)\/[^/]{1,240}|youtube\/[A-Za-z0-9-]+\/(pitching|batting|fielding)\/[A-Za-z0-9_-]{11})$/.test(key);
-}
-
-function youtubeInfo(key: string, contentType: string) {
-  const match = key.match(/^youtube\/[A-Za-z0-9-]+\/(pitching|batting|fielding)\/([A-Za-z0-9_-]{11})$/);
-  if (!match) return null;
-  const orientation: VideoOrientation = contentType.includes("orientation=landscape") ? "landscape" : "portrait";
-  return { videoId: match[2], orientation };
 }
 
 export async function GET(request: Request) {
@@ -33,34 +26,7 @@ export async function GET(request: Request) {
     query, role ? null : publicAccess(playerId ? [playerId] : playerIds.length ? playerIds : undefined),
   ]);
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  const items = await Promise.all((data || []).filter((row) => !access || access.player(row.player_id)).map(async (row) => {
-    const youtube = youtubeInfo(row.storage_key, row.content_type);
-    if (youtube) return {
-      key: row.storage_key,
-      playerId: row.player_id,
-      type: "video" as const,
-      source: "youtube" as const,
-      contentType: row.content_type,
-      uploadedAt: row.uploaded_at,
-      category: row.category,
-      url: youtubeEmbedUrl(youtube.videoId),
-      thumbnailUrl: youtubeThumbnailUrl(youtube.videoId),
-      videoId: youtube.videoId,
-      orientation: youtube.orientation,
-    };
-    const { data: signed } = await db.storage.from("media").createSignedUrl(row.storage_key, signedUrlTtlSeconds);
-    return {
-      key: row.storage_key,
-      playerId: row.player_id,
-      type: imageCategories.has(row.category) ? "image" : "video",
-      contentType: row.content_type,
-      uploadedAt: row.uploaded_at,
-      category: row.category,
-      url: signed?.signedUrl || "",
-      source: "upload" as const,
-      orientation: "landscape" as const,
-    };
-  }));
+  const items = await presentMedia((data || []).filter((row) => !access || access.player(row.player_id)));
   return Response.json({ items }, { headers: { "cache-control": "no-store" } });
 }
 

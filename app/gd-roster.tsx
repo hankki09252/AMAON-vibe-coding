@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { ProfileEntryContext } from "./profile-entry-context";
 import * as tus from "tus-js-client";
 import { createSupabaseBrowserClient } from "./supabase/browser";
 import { managedTeamOptions } from "./team-directory";
@@ -19,7 +20,7 @@ export type TeamPlayer = {
   batsThrows: string;
 };
 
-type MediaItem = {
+export type MediaItem = {
   key: string;
   playerId: string;
   type: "image" | "video";
@@ -38,7 +39,7 @@ type MediaStorageCategory = MediaCategory | "profile";
 type LikeState = { count: number; liked: boolean };
 type TeamEmblem = { key: string; url: string; uploadedAt: string };
 type TeamBanner = { key: string; url: string; uploadedAt: string };
-type PlayerProfileOverride = { playerId: string; year: number; number: string; grade: string; position: string; height: number; weight: number; introduction: string; strengths: string; aspiration: string; updatedAt: number };
+export type PlayerProfileOverride = { playerId: string; year: number; number: string; grade: string; position: string; height: number; weight: number; introduction: string; strengths: string; aspiration: string; updatedAt: number };
 type ProfileEditForm = { year: string; number: string; grade: string; position: string; height: string; weight: string; introduction: string; strengths: string; aspiration: string };
 type OriginSchool = { playerId: string; sequence: number; region: string; school: string; year: number; position: string };
 type OriginSchoolForm = { region: string; school: string; year: string; position: string };
@@ -91,16 +92,19 @@ type TeamRosterProps = {
 };
 
 export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, monogram, players }: TeamRosterProps) {
+  const entryContext = useContext(ProfileEntryContext);
+  const entry = entryContext?.team === sectionId ? entryContext : null;
   const [selected, setSelected] = useState<TeamPlayer | null>(() => {
+    if (entry) return entry.roster.find((item) => item.playerId === entry.player)?.player ?? players.find((player) => player.id === entry.player) ?? null;
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
     if (params.get("team") !== sectionId) return null;
     const playerId = params.get("player");
     return players.find((player) => player.id === playerId) ?? null;
   });
-  const [media, setMedia] = useState<MediaItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [profileLoadComplete, setProfileLoadComplete] = useState(false);
+  const [media, setMedia] = useState<MediaItem[]>(entry?.media ?? []);
+  const [loading, setLoading] = useState(!entry);
+  const [profileLoadComplete, setProfileLoadComplete] = useState(Boolean(entry));
   const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -118,7 +122,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [emblemUploading, setEmblemUploading] = useState(false);
   const [teamBanner, setTeamBanner] = useState<TeamBanner | null>(null);
   const [bannerUploading, setBannerUploading] = useState(false);
-  const [profileOverrides, setProfileOverrides] = useState<Record<string, PlayerProfileOverride>>({});
+  const [profileOverrides, setProfileOverrides] = useState<Record<string, PlayerProfileOverride>>(() => Object.fromEntries((entry?.overrides ?? []).map((item) => [item.playerId, item])));
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileEditForm>({ year: "2026", number: "", grade: "", position: "", height: "", weight: "", introduction: "", strengths: "", aspiration: "" });
@@ -128,7 +132,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const [originForm, setOriginForm] = useState<OriginSchoolForm[]>([]);
   const [mediaFeedOpen, setMediaFeedOpen] = useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
-  const [rosterChanges, setRosterChanges] = useState<ManagedRosterPlayer[]>([]);
+  const [rosterChanges, setRosterChanges] = useState<ManagedRosterPlayer[]>(entry?.roster ?? []);
   const [rosterManagerOpen, setRosterManagerOpen] = useState(false);
   const [newPlayerOpen, setNewPlayerOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
@@ -357,6 +361,15 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
 
   useEffect(() => {
     let cancelled = false;
+    if (entry) {
+      singlePlayerEntryRef.current = true;
+      void loadLikes();
+      void loadAdminAccess();
+      void loadTeamEmblem();
+      void loadTeamBanner();
+      void loadOriginSchools();
+      return;
+    }
     setProfileLoadComplete(false);
     const params = new URLSearchParams(window.location.search);
     const playerId = params.get("team") === sectionId ? params.get("player") : null;

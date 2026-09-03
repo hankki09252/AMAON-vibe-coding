@@ -43,6 +43,7 @@ import VideoRankings from "./video-rankings";
 import CommunityBoard from "./community-board";
 import { managedTeamOptions } from "./team-directory";
 import { createSupabaseBrowserClient } from "./supabase/browser";
+import { ProfileEntryContext, type ProfileEntryData } from "./profile-entry-context";
 
 
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
@@ -133,14 +134,14 @@ const playerSearchIndex = [
 
 type ProfileTarget = { team: string; player: string };
 
-export default function Home({ signedIn = false, initialProfile = null }: { signedIn?: boolean; initialProfile?: ProfileTarget | null }) {
-  const [pendingProfile, setPendingProfile] = useState<ProfileTarget | null>(initialProfile);
+export default function Home({ signedIn = false, initialProfile = null, profileEntry = null }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null }) {
+  const [pendingProfile, setPendingProfile] = useState<ProfileTarget | null>(profileEntry ? null : initialProfile);
   const [profileEntryError, setProfileEntryError] = useState("");
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("전체");
   const [playerDirectoryQuery, setPlayerDirectoryQuery] = useState("");
   const [playerDirectoryRegion, setPlayerDirectoryRegion] = useState("전체");
-  const [visibleRegions, setVisibleRegions] = useState(defaultVisibleRegions);
+  const [visibleRegions, setVisibleRegions] = useState(profileEntry?.visibleRegions ?? defaultVisibleRegions);
   const [regionDraft, setRegionDraft] = useState(defaultVisibleRegions);
   const [editingRegions, setEditingRegions] = useState<string[]>([]);
   const [regionEditingDraft, setRegionEditingDraft] = useState<string[]>([]);
@@ -151,7 +152,7 @@ export default function Home({ signedIn = false, initialProfile = null }: { sign
   const [regionNotice, setRegionNotice] = useState("");
   const [managedRosterPlayers, setManagedRosterPlayers] = useState<ManagedRosterPlayer[]>([]);
   const [teamDirectoryAssets, setTeamDirectoryAssets] = useState<TeamDirectoryAssets>({});
-  const [activeRosterSection, setActiveRosterSection] = useState<string | null>(null);
+  const [activeRosterSection, setActiveRosterSection] = useState<string | null>(profileEntry?.team ?? null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [supportCopyNotice, setSupportCopyNotice] = useState("");
@@ -872,6 +873,7 @@ export default function Home({ signedIn = false, initialProfile = null }: { sign
         {filteredPlayerDirectory.length > visiblePlayerDirectory.length && <p className="player-directory-note">검색 속도를 위해 처음 48명을 표시합니다. 이름이나 학교를 입력하면 원하는 선수를 빠르게 찾을 수 있습니다.</p>}
       </section>
 
+      <ProfileEntryContext.Provider value={profileEntry}>
       {activeRosterSchool && ActiveRosterComponent && <ActiveRosterComponent key={activeRosterSection} />}
       {activeRosterSchool && activeRosterSection && !ActiveRosterComponent && <TeamRoster
         key={activeRosterSection}
@@ -883,6 +885,7 @@ export default function Home({ signedIn = false, initialProfile = null }: { sign
         monogram={activeRosterSchool.name.slice(0, 1)}
         players={[]}
       />}
+      </ProfileEntryContext.Provider>
 
       <section className="how-section" id="how">
         <div className="how-copy">

@@ -37,6 +37,6 @@ export async function publicAccess(playerIds?: string[]) {
       && (!expectedTeam || team === expectedTeam)
       && (separator < 0 || id.slice(0, separator) === team));
   }
-  return { team: (id: string) => teams.has(id), player,
+  return { visibleRegions: settings.visibleRegions, team: (id: string) => teams.has(id), player,
     media: (key: string) => key.startsWith("teams/") ? teams.has(key.split("/")[1]) : player(key.split("/")[1] || "") };
 }
