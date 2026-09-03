@@ -163,7 +163,7 @@ export default function Home({ signedIn = false, initialProfile = null }: { sign
     Promise.all([
       fetch("/api/region-visibility", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
       fetch("/api/admin", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
-      fetch("/api/roster-players", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
+      initialProfile ? Promise.resolve({ items: [] }) : fetch("/api/roster-players", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
     ]).then(([visibility, admin, rosterManagement]) => {
       if (initialProfile) {
         const region = schoolRegionByName[schoolByRosterSection[initialProfile.team]];
@@ -187,6 +187,14 @@ export default function Home({ signedIn = false, initialProfile = null }: { sign
       if (initialProfile) setProfileEntryError("선수 정보를 불러오지 못했습니다. 다시 시도해 주세요.");
     });
   }, []);
+
+  useEffect(() => {
+    if (!initialProfile || pendingProfile) return;
+    void fetch("/api/roster-players", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => { if (Array.isArray(data?.items)) setManagedRosterPlayers(data.items); })
+      .catch(() => undefined);
+  }, [initialProfile, pendingProfile]);
 
   useEffect(() => {
     if (!pendingProfile) return;

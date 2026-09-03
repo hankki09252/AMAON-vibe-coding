@@ -4,11 +4,16 @@ import { createSupabaseAdminClient } from "../../supabase/admin";
 
 export async function GET(request: Request) {
   const { role } = await apiAdmin();
-  const access = role ? null : await publicAccess();
   const teamId = new URL(request.url).searchParams.get("teamId") || "";
+  const playerId = new URL(request.url).searchParams.get("playerId") || undefined;
   if (!validTeamId(teamId)) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
+  if (playerId && !validPlayerId(playerId)) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
   const db = createSupabaseAdminClient();
-  const { data, error } = await db.from("player_profile_overrides").select("*").eq("team_id", teamId);
+  let query = db.from("player_profile_overrides").select("*").eq("team_id", teamId);
+  if (playerId) query = query.eq("player_id", playerId);
+  const [{ data, error }, access] = await Promise.all([
+    query, role ? null : publicAccess(playerId ? [playerId] : undefined),
+  ]);
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ items: (data || []).filter((item) => !access || access.player(item.player_id, teamId)).map((item) => ({ playerId: item.player_id, year: item.roster_year, number: item.jersey_number, grade: item.grade, position: item.position, height: item.height, weight: item.weight, introduction: item.introduction, strengths: item.strengths, aspiration: item.aspiration, updatedAt: new Date(item.updated_at).getTime() })) }, { headers: { "cache-control": "no-store" } });
 }

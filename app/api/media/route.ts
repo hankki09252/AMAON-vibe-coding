@@ -20,7 +20,6 @@ function youtubeInfo(key: string, contentType: string) {
 
 export async function GET(request: Request) {
   const { role } = await apiAdmin();
-  const access = role ? null : await publicAccess();
   const url = new URL(request.url);
   const playerId = url.searchParams.get("playerId");
   const playerIds = [...new Set((url.searchParams.get("playerIds") || "").split(",").filter(Boolean))];
@@ -30,7 +29,9 @@ export async function GET(request: Request) {
   let query = db.from("media_items").select("storage_key, player_id, category, content_type, uploaded_at").order("uploaded_at", { ascending: false }).limit(1000);
   if (playerId) query = query.eq("player_id", playerId);
   else if (playerIds.length) query = query.in("player_id", playerIds);
-  const { data, error } = await query;
+  const [{ data, error }, access] = await Promise.all([
+    query, role ? null : publicAccess(playerId ? [playerId] : playerIds.length ? playerIds : undefined),
+  ]);
   if (error) return Response.json({ error: error.message }, { status: 500 });
   const items = await Promise.all((data || []).filter((row) => !access || access.player(row.player_id)).map(async (row) => {
     const youtube = youtubeInfo(row.storage_key, row.content_type);

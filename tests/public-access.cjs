@@ -15,8 +15,10 @@ let settings = { visibleRegions: ["경기", "인천"], editingRegions: ["서울"
 const db = {
   from(table) {
     assert.equal(table, "roster_players");
+    let scopedRows = rows;
     return { select() { return this; }, order() { return this; },
-      range() { return Promise.resolve({ data: rows, error: null }); } };
+      in(column, ids) { scopedRows = rows.filter((row) => ids.includes(row[column])); return this; },
+      range() { return Promise.resolve({ data: scopedRows, error: null }); } };
   },
   storage: { from() { return { download: async () => ({ data: { text: async () => JSON.stringify(settings) }, error: null }) }; } },
 };
@@ -58,6 +60,12 @@ function load(file) {
   assert.equal(access.player("gd-roster--custom-public"), false, "forged team namespace");
   assert.equal(access.media("youtube/custom-public/pitching/abcdefghijk"), true);
   assert.equal(access.media("youtube/custom-private/pitching/abcdefghijk"), false);
+  for (const id of ["gah-40", "gah-2", "gah-52", "custom-public", "custom-private", "unknown-id"]) {
+    const scoped = await load("app/public-access.ts").publicAccess([id]);
+    assert.equal(scoped.player(id), access.player(id), "scoped visibility: " + id);
+    assert.equal(scoped.player(id === "gah-40" ? "custom-public" : "gah-40"), false, "deny outside scope");
+  }
+  assert.equal((await load("app/public-access.ts").publicAccess([])).player("gah-40"), false);
   settings = { visibleRegions: [], editingRegions: ["경기"] };
   assert.equal((await load("app/public-access.ts").publicAccess()).player("gah-40"), false);
   const protectedRoutes = [

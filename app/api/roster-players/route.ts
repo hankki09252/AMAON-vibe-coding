@@ -89,16 +89,17 @@ function fromRow(row: RosterPlayerRow): ManagedRosterPlayer {
   };
 }
 
-async function readTableItems(): Promise<ManagedRosterPlayer[]> {
+async function readTableItems(playerId?: string): Promise<ManagedRosterPlayer[]> {
   const db = createSupabaseAdminClient();
   const items: ManagedRosterPlayer[] = [];
   const pageSize = 1000;
   for (let from = 0; ; from += pageSize) {
-    const { data, error } = await db
+    let query = db
       .from("roster_players")
       .select("*")
-      .order("player_id")
-      .range(from, from + pageSize - 1);
+      .order("player_id");
+    if (playerId) query = query.eq("player_id", playerId);
+    const { data, error } = await query.range(from, from + pageSize - 1);
     if (error) throw new Error(`선수 기록 테이블을 읽지 못했습니다: ${error.message}`);
     const rows = (data || []) as RosterPlayerRow[];
     items.push(...rows.map(fromRow));
@@ -187,10 +188,13 @@ async function migratePlayerDetails(playerId: string, fromTeamId: string, toTeam
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const playerId = new URL(request.url).searchParams.get("playerId") || undefined;
+  if (playerId && !validPlayerId(playerId)) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
   const { role } = await apiAdmin();
-  const items = await readTableItems();
-  const access = role ? null : await publicAccess();
+  const [items, access] = await Promise.all([
+    readTableItems(playerId), role ? null : publicAccess(playerId ? [playerId] : undefined),
+  ]);
   const publicItems = items.map((item) => access && !access.player(item.playerId)
     ? { playerId: item.playerId, teamId: item.teamId, originTeamId: item.originTeamId, hidden: true }
     : role ? item : { ...item, updatedBy: "" });
