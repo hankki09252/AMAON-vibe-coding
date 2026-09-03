@@ -1622,6 +1622,14 @@ footer p, footer small { color: #777; }
   .amaon-guide-mission button { grid-column: 2; width: max-content; }
 }
 
+/* Present a shared profile in one reveal, never the intermediate home/team scroll. */
+.profile-entry-pending > :not(.profile-entry-gate) { visibility: hidden !important; pointer-events: none; }
+.profile-entry-gate { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 28px; background: #050505; color: #f7f7f5; text-align: center; }
+.profile-entry-gate small { display: block; margin-bottom: 22px; color: #ff6900; font-size: 11px; font-weight: 800; letter-spacing: 2px; }
+.profile-entry-gate strong { display: block; font-size: clamp(20px, 4vw, 28px); }
+.profile-entry-gate p { color: #aaa; font-size: 14px; }
+.profile-entry-gate button, .profile-entry-gate a { display: inline-block; margin: 12px 8px; padding: 12px 18px; border: 1px solid #ff6900; background: #111; color: #fff; font: inherit; text-decoration: none; cursor: pointer; }
+
 @media (max-width: 800px) {
   .section-console-bar { min-height: 44px; margin-bottom: 26px; padding-inline: 12px; }
   .section-console-bar small { display: none; }

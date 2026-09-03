@@ -100,6 +100,8 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   });
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profileLoadComplete, setProfileLoadComplete] = useState(false);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadingPlayerId, setUploadingPlayerId] = useState<string | null>(null);
@@ -191,6 +193,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     url.searchParams.delete("player");
     url.hash = sectionId;
     window.history.replaceState({ amaonView: "team", team: sectionId }, "", url);
+    requestAnimationFrame(() => {
+      const team = document.getElementById(sectionId);
+      if (team) window.scrollTo({ top: team.getBoundingClientRect().top + window.scrollY, behavior: "instant" });
+    });
   }
 
   function goToSchoolDirectory() {
@@ -331,26 +337,28 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   async function loadRosterChanges() {
     try {
       const response = await fetch("/api/roster-players", { cache: "no-store" });
-      if (!response.ok) return;
+      if (!response.ok) throw new Error("선수 명단을 불러오지 못했습니다.");
       const data = await response.json() as { items: ManagedRosterPlayer[] };
       const items = data.items || [];
       setRosterChanges(items);
       const managedPlayerIds = items.filter((item) => item.teamId === sectionId && !item.hidden).map((item) => item.playerId);
-      if (managedPlayerIds.length) void loadMedia(managedPlayerIds);
+      await loadMedia(managedPlayerIds);
     } catch {
-      // The original roster remains available if management settings cannot load.
+      setProfileLoadFailed(true);
+      setLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadMedia();
-    void loadLikes();
-    void loadAdminAccess();
-    void loadTeamEmblem();
-    void loadProfileOverrides();
-    void loadTeamBanner();
-    void loadOriginSchools();
-    void loadRosterChanges();
+    let cancelled = false;
+    setProfileLoadComplete(false);
+    void Promise.all([
+      loadLikes(), loadAdminAccess(), loadTeamEmblem(), loadProfileOverrides(),
+      loadTeamBanner(), loadOriginSchools(),
+      // Fetch the team media once, after including dynamically registered players.
+      loadRosterChanges(),
+    ]).finally(() => { if (!cancelled) setProfileLoadComplete(true); });
+    return () => { cancelled = true; };
   }, [sectionId]);
 
   function beginOriginEdit() {
@@ -972,6 +980,35 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     ? newestMediaFirst(selectedMedia.filter((item) => item.type === "image" && item.category === "profile"))[0]
       ?? newestMediaFirst(selectedMedia.filter((item) => item.type === "image" && item.category === "photo"))[0]
     : undefined;
+  useEffect(() => {
+    if (!profileLoadComplete) return;
+    const params = new URLSearchParams(window.location.search);
+    const playerId = params.get("player");
+    if (params.get("team") !== sectionId || !playerId) return;
+    const found = displayPlayers.some((player) => player.id === playerId);
+    if (found && selected?.id !== playerId) return; // URL selection commits next render.
+    if (!found && rosterChanges.some((item) => item.playerId === playerId && !item.hidden && item.teamId !== sectionId)) return;
+    let cancelled = false;
+    let frame = 0;
+    const images = [selectedProfilePortrait?.url, teamBanner?.url].filter(Boolean) as string[];
+    const loaded = Promise.all(images.map((url) => new Promise<void>((resolve) => {
+      const image = new Image();
+      image.onload = image.onerror = () => resolve();
+      image.src = url;
+      if (image.complete) resolve();
+    })));
+    let timeout: ReturnType<typeof setTimeout>;
+    const deadline = new Promise<void>((resolve) => { timeout = setTimeout(resolve, 2500); });
+    void Promise.race([loaded, deadline]).then(() => {
+      if (cancelled) return;
+      frame = requestAnimationFrame(() => {
+        if (!cancelled) window.dispatchEvent(new CustomEvent("amaon:profile-ready", {
+          detail: { team: sectionId, player: playerId, ready: found && !profileLoadFailed },
+        }));
+      });
+    });
+    return () => { cancelled = true; clearTimeout(timeout); cancelAnimationFrame(frame); };
+  }, [profileLoadComplete, profileLoadFailed, selected?.id, selectedProfilePortrait?.url, teamBanner?.url, displayPlayers, rosterChanges, sectionId]);
   const featuredVideo = selected
     ? newestMediaFirst(selectedMedia.filter((item) => item.type === "video"))[0]
     : undefined;

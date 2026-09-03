@@ -131,7 +131,11 @@ const playerSearchIndex = [
   ...ansanTechnicalPlayers.map((player) => ({ player, school: "안산공업고", sectionId: "ansan-technical-roster" })),
 ];
 
-export default function Home({ signedIn = false }: { signedIn?: boolean }) {
+type ProfileTarget = { team: string; player: string };
+
+export default function Home({ signedIn = false, initialProfile = null }: { signedIn?: boolean; initialProfile?: ProfileTarget | null }) {
+  const [pendingProfile, setPendingProfile] = useState<ProfileTarget | null>(initialProfile);
+  const [profileEntryError, setProfileEntryError] = useState("");
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("전체");
   const [playerDirectoryQuery, setPlayerDirectoryQuery] = useState("");
@@ -161,6 +165,11 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
       fetch("/api/admin", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
       fetch("/api/roster-players", { cache: "no-store" }).then((response) => response.ok ? response.json() : null),
     ]).then(([visibility, admin, rosterManagement]) => {
+      if (initialProfile) {
+        const region = schoolRegionByName[schoolByRosterSection[initialProfile.team]];
+        if (!visibility || !rosterManagement) setProfileEntryError("선수 정보를 불러오지 못했습니다. 다시 시도해 주세요.");
+        else if (!region || (!admin?.isAdmin && !visibility.visibleRegions?.includes(region))) setProfileEntryError("공개된 선수 프로필을 찾을 수 없습니다.");
+      }
       if (Array.isArray(visibility?.visibleRegions) && visibility.visibleRegions.length) {
         setVisibleRegions(visibility.visibleRegions);
         setRegionDraft(visibility.visibleRegions);
@@ -174,10 +183,29 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
       }
       setIsAdmin(Boolean(admin?.isAdmin));
       if (Array.isArray(rosterManagement?.items)) setManagedRosterPlayers(rosterManagement.items);
-    }).catch(() => undefined);
+    }).catch(() => {
+      if (initialProfile) setProfileEntryError("선수 정보를 불러오지 못했습니다. 다시 시도해 주세요.");
+    });
   }, []);
 
   useEffect(() => {
+    if (!pendingProfile) return;
+    function finishEntry(event: Event) {
+      const detail = (event as CustomEvent<{ team: string; player: string; ready: boolean }>).detail;
+      if (detail?.team !== pendingProfile?.team || detail.player !== pendingProfile.player) return;
+      if (detail.ready) setPendingProfile(null);
+      else setProfileEntryError("공개된 선수 프로필을 찾을 수 없습니다.");
+    }
+    const timeout = window.setTimeout(() => setProfileEntryError("연결이 지연되고 있습니다. 다시 시도해 주세요."), 15000);
+    window.addEventListener("amaon:profile-ready", finishEntry);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("amaon:profile-ready", finishEntry);
+    };
+  }, [pendingProfile]);
+
+  useEffect(() => {
+    if (pendingProfile) return; // Prioritize the shared player over the home directory assets.
     const teamIds = [...new Set(Object.values(rosterSectionBySchool))];
     const loadAssets = async () => {
       async function loadAssetKind(kind: "banners" | "emblems") {
@@ -217,7 +245,7 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
     }
     window.addEventListener("amaon:team-asset-changed", syncTeamAsset);
     return () => window.removeEventListener("amaon:team-asset-changed", syncTeamAsset);
-  }, []);
+  }, [pendingProfile]);
 
   useEffect(() => {
     function syncRosterChange(event: Event) {
@@ -262,7 +290,7 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (!activeRosterSection || window.location.hash !== `#${activeRosterSection}`) return;
+    if (!activeRosterSection || new URLSearchParams(window.location.search).has("player") || window.location.hash !== `#${activeRosterSection}`) return;
     const frame = window.requestAnimationFrame(() => {
       const target = document.getElementById(activeRosterSection);
       if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, left: 0, behavior: "auto" });
@@ -397,6 +425,8 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
   }
 
   function openSearchedPlayer(result: (typeof currentPlayerSearchIndex)[number]) {
+    setProfileEntryError("");
+    setPendingProfile({ team: result.sectionId, player: result.player.id });
     const url = new URL(window.location.href);
     url.searchParams.set("team", result.sectionId);
     url.searchParams.set("player", result.player.id);
@@ -407,6 +437,7 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
     setActiveMobileSection("players");
     setShowMobileBack(true);
     setMobileMenuOpen(false);
+    window.dispatchEvent(new PopStateEvent("popstate"));
   }
 
   function runMainSearch() {
@@ -506,7 +537,13 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
   }
 
   return (
-    <main className="member-home">
+    <main className={`member-home${pendingProfile ? " profile-entry-pending" : ""}`}>
+      {pendingProfile && <div className="profile-entry-gate" role={profileEntryError ? "alert" : "status"} aria-live="polite">
+        <div><small>AMAON · PLAYER PROFILE</small><strong>{profileEntryError || "선수 프로필을 준비하고 있습니다"}</strong>
+          {profileEntryError ? <p><button type="button" onClick={() => window.location.reload()}>다시 시도</button><a href="/">아마ON 홈으로</a></p>
+            : <p>잠시만 기다려 주세요.</p>}
+        </div>
+      </div>}
       <header className="topbar">
         <a className="brand-lockup" href="#top" aria-label="아마ON 홈">
           <Image
@@ -675,9 +712,9 @@ export default function Home({ signedIn = false }: { signedIn?: boolean }) {
         </div>
       </section>
 
-      <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} />
+      {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} />}
 
-      <CommunityBoard signedIn={signedIn} />
+      {!pendingProfile && <CommunityBoard signedIn={signedIn} />}
 
       <section className="school-section" id="schools">
         <div className="section-console-bar">
