@@ -107,7 +107,7 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
 
   async function upload(ticket: UploadTicket, source: File, contentType: string) {
     await new Promise<void>((resolve, reject) => {
-      const task = new tus.Upload(source, { endpoint: ticket.uploadEndpoint, retryDelays: [0, 1000, 3000, 5000, 10000], headers: { "x-signature": ticket.token, apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! }, uploadDataDuringCreation: true, removeFingerprintOnSuccess: true, chunkSize: 6 * 1024 * 1024, metadata: { bucketName: "media", objectName: ticket.storageKey, contentType, cacheControl: "3600" }, onError: reject, onProgress: (uploaded, total) => setProgress(Math.min(98, Math.round((uploaded / total) * 98))), onSuccess: () => resolve() });
+      const task = new tus.Upload(source, { endpoint: ticket.uploadEndpoint, retryDelays: [0, 1000, 3000, 5000, 10000], headers: { "x-signature": ticket.token }, uploadDataDuringCreation: true, removeFingerprintOnSuccess: true, chunkSize: 6 * 1024 * 1024, metadata: { bucketName: "media", objectName: ticket.storageKey, contentType, cacheControl: "3600" }, onError: reject, onProgress: (uploaded, total) => setProgress(Math.min(98, Math.round((uploaded / total) * 98))), onSuccess: () => resolve() });
       task.start();
     });
   }
