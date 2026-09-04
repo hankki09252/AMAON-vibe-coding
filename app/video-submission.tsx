@@ -188,5 +188,15 @@ function ProfileFields({ value, onChange }: { value: ProfileForm; onChange: (nex
 }
 
 function TransferFields({ value, currentTeamId, onChange }: { value: string; currentTeamId: string; onChange: (next: string) => void }) {
-  return <div className="player-profile-request-fields"><p>전학한 학교만 선택하면 됩니다. 프로필 내용을 다시 입력할 필요가 없습니다.</p><label>전학할 학교<select value={value} required onChange={(event) => onChange(event.target.value)}><option value="">학교 선택</option>{managedTeamOptions.filter((team) => team.id !== currentTeamId).map((team) => <option key={team.id} value={team.id}>{team.label}</option>)}</select><small>운영자 승인 후 기존 사진·영상·프로필을 유지한 채 새 학교로 이동합니다.</small></label></div>;
+  const [query, setQuery] = useState("");
+  const selectedTeam = managedTeamOptions.find((team) => team.id === value);
+  const results = useMemo(() => {
+    const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
+    if (!keyword) return [];
+    return managedTeamOptions
+      .filter((team) => team.id !== currentTeamId && team.label.replace(/\s+/g, "").toLowerCase().includes(keyword))
+      .slice(0, 8);
+  }, [currentTeamId, query]);
+
+  return <div className="player-profile-request-fields"><p>전학한 학교명만 검색해 선택하면 됩니다. 프로필 내용을 다시 입력할 필요가 없습니다.</p>{selectedTeam ? <button className="video-submit-selected" type="button" onClick={() => { onChange(""); setQuery(""); }}><strong>{selectedTeam.label}</strong><span>전학할 학교로 선택됨</span><em>다시 찾기</em></button> : <><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="전학한 학교명 검색" aria-label="전학할 학교 검색" autoComplete="off" />{query.trim() && (results.length ? <div className="video-submit-results" aria-label="전학할 학교 검색 결과">{results.map((team) => <button type="button" key={team.id} onClick={() => onChange(team.id)}><strong>{team.label}</strong><span>이 학교로 전학 요청</span><em>선택</em></button>)}</div> : <p>검색 결과가 없습니다. 학교 이름을 다시 확인해 주세요.</p>)}</>}<p>운영자 승인 후 기존 사진·영상·프로필을 유지한 채 새 학교로 이동합니다.</p></div>;
 }
