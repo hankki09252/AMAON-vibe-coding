@@ -19,6 +19,8 @@ type SubmissionRow = {
   created_at: string; uploaded_at: string | null; reviewed_at: string | null;
 };
 
+type ImageRequest = { fileName: string; fileSize: number; contentType: string };
+
 function cleanText(value: unknown, max = 120) {
   return String(value || "").replace(/[\r\0]/g, " ").trim().slice(0, max);
 }
@@ -107,11 +109,13 @@ export async function POST(request: Request) {
 
   const requester = await requesterHash(contact);
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count } = await db.from("player_profile_submissions").select("id", { count: "exact", head: true }).eq("requester_hash", requester.hash).gte("created_at", since);
-  if ((count || 0) >= 3) return Response.json({ error: "하루 등록·수정 요청은 최대 3개입니다. 내일 다시 이용해 주세요." }, { status: 429 });
+  const { data: recentRequests } = await db.from("player_profile_submissions").select("created_at").eq("requester_hash", requester.hash).gte("created_at", since).limit(40);
+  const requestCount = new Set((recentRequests || []).map((row) => row.created_at)).size;
+  if (requestCount >= 3) return Response.json({ error: "하루 등록·수정 요청은 최대 3번입니다. 내일 다시 이용해 주세요." }, { status: 429 });
 
   const id = randomUUID();
-  const base = { id, team_id: teamId, player_id: playerId, player_name: player.name, school_name: managedTeamLabel[teamId], submission_type: submissionType, relationship, contact, consent, social_consent: socialConsent, requester_hash: requester.hash };
+  const createdAt = new Date().toISOString();
+  const base = { id, team_id: teamId, player_id: playerId, player_name: player.name, school_name: managedTeamLabel[teamId], submission_type: submissionType, relationship, contact, consent, social_consent: socialConsent, requester_hash: requester.hash, created_at: createdAt };
   if (submissionType === "profile") {
     const data = profilePayload(body.profileData);
     if (!Object.keys(data).length) return Response.json({ error: "수정할 프로필 내용을 하나 이상 입력해 주세요." }, { status: 400 });
@@ -119,6 +123,37 @@ export async function POST(request: Request) {
     if (error) return Response.json({ error: "프로필 수정 요청을 저장하지 못했습니다." }, { status: 500 });
     const response = Response.json({ ok: true, submissionId: id }, { status: 201 });
     response.headers.append("Set-Cookie", `${visitorCookie}=${requester.visitorId}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`);
+    return response;
+  }
+
+  if (submissionType === "photo") {
+    const requestedFiles = Array.isArray(body.files) ? body.files : body.fileName ? [{ fileName: body.fileName, fileSize: body.fileSize, contentType: body.contentType }] : [];
+    const files = requestedFiles.slice(0, 11).map((value) => {
+      const input = value && typeof value === "object" ? value as Record<string, unknown> : {};
+      return { fileName: cleanText(input.fileName || "photo.jpg"), fileSize: Number(input.fileSize || 0), contentType: String(input.contentType || "").toLowerCase() } satisfies ImageRequest;
+    });
+    if (!files.length || files.length > 10) return Response.json({ error: "경기·훈련 사진은 한 번에 1장부터 10장까지 선택해 주세요." }, { status: 400 });
+    if (files.some((item) => !allowedImageTypes.has(item.contentType) || !Number.isFinite(item.fileSize) || item.fileSize <= 0 || item.fileSize > maxImageBytes)) {
+      return Response.json({ error: "사진은 JPG·PNG·WEBP 형식, 사진당 최대 12MB까지 등록할 수 있습니다." }, { status: 400 });
+    }
+    const entries = files.map((item, index) => {
+      const submissionId = index === 0 ? id : randomUUID();
+      const extension = safeImageExtension(item.fileName, item.contentType);
+      return { submissionId, storageKey: `submissions/${submissionId}/photo.${extension}`, file: item };
+    });
+    const { error: insertError } = await db.from("player_profile_submissions").insert(entries.map((entry) => ({ ...base, id: entry.submissionId, profile_data: {}, original_name: entry.file.fileName, storage_key: entry.storageKey, content_type: entry.file.contentType, file_size: Math.round(entry.file.fileSize) })));
+    if (insertError) return Response.json({ error: "사진 등록 요청을 만들지 못했습니다." }, { status: 500 });
+    const signedTickets = await Promise.all(entries.map(async (entry) => ({ entry, result: await db.storage.from(bucket).createSignedUploadUrl(entry.storageKey) })));
+    if (signedTickets.some(({ result }) => result.error || !result.data?.token)) {
+      await db.from("player_profile_submissions").delete().in("id", entries.map((entry) => entry.submissionId));
+      return Response.json({ error: "사진 업로드 주소를 만들지 못했습니다." }, { status: 500 });
+    }
+    const projectId = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0];
+    const uploadEndpoint = `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable/sign`;
+    const tickets = signedTickets.map(({ entry, result }) => ({ submissionId: entry.submissionId, storageKey: entry.storageKey, token: result.data!.token, uploadEndpoint }));
+    const response = Response.json(Array.isArray(body.files) ? { submissionId: id, tickets } : { ...tickets[0], tickets }, { status: 201 });
+    response.headers.append("Set-Cookie", `${visitorCookie}=${requester.visitorId}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`);
+    response.headers.set("Cache-Control", "no-store");
     return response;
   }
 
