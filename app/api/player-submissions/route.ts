@@ -41,6 +41,7 @@ function profilePayload(value: unknown) {
   const introduction = cleanText(input.introduction, 500);
   const strengths = cleanText(input.strengths, 300);
   const aspiration = cleanText(input.aspiration, 300);
+  const transferTeamId = cleanText(input.transferTeamId, 80);
   const year = Number(input.year);
   const height = Number(input.height);
   const weight = Number(input.weight);
@@ -51,6 +52,7 @@ function profilePayload(value: unknown) {
   if (introduction) output.introduction = introduction;
   if (strengths) output.strengths = strengths;
   if (aspiration) output.aspiration = aspiration;
+  if (transferTeamId && validTeamId(transferTeamId) && managedTeamLabel[transferTeamId]) output.transferTeamId = transferTeamId;
   if (Number.isInteger(year) && year >= 2000 && year <= 2100) output.year = year;
   if (Number.isInteger(height) && height >= 100 && height <= 230) output.height = height;
   if (Number.isInteger(weight) && weight >= 30 && weight <= 200) output.weight = weight;
@@ -117,6 +119,10 @@ export async function POST(request: Request) {
   const createdAt = new Date().toISOString();
   const base = { id, team_id: teamId, player_id: playerId, player_name: player.name, school_name: managedTeamLabel[teamId], submission_type: submissionType, relationship, contact, consent, social_consent: socialConsent, requester_hash: requester.hash, created_at: createdAt };
   if (submissionType === "profile") {
+    const requestedTransfer = cleanText((body.profileData as Record<string, unknown> | undefined)?.transferTeamId, 80);
+    if (requestedTransfer && (!validTeamId(requestedTransfer) || !managedTeamLabel[requestedTransfer] || requestedTransfer === teamId)) {
+      return Response.json({ error: "전학할 학교를 다시 선택해 주세요." }, { status: 400 });
+    }
     const data = profilePayload(body.profileData);
     if (!Object.keys(data).length) return Response.json({ error: "수정할 프로필 내용을 하나 이상 입력해 주세요." }, { status: 400 });
     const { error } = await db.from("player_profile_submissions").insert({ ...base, profile_data: data, status: "pending", content_type: "application/json", file_size: 0 });
@@ -211,14 +217,26 @@ export async function PATCH(request: Request) {
   }
 
   if (row.submission_type === "profile") {
+    const data = profilePayload(row.profile_data);
+    const transferTeamId = typeof data.transferTeamId === "string" ? data.transferTeamId : "";
+    const targetTeamId = transferTeamId || row.team_id;
+    if (transferTeamId) {
+      const { error: transferError } = await db.rpc("admin_transfer_player", {
+        p_player_id: row.player_id,
+        p_from_team_id: row.team_id,
+        p_to_team_id: transferTeamId,
+        p_school_name: managedTeamLabel[transferTeamId],
+        p_updated_by: user.email || "",
+      });
+      if (transferError) return Response.json({ error: `선수 전학을 처리하지 못했습니다: ${transferError.message}` }, { status: 500 });
+    }
     const [{ data: roster }, { data: current }] = await Promise.all([
-      db.from("roster_players").select("roster_year,jersey_number,grade,position,height,weight,bats_throws").eq("team_id", row.team_id).eq("player_id", row.player_id).maybeSingle(),
-      db.from("player_profile_overrides").select("*").eq("team_id", row.team_id).eq("player_id", row.player_id).maybeSingle(),
+      db.from("roster_players").select("roster_year,jersey_number,grade,position,height,weight,bats_throws").eq("team_id", targetTeamId).eq("player_id", row.player_id).maybeSingle(),
+      db.from("player_profile_overrides").select("*").eq("team_id", targetTeamId).eq("player_id", row.player_id).maybeSingle(),
     ]);
     if (!roster) return Response.json({ error: "반영할 선수 정보를 찾지 못했습니다." }, { status: 404 });
-    const data = profilePayload(row.profile_data);
     const profileRow = {
-      team_id: row.team_id, player_id: row.player_id,
+      team_id: targetTeamId, player_id: row.player_id,
       roster_year: data.year ?? current?.roster_year ?? roster.roster_year,
       jersey_number: data.number ?? current?.jersey_number ?? roster.jersey_number,
       grade: data.grade ?? current?.grade ?? roster.grade,
@@ -232,7 +250,9 @@ export async function PATCH(request: Request) {
     };
     const { error: profileError } = await db.from("player_profile_overrides").upsert(profileRow, { onConflict: "team_id,player_id" });
     if (profileError) return Response.json({ error: "선수 프로필에 수정 내용을 반영하지 못했습니다." }, { status: 500 });
-    if (data.batsThrows) await db.from("roster_players").update({ bats_throws: data.batsThrows, updated_by: user.email }).eq("team_id", row.team_id).eq("player_id", row.player_id);
+    if (data.batsThrows) await db.from("roster_players").update({ bats_throws: data.batsThrows, updated_by: user.email }).eq("team_id", targetTeamId).eq("player_id", row.player_id);
+    row.team_id = targetTeamId;
+    row.school_name = managedTeamLabel[targetTeamId];
   } else {
     if (!row.storage_key) return Response.json({ error: "승인할 사진 파일을 찾지 못했습니다." }, { status: 409 });
     const category = row.submission_type === "profile_photo" ? "profile" : "photo";
@@ -248,7 +268,7 @@ export async function PATCH(request: Request) {
     }
     row.storage_key = finalKey;
   }
-  const { error: updateError } = await db.from("player_profile_submissions").update({ storage_key: row.storage_key, status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.email }).eq("id", id).eq("status", "pending");
+  const { error: updateError } = await db.from("player_profile_submissions").update({ team_id: row.team_id, school_name: row.school_name, storage_key: row.storage_key, status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.email }).eq("id", id).eq("status", "pending");
   if (updateError) return Response.json({ error: "승인 상태를 저장하지 못했습니다." }, { status: 500 });
   return Response.json({ ok: true, profileUrl: `/?team=${encodeURIComponent(row.team_id)}&player=${encodeURIComponent(row.player_id)}#${encodeURIComponent(row.team_id)}` });
 }

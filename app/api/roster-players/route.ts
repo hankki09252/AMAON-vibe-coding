@@ -168,24 +168,17 @@ function parsePlayer(value: unknown, forcedId?: string): StoredPlayer | null {
   return player;
 }
 
-async function migratePlayerDetails(playerId: string, fromTeamId: string, toTeamId: string) {
+async function migratePlayerDetails(playerId: string, fromTeamId: string, toTeamId: string, updatedBy: string) {
   if (fromTeamId === toTeamId) return;
   const db = createSupabaseAdminClient();
-  const { data: profile } = await db.from("player_profile_overrides").select("*").eq("team_id", fromTeamId).eq("player_id", playerId).maybeSingle();
-  if (profile) {
-    const { team_id: _oldTeam, ...rest } = profile;
-    const { error } = await db.from("player_profile_overrides").upsert({ ...rest, team_id: toTeamId }, { onConflict: "team_id,player_id" });
-    if (error) throw new Error(error.message);
-    await db.from("player_profile_overrides").delete().eq("team_id", fromTeamId).eq("player_id", playerId);
-  }
-
-  const { data: origins } = await db.from("player_origin_schools").select("*").eq("team_id", fromTeamId).eq("player_id", playerId).order("sequence");
-  if (origins?.length) {
-    const rows = origins.map(({ team_id: _oldTeam, ...rest }) => ({ ...rest, team_id: toTeamId }));
-    const { error } = await db.from("player_origin_schools").upsert(rows, { onConflict: "team_id,player_id,sequence" });
-    if (error) throw new Error(error.message);
-    await db.from("player_origin_schools").delete().eq("team_id", fromTeamId).eq("player_id", playerId);
-  }
+  const { error } = await db.rpc("admin_transfer_player", {
+    p_player_id: playerId,
+    p_from_team_id: fromTeamId,
+    p_to_team_id: toTeamId,
+    p_school_name: managedTeamLabel[toTeamId],
+    p_updated_by: updatedBy,
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function GET(request: Request) {
@@ -287,7 +280,7 @@ export async function PUT(request: Request) {
     updatedBy: user.email || "",
   };
   try {
-    if (fromTeamId !== teamId) await migratePlayerDetails(playerId, fromTeamId, teamId);
+    if (fromTeamId !== teamId) await migratePlayerDetails(playerId, fromTeamId, teamId, user.email || "");
     await saveItems([item]);
     return Response.json({ item });
   } catch (error) {
