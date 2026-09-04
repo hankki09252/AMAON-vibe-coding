@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import type { TeamPlayer } from "./gd-roster";
 import { youtubeEmbedUrl } from "./youtube";
 import { offerMemberLogin } from "./member-login";
+
+const GlobalVideoFeed = dynamic(() => import("./global-video-feed"));
 
 type PlayerIndexItem = { player: TeamPlayer; school: string; sectionId: string };
 type RankingItem = {
@@ -22,12 +25,13 @@ type RankingItem = {
 
 const categoryLabels = { pitching: "투구영상", batting: "타격영상", fielding: "수비영상" } as const;
 
-export default function VideoRankings({ players, visibleRegions, schoolRegions }: { players: PlayerIndexItem[]; visibleRegions: string[]; schoolRegions: Record<string, string> }) {
+export default function VideoRankings({ players, visibleRegions, schoolRegions, onOpenPlayer }: { players: PlayerIndexItem[]; visibleRegions: string[]; schoolRegions: Record<string, string>; onOpenPlayer?: (player: PlayerIndexItem) => void }) {
   const [items, setItems] = useState<RankingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState<{ item: RankingItem; match: PlayerIndexItem } | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [feedOpen, setFeedOpen] = useState(false);
   const mutationPending = useRef(false);
   const loadSequence = useRef(0);
 
@@ -125,7 +129,7 @@ export default function VideoRankings({ players, visibleRegions, schoolRegions }
       </div>
       <div className="video-ranking-heading">
         <div><p className="kicker dark"><span /> MOST LIKED FILMS</p><h2>좋아요 TOP 5 영상</h2></div>
-        <p>회원들이 가장 많이 좋아한 선수 영상을 만나보세요.<br />영상 영역은 재생, 하트는 좋아요를 누르는 버튼입니다.</p>
+        <div className="video-ranking-heading-actions"><p>회원들이 가장 많이 좋아한 선수 영상을 만나보세요.<br />영상 영역은 재생, 하트는 좋아요를 누르는 버튼입니다.</p><button type="button" onClick={() => setFeedOpen(true)}>전체 영상 세로로 보기 <b>↕</b></button></div>
       </div>
       {notice && !activeVideo && <p className="video-ranking-notice" role="status">{notice}</p>}
       {ranked.length ? (
@@ -166,5 +170,6 @@ export default function VideoRankings({ players, visibleRegions, schoolRegions }
         {notice && <p className="video-ranking-notice" role="status">{notice}</p>}
       </div>
     </section>}
+    {feedOpen && <GlobalVideoFeed open onClose={() => setFeedOpen(false)} players={players} onOpenPlayer={onOpenPlayer} />}
   </>;
 }

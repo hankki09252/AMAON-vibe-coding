@@ -773,7 +773,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         </section>
       )}
 
-      {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} />}
+      {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} onOpenPlayer={openSearchedPlayer} />}
 
       {!pendingProfile && <CommunityBoard signedIn={signedIn} />}
 

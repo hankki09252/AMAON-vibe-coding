@@ -42,6 +42,7 @@ const server = http.createServer(async (req, res) => {
   if (req.url === "/theme.css") { res.setHeader("Content-Type", "text/css"); return res.end(fs.readFileSync(path.join(root, "app/theme.css"))); }
   if (req.url === "/pixel.svg") { res.setHeader("Content-Type", "image/svg+xml"); return res.end('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180"><rect width="300" height="180" fill="#333"/></svg>'); }
   if (req.url === "/api/video-rankings") { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify({ items })); }
+  if (req.url === "/api/video-feed") { res.setHeader("Content-Type", "application/json"); return res.end(JSON.stringify({ items, nextCursor: null })); }
   if (req.url === "/api/likes" && req.method === "POST") {
     posts++;
     let body = ""; for await (const chunk of req) body += chunk;
@@ -59,7 +60,7 @@ const server = http.createServer(async (req, res) => {
 (async () => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch({ headless: true, ...(process.env.AMAON_TEST_BROWSER_CHANNEL ? { channel: process.env.AMAON_TEST_BROWSER_CHANNEL } : {}) });
+  const browser = await chromium.launch({ headless: true, ...(process.env.AMAON_TEST_BROWSER_PATH ? { executablePath: process.env.AMAON_TEST_BROWSER_PATH } : {}), ...(process.env.AMAON_TEST_BROWSER_CHANNEL ? { channel: process.env.AMAON_TEST_BROWSER_CHANNEL } : {}) });
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await page.route("**/*", (route) => route.request().url().startsWith(origin) ? route.continue() : route.fulfill({ status: 200, contentType: "text/html", body: "Test video" }));
@@ -86,6 +87,15 @@ const server = http.createServer(async (req, res) => {
     assert.equal(posts, before + 1, "Rapid clicks send one request");
     assert.equal(await heart.getAttribute("aria-pressed"), "true", "Modal and card agree");
     await page.getByRole("button", { name: "영상 닫기", exact: true }).click();
+    await page.getByRole("button", { name: /전체 영상 세로로 보기/ }).click();
+    const feed = page.getByRole("dialog", { name: "아마온 전체 영상 피드" });
+    await feed.waitFor();
+    await feed.locator('[data-index="0"] iframe').waitFor();
+    assert.equal(await feed.locator("iframe").count(), 1, "Only the active feed video is mounted");
+    await feed.getByRole("button", { name: "다음 영상" }).click();
+    await feed.locator('[data-index="1"] iframe').waitFor();
+    assert.equal(await feed.locator("iframe").count(), 1, "Previous video is unloaded after scrolling");
+    await feed.getByRole("button", { name: "전체 영상 닫기" }).click();
     mode = "error"; await heart.click();
     await page.getByRole("status").filter({ hasText: "저장하지 못했습니다" }).waitFor();
     assert.equal(await heart.getAttribute("aria-pressed"), "true", "Failure must not fake success");
@@ -101,6 +111,6 @@ const server = http.createServer(async (req, res) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.screenshot({ path: path.join(os.tmpdir(), "amaon-ranking-desktop.png"), fullPage: true });
     assert.deepEqual(errors, []);
-    console.log("PASS: like/unlike, persistence, click separation, modal sync, duplicate guard, 500/401 feedback, mobile, no runtime errors");
+    console.log("PASS: likes, modal, paged vertical feed, single active player, mobile, no runtime errors");
   } finally { await browser.close(); server.close(); }
 })().catch((error) => { console.error(error); server.close(); process.exitCode = 1; });
