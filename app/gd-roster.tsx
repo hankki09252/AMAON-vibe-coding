@@ -1028,9 +1028,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
   const selectedTagline = selectedDetails?.introduction?.trim()
     || `${selectedDisplay?.position ?? "야구선수"}로서 매 순간 성장하고 있습니다.`;
 
-  function openMediaFeed() {
+  function openMediaFeed(startIndex = 0) {
     if (!selectedCategoryMedia.length) return;
-    setActiveMediaIndex(0);
+    setActiveMediaIndex(startIndex);
     setMediaFeedOpen(true);
   }
 
@@ -1308,7 +1308,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               </div> : <p className="gd-origin-empty">등록된 출신학교가 없습니다.</p>}
             </section>
 
-            <div className="gd-media-head" id={`${sectionId}-${selectedDisplay.id}-media`}><div><h3>사진 · 경기 영상</h3><p>대표 프로필 사진과 일반 경기 사진은 서로 구분해 등록합니다.</p></div><div className="gd-media-head-actions"><button type="button" className="gd-feed-open" onClick={openMediaFeed} disabled={!selectedCategoryMedia.length}>릴스처럼 보기 <span>↕</span></button>{isAdmin ? selectedCategory === "photo" ? <><label className={`gd-main-photo-upload${uploadingPlayerId === selectedDisplay.id ? " disabled" : ""}`}><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadPlayerPhoto(selectedDisplay, event)} disabled={uploadingPlayerId !== null || uploading} /><span>{uploadingPlayerId === selectedDisplay.id ? "대표 사진 올리는 중…" : selectedProfilePortrait ? "대표 프로필 사진 교체" : "+ 대표 프로필 사진 올리기"}</span></label><label className={uploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={uploadFiles} disabled={uploading || uploadingPlayerId !== null} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : "+ 일반 사진 올리기"}</span></label></> : <button type="button" className="gd-youtube-open" onClick={() => setYoutubeFormOpen((open) => !open)}>+ 유튜브 영상 등록</button> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div></div>
+            <div className="gd-media-head" id={`${sectionId}-${selectedDisplay.id}-media`}><div><h3>사진 · 경기 영상</h3><p>대표 프로필 사진과 일반 경기 사진은 서로 구분해 등록합니다.</p></div><div className="gd-media-head-actions"><button type="button" className="gd-feed-open" onClick={() => openMediaFeed()} disabled={!selectedCategoryMedia.length}>릴스처럼 보기 <span>↕</span></button>{isAdmin ? selectedCategory === "photo" ? <><label className={`gd-main-photo-upload${uploadingPlayerId === selectedDisplay.id ? " disabled" : ""}`}><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadPlayerPhoto(selectedDisplay, event)} disabled={uploadingPlayerId !== null || uploading} /><span>{uploadingPlayerId === selectedDisplay.id ? "대표 사진 올리는 중…" : selectedProfilePortrait ? "대표 프로필 사진 교체" : "+ 대표 프로필 사진 올리기"}</span></label><label className={uploading ? "disabled" : ""}><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={uploadFiles} disabled={uploading || uploadingPlayerId !== null} /><span>{uploading ? `업로드 중${uploadProgress === null ? "…" : ` ${uploadProgress}%`}` : "+ 일반 사진 올리기"}</span></label></> : <button type="button" className="gd-youtube-open" onClick={() => setYoutubeFormOpen((open) => !open)}>+ 유튜브 영상 등록</button> : <span className="gd-admin-note">관리자만 업로드할 수 있습니다</span>}</div></div>
             <div className="gd-media-categories" aria-label="미디어 카테고리">
               {mediaCategories.map((category) => (
                 <button key={category.id} className={selectedCategory === category.id ? "active" : ""} onClick={() => { setSelectedCategory(category.id); setYoutubeFormOpen(false); setNotice(""); }}>
@@ -1324,10 +1324,10 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
             </div>}
             {notice && <p className="gd-notice">{notice}</p>}
             <div className="gd-media-grid">
-              {selectedCategoryMedia.map((item) => {
+              {selectedCategoryMedia.map((item, index) => {
                 const like = likes[item.key] ?? { count: 0, liked: false };
                 const liking = likingKeys.has(item.key);
-                return <figure className={item.orientation === "portrait" ? "portrait" : "landscape"} key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} loading="lazy" decoding="async" /> : item.source === "youtube" && item.videoId ? <div className="gd-youtube-player"><iframe src={youtubeEmbedUrl(item.videoId)} title={`${selectedDisplay.name} ${activeCategory.label}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}{item.source === "youtube" ? " · YOUTUBE" : ""}</figcaption><div className="gd-media-actions"><button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={liking ? "좋아요 처리 중" : like.liked ? "좋아요 취소" : "좋아요"} aria-busy={liking} disabled={liking}>♥ <span>{liking ? "…" : like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
+                return <figure className={item.orientation === "portrait" ? "portrait" : "landscape"} key={item.key}>{item.type === "image" ? <img src={item.url} alt={`${selectedDisplay.name} 업로드 사진`} loading="lazy" decoding="async" /> : item.source === "youtube" && item.videoId ? <div className="gd-youtube-player"><iframe src={youtubeEmbedUrl(item.videoId)} title={`${selectedDisplay.name} ${activeCategory.label}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div> : <video src={item.url} controls preload="metadata" />}<figcaption>{activeCategory.shortLabel}{item.source === "youtube" ? " · YOUTUBE" : ""}</figcaption><div className="gd-media-actions">{item.type === "video" && <button type="button" className="fullscreen" onClick={() => openMediaFeed(index)} aria-label={`${selectedDisplay.name} ${activeCategory.label} 전체화면으로 보기`}>⛶ 전체화면</button>}<button className={like.liked ? "liked" : ""} onClick={() => void toggleLike(item)} aria-label={liking ? "좋아요 처리 중" : like.liked ? "좋아요 취소" : "좋아요"} aria-busy={liking} disabled={liking}>♥ <span>{liking ? "…" : like.count}</span></button>{isAdmin && <button className="delete" onClick={() => void deleteMedia(item)}>삭제</button>}</div></figure>;
               })}
               {!selectedCategoryMedia.length && <div className="gd-media-empty"><span>＋</span><strong>아직 등록된 {activeCategory.label}이 없습니다.</strong><p>{selectedCategory === "photo" ? "JPG·PNG·WEBP 사진을 올려주세요." : "공개 유튜브 영상 주소를 등록해 주세요."}</p></div>}
             </div>
