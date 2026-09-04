@@ -25,6 +25,9 @@ type MemberStats = {
   total: number; verified: number; joinedToday: number;
   roleCounts: Record<string, number>;
 };
+type TrafficStats = {
+  totalVisitors: number; totalPageViews: number; todayVisitors: number; todayPageViews: number;
+};
 
 export default function CommunityBoard({ signedIn = false }: { signedIn?: boolean }) {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -48,6 +51,8 @@ export default function CommunityBoard({ signedIn = false }: { signedIn?: boolea
   const [commentBusy, setCommentBusy] = useState("");
   const [verificationBusyId, setVerificationBusyId] = useState("");
   const [adminNotice, setAdminNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [trafficStats, setTrafficStats] = useState<TrafficStats | null>(null);
+  const [trafficError, setTrafficError] = useState("");
 
   const categoryLabel = useMemo(() => Object.fromEntries(COMMUNITY_CATEGORIES), []);
 
@@ -83,6 +88,17 @@ export default function CommunityBoard({ signedIn = false }: { signedIn?: boolea
     const timer = window.setTimeout(() => { void load(); }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!adminOpen || !profile?.isAdmin || trafficStats) return;
+    fetch("/api/site-analytics", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "방문 통계를 불러오지 못했습니다.");
+        setTrafficStats(payload);
+      })
+      .catch((error) => setTrafficError(error instanceof Error ? error.message : "방문 통계를 불러오지 못했습니다."));
+  }, [adminOpen, profile?.isAdmin, trafficStats]);
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
@@ -225,6 +241,14 @@ export default function CommunityBoard({ signedIn = false }: { signedIn?: boolea
       <button disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
     </form>}
     {adminOpen && profile?.isAdmin && <div className="member-verification-panel">
+      <div className="member-admin-heading"><div><h3>사이트 방문 통계</h3><p>운영자에게만 표시되며, 페이지를 열 때 한 번만 불러옵니다.</p></div></div>
+      <div className="member-stat-grid traffic-stat-grid">
+        <article><span>전체 방문자</span><strong>{trafficStats ? trafficStats.totalVisitors.toLocaleString() : "—"}명</strong></article>
+        <article><span>전체 페이지 조회</span><strong>{trafficStats ? trafficStats.totalPageViews.toLocaleString() : "—"}회</strong></article>
+        <article><span>오늘 방문자</span><strong>{trafficStats ? trafficStats.todayVisitors.toLocaleString() : "—"}명</strong></article>
+        <article><span>오늘 페이지 조회</span><strong>{trafficStats ? trafficStats.todayPageViews.toLocaleString() : "—"}회</strong></article>
+      </div>
+      {trafficError && <p className="member-verification-notice error" role="status">{trafficError}</p>}
       <div className="member-admin-heading"><div><h3>회원 데이터 관리</h3><p>회원가입 구분별 현황을 확인하고 엑셀로 내려받을 수 있습니다.</p></div><button type="button" onClick={() => downloadMembers()}>전체 회원 엑셀 다운로드</button></div>
       <div className="member-stat-grid">
         <article><span>전체 회원·팔로워</span><strong>{Number(stats?.total || totalMembers).toLocaleString()}명</strong></article>

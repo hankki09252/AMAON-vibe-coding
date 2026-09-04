@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
+import SiteAnalytics from "./site-analytics";
 import "./globals.css";
 import "./theme.css";
 import PwaRegister from "./pwa-register";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <PwaRegister />
         {children}
+        <SiteAnalytics />
         <Analytics mode="production" />
       </body>
     </html>
