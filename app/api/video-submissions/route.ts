@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "영상 업로드 주소를 만들지 못했습니다." }, { status: 500 });
   }
   const projectId = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0];
-  const response = Response.json({ submissionId: id, storageKey, token: signed.token, uploadEndpoint: `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable` }, { status: 201 });
+  const response = Response.json({ submissionId: id, storageKey, token: signed.token, uploadEndpoint: `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable/sign` }, { status: 201 });
   response.headers.append("Set-Cookie", `${visitorCookie}=${visitorId}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`);
   response.headers.set("Cache-Control", "no-store");
   return response;
