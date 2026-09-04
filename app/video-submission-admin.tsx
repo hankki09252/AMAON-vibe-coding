@@ -6,7 +6,7 @@ type Submission = {
   id: string; team_id: string; player_id: string; player_name: string; school_name: string;
   category: "pitching" | "batting" | "fielding"; relationship: "player" | "guardian";
   contact: string; original_name: string; file_size: number; duration_seconds: number;
-  status: "pending" | "approved" | "rejected"; review_reason: string; created_at: string; previewUrl: string;
+  social_consent: boolean; status: "pending" | "approved" | "rejected"; review_reason: string; created_at: string; previewUrl: string; downloadUrl: string;
 };
 
 const labels = { pitching: "투구", batting: "타격", fielding: "수비" } as const;
@@ -58,8 +58,8 @@ export default function VideoSubmissionAdmin() {
     {notice && <p className="member-verification-notice" role="status">{notice}</p>}
     {loading ? <p className="video-review-empty">등록 요청을 불러오는 중입니다.</p> : pending.length ? <div className="video-review-list">{pending.map((item) => <article key={item.id}>
       <video src={item.previewUrl} controls playsInline preload="metadata"><track kind="captions" label="자막 없음" /></video>
-      <div><small>{labels[item.category]} 영상 · {Math.ceil(item.duration_seconds)}초 · {(item.file_size / 1024 / 1024).toFixed(1)}MB</small><h4>{item.player_name} <span>{item.school_name}</span></h4><p>{item.relationship === "guardian" ? "보호자" : "선수 본인"} · {item.contact}</p><em>{new Date(item.created_at).toLocaleString("ko-KR")}</em></div>
-      <div className="video-review-actions"><button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "approve")}>{busyId === item.id ? "처리 중…" : "승인·공개"}</button><button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "reject")}>반려·삭제</button></div>
+      <div><small>{labels[item.category]} 영상 · {Math.ceil(item.duration_seconds)}초 · {(item.file_size / 1024 / 1024).toFixed(1)}MB</small><h4>{item.player_name} <span>{item.school_name}</span></h4><p>{item.relationship === "guardian" ? "보호자" : "선수 본인"} · {item.contact}</p><p className={item.social_consent ? "social-consent yes" : "social-consent"}>{item.social_consent ? "SNS 활용 동의" : "SNS 활용 미동의"}</p><em>{new Date(item.created_at).toLocaleString("ko-KR")}</em></div>
+      <div className="video-review-actions">{item.downloadUrl && <a href={item.downloadUrl} target="_blank" rel="noopener noreferrer">원본 받기</a>}<button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "approve")}>{busyId === item.id ? "처리 중…" : "승인·공개"}</button><button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "reject")}>반려·삭제</button></div>
     </article>)}</div> : <p className="video-review-empty">현재 확인할 영상이 없습니다.</p>}
     {history.length > 0 && <details className="video-review-history"><summary>최근 처리 내역 {history.length}건</summary>{history.map((item) => <div key={item.id}><span className={item.status}>{item.status === "approved" ? "승인" : "반려"}</span><strong>{item.school_name} · {item.player_name}</strong><small>{labels[item.category]} · {new Date(item.created_at).toLocaleDateString("ko-KR")}</small>{item.status === "approved" && <button type="button" onClick={() => void copyProfile(item)}>프로필 링크 복사</button>}{item.review_reason && <em>{item.review_reason}</em>}</div>)}</details>}
   </section>;

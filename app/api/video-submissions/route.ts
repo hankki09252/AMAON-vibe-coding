@@ -16,7 +16,7 @@ type SubmissionRow = {
   id: string; team_id: string; player_id: string; player_name: string; school_name: string;
   category: string; relationship: string; contact: string; original_name: string; storage_key: string;
   content_type: string; file_size: number; duration_seconds: number; status: string; review_reason: string;
-  created_at: string; uploaded_at: string | null; reviewed_at: string | null;
+  social_consent: boolean; created_at: string; uploaded_at: string | null; reviewed_at: string | null;
 };
 
 function cleanName(value: string) {
@@ -67,6 +67,7 @@ export async function POST(request: Request) {
   const fileSize = Number(body.fileSize || 0);
   const durationSeconds = Math.ceil(Number(body.durationSeconds || 0));
   const consent = body.consent === true;
+  const socialConsent = body.socialConsent === true;
   if (!validTeamId(teamId) || !managedTeamLabel[teamId] || !validPlayerId(playerId) || !categories.has(category)
     || !relationships.has(relationship) || contact.length < 5 || !consent || !allowedTypes.has(contentType)
     || !Number.isFinite(fileSize) || fileSize <= 0 || fileSize > maxBytes
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
   const storageKey = `submissions/${id}/video.${extension}`;
   const { error: insertError } = await db.from("video_submissions").insert({
     id, team_id: teamId, player_id: playerId, player_name: player.name, school_name: managedTeamLabel[teamId],
-    category, relationship, contact, consent, original_name: originalName, storage_key: storageKey,
+    category, relationship, contact, consent, social_consent: socialConsent, original_name: originalName, storage_key: storageKey,
     content_type: contentType, file_size: Math.round(fileSize), duration_seconds: durationSeconds, requester_hash: requesterHash,
   });
   if (insertError) return Response.json({ error: "등록 요청을 만들지 못했습니다." }, { status: 500 });
@@ -111,13 +112,13 @@ export async function GET() {
   const { role } = await apiAdmin();
   if (!role) return Response.json({ error: "운영자 권한이 필요합니다." }, { status: 403 });
   const db = createSupabaseAdminClient();
-  const { data, error } = await db.from("video_submissions").select("id,team_id,player_id,player_name,school_name,category,relationship,contact,original_name,storage_key,content_type,file_size,duration_seconds,status,review_reason,created_at,uploaded_at,reviewed_at").in("status", ["pending", "approved", "rejected"]).order("created_at", { ascending: false }).limit(40);
+  const { data, error } = await db.from("video_submissions").select("id,team_id,player_id,player_name,school_name,category,relationship,contact,social_consent,original_name,storage_key,content_type,file_size,duration_seconds,status,review_reason,created_at,uploaded_at,reviewed_at").in("status", ["pending", "approved", "rejected"]).order("created_at", { ascending: false }).limit(40);
   if (error) return Response.json({ error: "영상 등록 요청을 불러오지 못했습니다." }, { status: 500 });
   const rows = (data || []) as SubmissionRow[];
-  const pending = rows.filter((row) => row.status === "pending");
-  const { data: urls } = pending.length ? await db.storage.from(bucket).createSignedUrls(pending.map((row) => row.storage_key), 20 * 60) : { data: [] };
-  const urlByPath = new Map((urls || []).map((item) => [item.path, item.signedUrl]));
-  return Response.json({ items: rows.map((row) => ({ ...row, previewUrl: row.status === "pending" ? urlByPath.get(row.storage_key) || "" : "" })) }, { headers: { "Cache-Control": "private, no-store" } });
+  const downloadable = rows.filter((row) => row.status !== "rejected");
+  const signed = await Promise.all(downloadable.map(async (row) => ({ id: row.id, preview: (await db.storage.from(bucket).createSignedUrl(row.storage_key, 20 * 60)).data?.signedUrl || "", download: (await db.storage.from(bucket).createSignedUrl(row.storage_key, 20 * 60, { download: row.original_name || "amaon-video" })).data?.signedUrl || "" })));
+  const urlById = new Map(signed.map((item) => [item.id, item]));
+  return Response.json({ items: rows.map((row) => ({ ...row, previewUrl: urlById.get(row.id)?.preview || "", downloadUrl: urlById.get(row.id)?.download || "" })) }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function PATCH(request: Request) {

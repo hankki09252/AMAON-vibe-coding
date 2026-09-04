@@ -8,7 +8,7 @@ const categories = new Set(["pitching", "batting", "fielding", "photo", "profile
 const imageCategories = new Set(["photo", "profile"]);
 
 function validKey(key: string) {
-  return /^(gd\/[A-Za-z0-9-]+\/(pitching|batting|fielding|photo|profile)\/[^/]{1,240}|youtube\/[A-Za-z0-9-]+\/(pitching|batting|fielding)\/[A-Za-z0-9_-]{11})$/.test(key);
+  return /^(gd\/[A-Za-z0-9-]+\/(pitching|batting|fielding|photo|profile)\/[^/]{1,240}|teams\/[A-Za-z0-9-]+\/players\/[A-Za-z0-9-]+\/(pitching|batting|fielding|photo|profile)\/[^/]{1,240}|youtube\/[A-Za-z0-9-]+\/(pitching|batting|fielding)\/[A-Za-z0-9_-]{11})$/.test(key);
 }
 
 export async function GET(request: Request) {

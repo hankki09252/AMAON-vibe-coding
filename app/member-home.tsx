@@ -704,13 +704,13 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
               </div>
             )}
           </div>
-          <aside className="hero-instagram-cta" aria-label="선수 영상 직접 등록 안내">
+          <aside className="hero-instagram-cta" aria-label="선수 프로필 직접 등록 안내">
             <div>
-              <small>PLAYER VIDEO · DIRECT UPLOAD</small>
-              <strong>영상 하나면 선수 프로필이 시작됩니다.</strong>
-              <p>로그인 없이 휴대폰 영상을 올려주세요. 확인 후 아마ON 선수 프로필에 공개합니다.</p>
+              <small>PLAYER PROFILE · DIRECT REQUEST</small>
+              <strong>사진·영상·프로필을 직접 등록하세요.</strong>
+              <p>로그인 없이 필요한 항목 하나만 보내주세요. 운영팀 확인 후 선수 프로필에 반영합니다.</p>
             </div>
-            <div className="hero-registration-actions"><button type="button" onClick={() => setVideoSubmissionOpen(true)}><span>우리 아이 영상 등록하기</span><b aria-hidden="true">→</b></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">업로드가 어렵다면 한끼방패 DM ↗</a></div>
+            <div className="hero-registration-actions"><button type="button" onClick={() => setVideoSubmissionOpen(true)}><span>선수 프로필 등록·수정</span><b aria-hidden="true">→</b></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">직접 등록이 어렵다면 한끼방패 DM ↗</a></div>
           </aside>
           <button type="button" className="amaon-guide-trigger" onClick={() => setGuideOpen(true)}>
             <span>AMAON GUIDE</span>
@@ -1022,16 +1022,17 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           <div className="amaon-guide-features" aria-label="아마ON 프로필 구성">
             <article><span>01</span><small>PROFILE</small><h3>나를 소개하는 프로필</h3><p>소속 학교, 포지션, 학년과 기본 정보를 한눈에 보여줍니다.</p></article>
             <article><span>02</span><small>STORY</small><h3>장점과 목표를 담는 이야기</h3><p>선수의 강점, 플레이 스타일, 앞으로의 목표와 포부를 직접 알립니다.</p></article>
-            <article><span>03</span><small>FILM</small><h3>플레이를 증명하는 영상</h3><p>유튜브에 등록된 투구·타격·수비 영상을 프로필에서 바로 확인할 수 있습니다.</p></article>
+            <article><span>03</span><small>FILM</small><h3>플레이를 증명하는 영상</h3><p>직접 등록하거나 유튜브로 연결된 투구·타격·수비 영상을 프로필에서 확인합니다.</p></article>
           </div>
 
           <section className="amaon-guide-register">
             <div className="amaon-guide-section-title"><small>HOW TO REGISTER</small><h3>프로필 등록 방법</h3><p>현재 경기·인천권부터 운영하며 지역은 순차적으로 확대합니다.</p></div>
             <ol>
-              <li><span>1</span><div><strong>프로필 내용을 준비하세요</strong><p>선수 이름, 학교, 포지션, 학년, 신체 정보, 자기소개, 장점과 목표를 정리합니다.</p></div></li>
-              <li><span>2</span><div><strong>영상과 함께 한끼방패 인스타그램 DM으로 보내주세요</strong><p>프로필 내용과 공개 가능한 사진, 유튜브 영상 주소를 전달합니다.</p></div></li>
-              <li><span>3</span><div><strong>확인 후 아마ON에 등록됩니다</strong><p>운영팀이 전달 내용을 확인한 뒤 선수 프로필을 구성해 공개합니다.</p></div></li>
+              <li><span>1</span><div><strong>홈에서 ‘선수 프로필 등록·수정’을 누르세요</strong><p>회원가입 없이 선수 이름이나 학교명으로 기존 선수를 찾습니다.</p></div></li>
+              <li><span>2</span><div><strong>필요한 항목 하나만 보내세요</strong><p>선수 영상, 대표 프로필 사진, 경기·훈련 사진 또는 프로필 내용 수정을 선택해 접수합니다.</p></div></li>
+              <li><span>3</span><div><strong>운영팀 확인 후 프로필에 반영됩니다</strong><p>승인 전 자료는 비공개로 보관됩니다. 확인이 끝나면 선수 프로필과 공유 링크에 반영됩니다.</p></div></li>
             </ol>
+            <div className="amaon-guide-register-actions"><button type="button" onClick={() => { setGuideOpen(false); setVideoSubmissionOpen(true); }}>지금 선수 프로필 등록·수정 <span>→</span></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">직접 등록이 어렵다면 한끼방패 DM ↗</a></div>
           </section>
 
           <section className="amaon-guide-install">
