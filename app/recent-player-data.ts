@@ -34,6 +34,11 @@ function updateLabel(updatedAt: string) {
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric" }).format(new Date(updatedAt));
 }
 
+function mediaPlayer(value: string) {
+  const separator = value.indexOf("--");
+  return separator < 0 ? { playerId: value, teamId: undefined } : { playerId: value.slice(separator + 2), teamId: value.slice(0, separator) };
+}
+
 export async function readRecentPlayerProfiles(): Promise<RecentPlayerProfile[]> {
   const db = createSupabaseAdminClient();
   const [mediaResult, profileResult, rosterResult] = await Promise.all([
@@ -48,7 +53,7 @@ export async function readRecentPlayerProfiles(): Promise<RecentPlayerProfile[]>
   const rosterRows = (rosterResult.data || []) as RosterRow[];
   const events: RecentEvent[] = [
     ...mediaRows.map((row) => ({
-      playerId: row.player_id,
+      ...mediaPlayer(row.player_id),
       updatedAt: row.uploaded_at,
       updateType: row.category === "profile" || row.category === "photo" ? "사진 업데이트" as const : "영상 추가" as const,
     })),
@@ -79,7 +84,7 @@ export async function readRecentPlayerProfiles(): Promise<RecentPlayerProfile[]>
   }).slice(0, displayLimit);
   if (!visible.length) return [];
 
-  const visibleIds = visible.map((event) => event.playerId);
+  const visibleIds = visible.flatMap((event) => [event.playerId, `${event.teamId}--${event.playerId}`]);
   const { data: previews, error: previewError } = await db
     .from("media_items")
     .select("storage_key,player_id,category,content_type,uploaded_at")
@@ -89,7 +94,8 @@ export async function readRecentPlayerProfiles(): Promise<RecentPlayerProfile[]>
   if (previewError) throw new Error("최근 선수 미리보기를 불러오지 못했습니다.");
   const previewsByPlayer = new Map<string, MediaRow[]>();
   for (const row of (previews || []) as MediaRow[]) {
-    previewsByPlayer.set(row.player_id, [...(previewsByPlayer.get(row.player_id) || []), row]);
+    const playerId = mediaPlayer(row.player_id).playerId;
+    previewsByPlayer.set(playerId, [...(previewsByPlayer.get(playerId) || []), row]);
   }
   const selectedPreviews = visible.flatMap((event) => {
     const items = previewsByPlayer.get(event.playerId) || [];
@@ -99,7 +105,7 @@ export async function readRecentPlayerProfiles(): Promise<RecentPlayerProfile[]>
     return row ? [row] : [];
   });
   const presentedPreviews = await presentMedia(selectedPreviews);
-  const previewByPlayer = new Map(presentedPreviews.map((item) => [item.playerId, item.thumbnailUrl || item.url]));
+  const previewByPlayer = new Map(presentedPreviews.map((item) => [mediaPlayer(item.playerId).playerId, item.thumbnailUrl || item.url]));
 
   return visible.map((event) => ({
     playerId: event.playerId,

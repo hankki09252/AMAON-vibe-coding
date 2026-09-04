@@ -263,7 +263,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
         setMedia([]);
         return;
       }
-      const params = new URLSearchParams(onlyPlayerId ? { playerId: onlyPlayerId } : { playerIds: teamPlayerIds.join(",") });
+      const params = new URLSearchParams(onlyPlayerId ? { playerId: onlyPlayerId, teamId: sectionId } : { playerIds: teamPlayerIds.join(","), teamId: sectionId });
       const response = await fetch(`/api/media?${params.toString()}`, { cache: "no-store" });
       if (!response.ok) throw new Error("미디어를 불러오지 못했습니다.");
       const data = await response.json() as { items: MediaItem[] };

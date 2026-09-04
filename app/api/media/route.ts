@@ -1,5 +1,5 @@
 import { publicAccess } from "../../public-access";
-import { apiAdmin, validPlayerId } from "../../api-auth";
+import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { extractYouTubeVideoId, type VideoOrientation } from "../../youtube";
 import { presentMedia } from "../../media-read";
@@ -15,19 +15,22 @@ export async function GET(request: Request) {
   const { role } = await apiAdmin();
   const url = new URL(request.url);
   const playerId = url.searchParams.get("playerId");
+  const teamId = url.searchParams.get("teamId");
   const playerIds = [...new Set((url.searchParams.get("playerIds") || "").split(",").filter(Boolean))];
   if (playerId && !validPlayerId(playerId)) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
+  if (teamId && !validTeamId(teamId)) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
   if (playerIds.length > 100 || playerIds.some((id) => !validPlayerId(id))) return Response.json({ error: "선수 정보가 올바르지 않습니다." }, { status: 400 });
   const db = createSupabaseAdminClient();
   let query = db.from("media_items").select("storage_key, player_id, category, content_type, uploaded_at").order("uploaded_at", { ascending: false }).limit(1000);
-  if (playerId) query = query.eq("player_id", playerId);
-  else if (playerIds.length) query = query.in("player_id", playerIds);
+  const scopedIds = teamId ? [...new Set((playerId ? [playerId] : playerIds).flatMap((id) => [id, `${teamId}--${id}`]))] : (playerId ? [playerId] : playerIds);
+  if (scopedIds.length === 1) query = query.eq("player_id", scopedIds[0]);
+  else if (scopedIds.length) query = query.in("player_id", scopedIds);
   const [{ data, error }, access] = await Promise.all([
-    query, role ? null : publicAccess(playerId ? [playerId] : playerIds.length ? playerIds : undefined),
+    query, role ? null : publicAccess(scopedIds.length ? scopedIds : undefined),
   ]);
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  const items = await presentMedia((data || []).filter((row) => !access || access.player(row.player_id)));
-  return Response.json({ items }, { headers: { "cache-control": "no-store" } });
+  const items = await presentMedia((data || []).filter((row) => !access || access.player(row.player_id, teamId || undefined)));
+  return Response.json({ items: teamId ? items.map((item) => ({ ...item, playerId: item.playerId.includes("--") ? item.playerId.slice(item.playerId.indexOf("--") + 2) : item.playerId })) : items }, { headers: { "cache-control": "no-store" } });
 }
 
 export async function POST(request: Request) {

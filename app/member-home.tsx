@@ -3,6 +3,7 @@
 // Public browsing; member actions remain protected by server API checks.
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { schools } from "./school-catalog";
 import { FormEvent, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import GdRoster, { gdPlayers, TeamRoster, type ManagedRosterPlayer } from "./gd-roster";
@@ -45,6 +46,8 @@ import { managedTeamOptions } from "./team-directory";
 import { createSupabaseBrowserClient } from "./supabase/browser";
 import { ProfileEntryContext, type ProfileEntryData } from "./profile-entry-context";
 import type { RecentPlayerProfile } from "./recent-player-data";
+
+const VideoSubmission = dynamic(() => import("./video-submission"));
 
 
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
@@ -148,6 +151,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   const [regionEditingDraft, setRegionEditingDraft] = useState<string[]>([]);
   const [regionEditorRegion, setRegionEditorRegion] = useState("서울");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [videoSubmissionOpen, setVideoSubmissionOpen] = useState(false);
   const [regionSettingsOpen, setRegionSettingsOpen] = useState(false);
   const [savingRegions, setSavingRegions] = useState(false);
   const [regionNotice, setRegionNotice] = useState("");
@@ -700,15 +704,13 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
               </div>
             )}
           </div>
-          <aside className="hero-instagram-cta" aria-label="한끼방패 인스타그램 선수 등록 안내">
+          <aside className="hero-instagram-cta" aria-label="선수 영상 직접 등록 안내">
             <div>
-              <small>PLAYER REGISTRATION · INSTAGRAM DM</small>
-              <strong>선수 영상·사진·프로필을 보내주세요.</strong>
-              <p>한끼방패 인스타그램 DM으로 보내주시면, 확인 후 아마ON 선수 프로필과 공유 링크를 만들어드립니다.</p>
+              <small>PLAYER VIDEO · DIRECT UPLOAD</small>
+              <strong>영상 하나면 선수 프로필이 시작됩니다.</strong>
+              <p>로그인 없이 휴대폰 영상을 올려주세요. 확인 후 아마ON 선수 프로필에 공개합니다.</p>
             </div>
-            <a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">
-              <span>인스타그램 DM으로 등록 신청</span><b aria-hidden="true">↗</b>
-            </a>
+            <div className="hero-registration-actions"><button type="button" onClick={() => setVideoSubmissionOpen(true)}><span>우리 아이 영상 등록하기</span><b aria-hidden="true">→</b></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">업로드가 어렵다면 한끼방패 DM ↗</a></div>
           </aside>
           <button type="button" className="amaon-guide-trigger" onClick={() => setGuideOpen(true)}>
             <span>AMAON GUIDE</span>
@@ -776,6 +778,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} onOpenPlayer={openSearchedPlayer} />}
 
       {!pendingProfile && <CommunityBoard signedIn={signedIn} />}
+
+      {videoSubmissionOpen && <VideoSubmission open players={publishedPlayerSearchIndex} onClose={() => setVideoSubmissionOpen(false)} />}
 
       <section className="school-section" id="schools">
         <div className="section-console-bar">
