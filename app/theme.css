@@ -314,11 +314,15 @@ footer p, footer small { color: #777; }
 .gd-modal-head strong { font-size: 12px; }
 .gd-profile-hero { display: grid; grid-template-columns: minmax(170px, 230px) minmax(260px, 1fr) minmax(260px, .9fr); gap: 28px; padding: 28px; margin-bottom: 18px; background: #0b0b0b; color: #fff; border-bottom: 4px solid var(--brand-orange); }
 .gd-profile-portrait { position: relative; min-height: 300px; background: #171717; border: 1px solid #343434; overflow: hidden; }
-.gd-profile-portrait > img { display: block; width: 100%; height: 100%; object-fit: contain; background: #111; }
+.gd-profile-portrait > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; background: #111; }
+.gd-profile-portrait.has-photo::after { content: ""; position: absolute; z-index: 1; inset: 38% 0 0; background: linear-gradient(transparent, rgba(0,0,0,.88)); pointer-events: none; }
+.gd-profile-photo-number { position: absolute; z-index: 2; right: 12px; bottom: 8px; display: grid; justify-items: end; color: var(--brand-orange); text-shadow: 0 3px 14px #000; pointer-events: none; }
+.gd-profile-photo-number small { margin: 0 3px -3px 0; color: #fff; font-size: 7px; font-weight: 1000; letter-spacing: 1.6px; }
+.gd-profile-photo-number strong { font-size: clamp(48px, 5vw, 68px); font-style: italic; line-height: 1; letter-spacing: -3px; }
 .gd-profile-portrait-fallback { min-height: 300px; display: grid; place-content: center; text-align: center; background: linear-gradient(145deg, #1c1c1c, #080808); }
 .gd-profile-portrait-fallback small { color: #777; font-size: 12px; letter-spacing: 4px; }
 .gd-profile-portrait-fallback strong { color: var(--brand-orange); font-size: 78px; font-style: italic; line-height: 1; }
-.gd-profile-portrait > span { position: absolute; left: 10px; bottom: 10px; padding: 6px 8px; background: var(--brand-orange); color: #050505; font-size: 7px; font-weight: 1000; letter-spacing: 1px; }
+.gd-profile-portrait > span { position: absolute; z-index: 3; left: 10px; bottom: 10px; padding: 6px 8px; background: var(--brand-orange); color: #050505; font-size: 7px; font-weight: 1000; letter-spacing: 1px; }
 .gd-profile-hero-copy { align-self: center; min-width: 0; }
 .gd-profile-hero-copy > p { margin: 0 0 10px; color: var(--brand-orange); font-size: 8px; font-weight: 1000; letter-spacing: 1.8px; }
 .gd-profile-hero-copy h2 { margin: 0; font-size: clamp(40px, 5vw, 70px); letter-spacing: -4px; line-height: .95; }
@@ -458,14 +462,14 @@ footer p, footer small { color: #777; }
 .gd-youtube-form > button:disabled { opacity: .45; cursor: not-allowed; }
 .gd-notice { margin: 13px 0 0; padding: 10px 12px; background: #fff2e7; border-left: 3px solid var(--brand-orange); font-size: 10px; }
 .gd-media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 12px; margin-top: 17px; }
-.gd-media-grid figure { position: relative; display: flex; align-items: center; justify-content: center; margin: 0; min-height: 0; overflow: hidden; background: #111; }
+.gd-media-grid figure { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: center; margin: 0; min-height: 0; overflow: hidden; background: #111; }
 .gd-media-grid img, .gd-media-grid video { display: block; width: 100%; height: auto; max-width: 100%; object-fit: contain; background: #111; }
 .gd-youtube-player { width: 100%; display: grid; place-items: center; background: #111; }
 .gd-media-grid figure.portrait .gd-youtube-player { aspect-ratio: 9 / 16; max-height: 620px; }
 .gd-media-grid figure.landscape .gd-youtube-player { aspect-ratio: 16 / 9; }
 .gd-youtube-player iframe { width: 100%; height: 100%; border: 0; }
 .gd-media-grid figcaption { position: absolute; left: 8px; bottom: 8px; padding: 5px 7px; background: var(--brand-orange); color: #050505; font-size: 8px; font-weight: 1000; }
-.gd-media-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+.gd-media-actions { position: absolute; z-index: 5; top: 8px; right: 8px; display: flex; gap: 6px; }
 .gd-media-actions button { min-height: 31px; padding: 6px 9px; border: 0; background: rgba(255,255,255,.92); color: #222; font-size: 11px; font-weight: 1000; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
 .gd-media-actions button.liked { background: var(--brand-orange); color: #050505; }
 .gd-media-actions button.fullscreen { border: 1px solid rgba(255,255,255,.72); background: rgba(5,5,5,.88); color: #fff; }

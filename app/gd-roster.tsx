@@ -1203,9 +1203,9 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
               </div>}
             </div>
             <section className="gd-profile-hero">
-              <div className="gd-profile-portrait">
+              <div className={`gd-profile-portrait${selectedProfilePortrait ? " has-photo" : ""}`}>
                 {selectedProfilePortrait
-                  ? <img src={selectedProfilePortrait.url} alt={`${selectedDisplay.name} 선수 프로필`} />
+                  ? <><img src={selectedProfilePortrait.url} alt={`${selectedDisplay.name} 선수 프로필`} /><div className="gd-profile-photo-number" aria-hidden="true"><small>NO.</small><strong>{selectedDisplay.number}</strong></div></>
                   : <div className="gd-profile-portrait-fallback"><small>{monogram}</small><strong>{selectedDisplay.number}</strong></div>}
                 <span>OFFICIAL PLAYER</span>
               </div>
