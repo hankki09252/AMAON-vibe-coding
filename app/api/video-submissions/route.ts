@@ -1,8 +1,10 @@
 import { createHash, randomUUID } from "crypto";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { managedTeamLabel } from "../../team-directory";
+import { sendTelegramSubmissionNotification } from "../../telegram-notification";
 
 const bucket = "media";
 const maxBytes = 150 * 1024 * 1024;
@@ -50,6 +52,8 @@ async function completeUpload(id: string) {
   }
   const { error: updateError } = await db.from("video_submissions").update({ status: "pending", file_size: storedSize, content_type: storedType, uploaded_at: new Date().toISOString() }).eq("id", id).eq("status", "uploading");
   if (updateError) return Response.json({ error: "승인 요청으로 전환하지 못했습니다." }, { status: 500 });
+  const categoryLabel: Record<string, string> = { pitching: "투구 영상", batting: "타격 영상", fielding: "수비 영상" };
+  after(() => sendTelegramSubmissionNotification({ requestType: categoryLabel[row.category] || "선수 영상" }));
   return Response.json({ ok: true, submissionId: id });
 }
 

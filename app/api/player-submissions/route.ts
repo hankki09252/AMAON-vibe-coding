@@ -1,8 +1,10 @@
 import { createHash, randomUUID } from "crypto";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { managedTeamLabel } from "../../team-directory";
+import { sendTelegramSubmissionNotification } from "../../telegram-notification";
 
 const bucket = "media";
 const maxImageBytes = 12 * 1024 * 1024;
@@ -86,6 +88,12 @@ async function completeUpload(id: string) {
   }
   const { error } = await db.from("player_profile_submissions").update({ status: "pending", file_size: storedSize, content_type: storedType, uploaded_at: new Date().toISOString() }).eq("id", id).eq("status", "uploading");
   if (error) return Response.json({ error: "승인 요청으로 전환하지 못했습니다." }, { status: 500 });
+  const { count: remainingUploads } = await db.from("player_profile_submissions").select("id", { count: "exact", head: true })
+    .eq("requester_hash", row.requester_hash).eq("created_at", row.created_at).eq("status", "uploading");
+  if (!remainingUploads) {
+    const requestType = row.submission_type === "profile_photo" ? "대표 프로필 사진" : "선수 사진 등록";
+    after(() => sendTelegramSubmissionNotification({ requestType }));
+  }
   return Response.json({ ok: true, submissionId: id });
 }
 
@@ -127,6 +135,8 @@ export async function POST(request: Request) {
     if (!Object.keys(data).length) return Response.json({ error: "수정할 프로필 내용을 하나 이상 입력해 주세요." }, { status: 400 });
     const { error } = await db.from("player_profile_submissions").insert({ ...base, profile_data: data, status: "pending", content_type: "application/json", file_size: 0 });
     if (error) return Response.json({ error: "프로필 수정 요청을 저장하지 못했습니다." }, { status: 500 });
+    const requestType = data.transferTeamId ? "전학 요청" : "선수 프로필 수정";
+    after(() => sendTelegramSubmissionNotification({ requestType }));
     const response = Response.json({ ok: true, submissionId: id }, { status: 201 });
     response.headers.append("Set-Cookie", `${visitorCookie}=${requester.visitorId}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`);
     return response;
