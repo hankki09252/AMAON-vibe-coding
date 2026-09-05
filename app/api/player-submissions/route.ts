@@ -121,7 +121,7 @@ export async function POST(request: Request) {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data: recentRequests } = await db.from("player_profile_submissions").select("created_at").eq("requester_hash", requester.hash).gte("created_at", since).limit(40);
   const requestCount = new Set((recentRequests || []).map((row) => row.created_at)).size;
-  if (requestCount >= 3) return Response.json({ error: "하루 등록·수정 요청은 최대 3번입니다. 내일 다시 이용해 주세요." }, { status: 429 });
+  if (requestCount >= 10) return Response.json({ error: "하루 등록·수정 요청은 최대 10번입니다. 내일 다시 이용해 주세요." }, { status: 429 });
 
   const id = randomUUID();
   const createdAt = new Date().toISOString();

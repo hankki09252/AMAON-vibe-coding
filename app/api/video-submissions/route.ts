@@ -89,7 +89,7 @@ export async function POST(request: Request) {
   const requesterHash = createHash("sha256").update(`${visitorId}:${contact.toLowerCase()}`).digest("hex");
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await db.from("video_submissions").select("id", { count: "exact", head: true }).eq("requester_hash", requesterHash).gte("created_at", since);
-  if ((count || 0) >= 3) return Response.json({ error: "하루 등록 가능 횟수는 3개입니다. 내일 다시 이용해 주세요." }, { status: 429 });
+  if ((count || 0) >= 10) return Response.json({ error: "하루 등록 가능 횟수는 10개입니다. 내일 다시 이용해 주세요." }, { status: 429 });
 
   const id = randomUUID();
   const extension = safeExtension(originalName, contentType);
