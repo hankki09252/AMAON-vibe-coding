@@ -673,8 +673,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             <em className="hero-purpose-line">이제는 선수를 알리는 시대.</em>
           </h1>
           <p className="hero-lead">
-            기록을 넘어, 선수의 진정성과 가능성을 세상에 연결합니다.<br />
-            선수와 부모가 함께 완성하는 단 하나의 야구 프로필.
+            기록은 결과를, 영상은 과정을,<br />
+            프로필은 선수의 이야기를 보여줍니다.
           </p>
           <div className="hero-search-wrap">
             <form className="hero-search" onSubmit={searchSchool}>
