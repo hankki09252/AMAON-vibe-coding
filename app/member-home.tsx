@@ -673,6 +673,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             <em className="hero-purpose-line">이제는 선수를 알리는 시대.</em>
           </h1>
           <p className="hero-lead">
+            아마온(아마ON), 한끼방패의 아마야구 선수 포트폴리오.<br />
             기록은 결과를, 영상은 과정을,<br />
             프로필은 선수의 이야기를 보여줍니다.
           </p>

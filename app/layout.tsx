@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 import SiteAnalytics from "./site-analytics";
 import "./globals.css";
@@ -7,17 +6,18 @@ import "./theme.css";
 import PwaRegister from "./pwa-register";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
+  const origin = "https://www.amaon.kr";
 
   return {
-    title: "아마ON | 아마야구의 모든 순간",
-    description: "고교야구 학교 정보와 선수 프로필, 기록과 영상을 한곳에서 만나는 아마야구 플랫폼",
+    metadataBase: new URL(origin),
+    title: "아마온(아마ON) | 아마야구 선수 프로필·영상 포트폴리오",
+    description: "아마온(아마ON)은 한끼방패가 운영하는 아마야구 선수 포트폴리오 플랫폼입니다. 학교별 선수 프로필과 경기 영상을 확인하고, 선수의 이야기를 개인 링크로 공유하세요.",
+    verification: { google: process.env.GOOGLE_SITE_VERIFICATION, other: process.env.NAVER_SITE_VERIFICATION ? { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION } : undefined },
     openGraph: {
-      title: "아마ON by 한끼방패",
-      description: "오늘의 선수를 내일의 이름으로",
+      title: "아마온(아마ON) | 한끼방패",
+      siteName: "아마온",
+      locale: "ko_KR",
+      description: "기록은 결과를, 영상은 과정을, 프로필은 선수의 이야기를 보여줍니다.",
       images: [{ url: `${origin}/og.png`, width: 1731, height: 909 }],
       type: "website",
     },
