@@ -12,7 +12,12 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(origin),
     title: "아마온(아마ON) | 아마야구 선수 프로필·영상 포트폴리오",
     description: "아마온(아마ON)은 한끼방패가 운영하는 아마야구 선수 포트폴리오 플랫폼입니다. 학교별 선수 프로필과 경기 영상을 확인하고, 선수의 이야기를 개인 링크로 공유하세요.",
-    verification: { google: process.env.GOOGLE_SITE_VERIFICATION ?? "FWxsCdCszxMRIq47xEGh1elBUuHvZIdA3rWafCLqE1Q", other: process.env.NAVER_SITE_VERIFICATION ? { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION } : undefined },
+    verification: {
+      google: process.env.GOOGLE_SITE_VERIFICATION ?? "FWxsCdCszxMRIq47xEGh1elBUuHvZIdA3rWafCLqE1Q",
+      other: {
+        "naver-site-verification": process.env.NAVER_SITE_VERIFICATION ?? "43d7e6aec130e890375aa15e00a36c2b46cb9012",
+      },
+    },
     openGraph: {
       title: "아마온(아마ON) | 한끼방패",
       siteName: "아마온",
