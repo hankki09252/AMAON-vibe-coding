@@ -105,7 +105,7 @@ export default function GuidePage() {
           <p>아마온은 서버, 데이터베이스, 영상·이미지 트래픽, 도메인과 유지보수 비용으로 운영됩니다. 보내주신 후원은 더 많은 아마야구 선수의 프로필과 영상을 안정적으로 알리는 데 사용합니다. 후원은 전적으로 자유이며 서비스 이용이나 선수 등록 여부와 무관합니다.</p>
         </div>
         <div className={styles.highlight}>
-          <div><small>COFFEE SUPPORT</small><h2>이어플이 도움이 되셨다면,<br />커피 한 잔으로 응원해 주세요.</h2><p>작은 응원이 아마야구 선수들의 이야기를 계속 연결하는 힘이 됩니다.</p></div>
+          <div><small>COFFEE SUPPORT</small><h2>이 앱이 도움이 되셨다면,<br />커피 한 잔으로 응원해 주세요.</h2><p>작은 응원이 아마야구 선수들의 이야기를 계속 연결하는 힘이 됩니다.</p></div>
           <div><small>NH농협은행</small><strong>302-2177-2877-01</strong><span>한끼방패 브랜드랩</span></div>
         </div>
       </section>
