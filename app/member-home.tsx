@@ -582,7 +582,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           />
         </a>
         <nav aria-label="주요 메뉴">
-          <button type="button" className="topbar-guide-link" onClick={() => setGuideOpen(true)}>아마ON 안내</button>
+          <a className="topbar-guide-link" href="/about">아마온 소개</a>
           <a href="#schools">학교 찾기</a>
           <a href="#schools">경기·인천 학교</a>
           <a href="#players">선수 프로필</a>
@@ -713,11 +713,11 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             </div>
             <div className="hero-registration-actions"><button type="button" onClick={() => setVideoSubmissionOpen(true)}><span>선수 프로필 등록·수정</span><b aria-hidden="true">→</b></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">직접 등록이 어렵다면 한끼방패 DM ↗</a></div>
           </aside>
-          <button type="button" className="amaon-guide-trigger" onClick={() => setGuideOpen(true)}>
+          <a className="amaon-guide-trigger" href="/guide">
             <span>AMAON GUIDE</span>
-            <strong>아마ON 사용설명서</strong>
+            <strong>아마온(아마ON) 사용설명서</strong>
             <small>선수 등록부터 SNS 프로필 공유까지 <b>→</b></small>
-          </button>
+          </a>
           <div className="hero-counts" aria-label="현재 공개 현황">
             <div><strong>{publishedSchools.length}</strong><span>공개 학교</span></div>
             <div><strong>{publishedPlayerCount.toLocaleString()}</strong><span>등록 선수</span></div>

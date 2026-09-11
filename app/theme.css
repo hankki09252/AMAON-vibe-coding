@@ -1527,9 +1527,9 @@ footer p, footer small { color: #777; }
 .community-post:hover { border-left-color: var(--brand-orange); background: #151515; }
 .community-post h3 { font-size: clamp(21px, 2.2vw, 29px); letter-spacing: -1px; }
 
-.topbar-guide-link { padding: 0; border: 0; background: transparent; color: #ddd; font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; }
+.topbar-guide-link { padding: 0; border: 0; background: transparent; color: #ddd; font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; text-decoration: none; }
 .topbar-guide-link:hover, .topbar-guide-link:focus-visible { color: var(--brand-orange); outline: none; }
-.amaon-guide-trigger { width: min(100%, 540px); min-height: 58px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin-top: 15px; padding: 0 16px; border: 1px solid #444; background: rgba(10,10,10,.76); color: white; text-align: left; cursor: pointer; }
+.amaon-guide-trigger { width: min(100%, 540px); min-height: 58px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin-top: 15px; padding: 0 16px; border: 1px solid #444; background: rgba(10,10,10,.76); color: white; text-align: left; cursor: pointer; text-decoration: none; }
 .amaon-guide-trigger > span { padding: 6px 8px; background: var(--brand-orange); color: #080808; font-size: 7px; font-weight: 1000; letter-spacing: 1px; }
 .amaon-guide-trigger > strong { font-size: 12px; }
 .amaon-guide-trigger > small { color: #898989; font-size: 8px; }
