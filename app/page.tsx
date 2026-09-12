@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getAmaonUser } from "./auth";
 import { readProfileEntry } from "./profile-entry-data";
 import { readRecentPlayerProfiles } from "./recent-player-data";
+import { readPublishedWeekly } from "./weekly/weekly-data";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +23,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const team = typeof params.team === "string" ? params.team : "";
   const player = typeof params.player === "string" ? params.player : "";
   const initialProfile = team && player ? { team, player } : null;
-  const [user, profileEntry, recentPlayers] = await Promise.all([
+  const [user, profileEntry, recentPlayers, weeklyPosts] = await Promise.all([
     userPromise,
     initialProfile ? readProfileEntry(team, player).catch(() => null) : null,
     initialProfile ? Promise.resolve([]) : readRecentPlayerProfiles().catch(() => []),
+    initialProfile ? Promise.resolve([]) : readPublishedWeekly(4).catch(() => []),
   ]);
-  return <>{!initialProfile && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "아마온", alternateName: ["아마ON", "AMAON"], url: "https://www.amaon.kr/" }) }} />}<MemberHome signedIn={Boolean(user)} initialProfile={initialProfile} profileEntry={profileEntry} recentPlayers={recentPlayers} /></>;
+  const weeklyPreviews = weeklyPosts.map(({ id, issueNumber, slug, title, summary, coverStorageKey, playerName, schoolName }) => ({ id, issueNumber, slug, title, summary, coverStorageKey, playerName, schoolName }));
+  return <>{!initialProfile && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "아마온", alternateName: ["아마ON", "AMAON"], url: "https://www.amaon.kr/" }) }} />}<MemberHome signedIn={Boolean(user)} initialProfile={initialProfile} profileEntry={profileEntry} recentPlayers={recentPlayers} weeklyPosts={weeklyPreviews} /></>;
 }

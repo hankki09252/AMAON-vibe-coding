@@ -3,9 +3,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { COMMUNITY_CATEGORIES, MEMBER_ROLE_LABELS, MEMBER_ROLES, activityLevel } from "./community-model";
+import type { WeeklyPlayerOption } from "./weekly-admin";
 
 const VideoSubmissionAdmin = dynamic(() => import("./video-submission-admin"));
 const PlayerSubmissionAdmin = dynamic(() => import("./player-submission-admin"));
+const WeeklyAdmin = dynamic(() => import("./weekly-admin"));
 
 type Profile = {
   user_id: string; display_name: string; member_role: string; school_name: string;
@@ -33,7 +35,7 @@ type TrafficStats = {
   totalVisitors: number; totalPageViews: number; todayVisitors: number; todayPageViews: number;
 };
 
-export default function CommunityBoard({ signedIn = false }: { signedIn?: boolean }) {
+export default function CommunityBoard({ signedIn = false, weeklyPlayerOptions = [] }: { signedIn?: boolean; weeklyPlayerOptions?: WeeklyPlayerOption[] }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [members, setMembers] = useState<Profile[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -245,6 +247,7 @@ export default function CommunityBoard({ signedIn = false }: { signedIn?: boolea
       <button disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
     </form>}
     {adminOpen && profile?.isAdmin && <div className="member-verification-panel">
+      <WeeklyAdmin playerOptions={weeklyPlayerOptions} />
       <PlayerSubmissionAdmin />
       <VideoSubmissionAdmin />
       <div className="member-admin-heading"><div><h3>사이트 방문 통계</h3><p>운영자에게만 표시되며, 페이지를 열 때 한 번만 불러옵니다.</p></div></div>

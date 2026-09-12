@@ -3,6 +3,7 @@
 // Public browsing; member actions remain protected by server API checks.
 
 import Image from "next/image";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { schools } from "./school-catalog";
 import { FormEvent, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
@@ -46,8 +47,10 @@ import { managedTeamOptions } from "./team-directory";
 import { createSupabaseBrowserClient } from "./supabase/browser";
 import { ProfileEntryContext, type ProfileEntryData } from "./profile-entry-context";
 import type { RecentPlayerProfile } from "./recent-player-data";
+import type { WeeklyPost } from "./weekly/weekly-data";
 
 const VideoSubmission = dynamic(() => import("./video-submission"));
+type WeeklyPreview = Pick<WeeklyPost, "id" | "issueNumber" | "slug" | "title" | "summary" | "coverStorageKey" | "playerName" | "schoolName">;
 
 
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
@@ -138,7 +141,7 @@ const playerSearchIndex = [
 
 type ProfileTarget = { team: string; player: string };
 
-export default function Home({ signedIn = false, initialProfile = null, profileEntry = null, recentPlayers = [] }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null; recentPlayers?: RecentPlayerProfile[] }) {
+export default function Home({ signedIn = false, initialProfile = null, profileEntry = null, recentPlayers = [], weeklyPosts = [] }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null; recentPlayers?: RecentPlayerProfile[]; weeklyPosts?: WeeklyPreview[] }) {
   const [pendingProfile, setPendingProfile] = useState<ProfileTarget | null>(profileEntry ? null : initialProfile);
   const [profileEntryError, setProfileEntryError] = useState("");
   const [query, setQuery] = useState("");
@@ -374,6 +377,9 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
     () => publishedPlayerSearchIndex.length,
     [publishedPlayerSearchIndex],
   );
+  const weeklyPlayerOptions = useMemo(() => publishedPlayerSearchIndex.map(({ player, school, sectionId }) => ({
+    teamId: sectionId, playerId: player.id, name: player.name, school, position: player.position,
+  })), [publishedPlayerSearchIndex]);
   const recentPlayerCards = useMemo(() => recentPlayers.flatMap((recent) => {
     const directoryEntry = currentPlayerSearchIndex.find((item) => item.player.id === recent.playerId && item.sectionId === recent.teamId);
     if (!directoryEntry || !visibleRegions.includes(schoolRegionByName[directoryEntry.school])) return [];
@@ -586,6 +592,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           <a href="#schools">학교 찾기</a>
           <a href="#schools">경기·인천 학교</a>
           <a href="#players">선수 프로필</a>
+          <Link href="/weekly">AMAON WEEKLY</Link>
           <a href="#community">커뮤니티</a>
         </nav>
         <PwaInstallButton />
@@ -644,6 +651,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
                 );
               })}
             </nav>
+          <Link className="mobile-weekly-link" href="/weekly"><span><small>NEW CONTENT</small><strong>AMAON WEEKLY</strong></span><b>→</b></Link>
           <button type="button" className="mobile-guide-link" onClick={() => { setMobileMenuOpen(false); setGuideOpen(true); }}>
             <span><small>START HERE</small><strong>아마ON 사용설명서</strong></span><b>→</b>
           </button>
@@ -747,6 +755,14 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         </div>
       </section>
 
+      {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
+        <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><Link href="/weekly">전체 보기 →</Link></header>
+        <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
+          <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
+          <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.schoolName} · {post.playerName} <em>3분 읽기 →</em></b></span>
+        </Link>)}</div>
+      </section>}
+
       {!pendingProfile && recentPlayerCards.length > 0 && (
         <section className="recent-player-section" aria-labelledby="recent-player-title">
           <header className="recent-player-head">
@@ -778,7 +794,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
 
       {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} onOpenPlayer={openSearchedPlayer} />}
 
-      {!pendingProfile && <CommunityBoard signedIn={signedIn} />}
+      {!pendingProfile && <CommunityBoard signedIn={signedIn} weeklyPlayerOptions={weeklyPlayerOptions} />}
 
       {videoSubmissionOpen && <VideoSubmission open players={publishedPlayerSearchIndex} onClose={() => setVideoSubmissionOpen(false)} />}
 
