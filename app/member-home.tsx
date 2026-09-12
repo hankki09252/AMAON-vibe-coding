@@ -759,7 +759,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><Link href="/weekly">전체 보기 →</Link></header>
         <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
           <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
-          <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.schoolName} · {post.playerName} <em>3분 읽기 →</em></b></span>
+          <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>3분 읽기 →</em></b></span>
         </Link>)}</div>
       </section>}
 

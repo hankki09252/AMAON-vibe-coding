@@ -18,12 +18,10 @@ create table if not exists public.weekly_posts (
   created_by text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint weekly_published_player_required check (
-    not published or (
-      published_at is not null and cover_storage_key is not null and
-      team_id is not null and player_id is not null and
-      player_name is not null and school_name is not null
-    )
+  constraint weekly_published_timestamp_required check (not published or published_at is not null),
+  constraint weekly_player_fields_complete check (
+    (team_id is null and player_id is null and player_name is null and school_name is null)
+    or (team_id is not null and player_id is not null and player_name is not null and school_name is not null)
   )
 );
 

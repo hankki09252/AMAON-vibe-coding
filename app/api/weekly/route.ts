@@ -71,11 +71,6 @@ export async function POST(request: Request) {
     if (error) return Response.json({ error: "대표 이미지를 저장하지 못했습니다." }, { status: 500 });
     coverKey = uploadedKey;
   }
-  if (published && (!hasPlayer || !coverKey)) {
-    if (uploadedKey) await db.storage.from(bucket).remove([uploadedKey]);
-    return Response.json({ error: "공개하려면 소개 선수와 대표 이미지를 선택해야 합니다." }, { status: 400 });
-  }
-
   const now = new Date().toISOString();
   const row = {
     id, issue_number: issueNumber, slug, title, summary, one_issue_title: oneIssueTitle, body, on_message: onMessage,

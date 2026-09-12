@@ -54,16 +54,16 @@ export default function WeeklyAdmin({ playerOptions }: { playerOptions: WeeklyPl
   }
 
   return <section className="weekly-admin" aria-labelledby="weekly-admin-title">
-    <div className="member-admin-heading"><div><h3 id="weekly-admin-title">AMAON WEEKLY 관리</h3><p>매주 한 편을 작성하고, 선수와 대표 이미지를 확인한 뒤 공개하세요.</p></div><a href="/weekly" target="_blank" rel="noreferrer">공개 화면 보기 ↗</a></div>
+    <div className="member-admin-heading"><div><h3 id="weekly-admin-title">AMAON WEEKLY 관리</h3><p>제목과 본문만으로도 공개할 수 있습니다. 선수와 대표 이미지는 필요한 글에만 선택하세요.</p></div><a href="/weekly" target="_blank" rel="noreferrer">공개 화면 보기 ↗</a></div>
     <form className="weekly-admin-form" onSubmit={save}>
       <div className="weekly-admin-row"><label>회차<input type="number" min="1" max="999" required value={form.issueNumber} onChange={(e) => setForm({ ...form, issueNumber: e.target.value })} /></label><label>영문 주소<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase() })} placeholder="offseason-baseball-player" /></label></div>
       <label>제목<input required minLength={2} maxLength={120} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
       <label>한 줄 요약<textarea required minLength={10} maxLength={240} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} /></label>
-      <label>PLAYER · 이번 주 선수<select value={form.playerKey} onChange={(e) => setForm({ ...form, playerKey: e.target.value })}><option value="">임시저장 시 나중에 선택</option>{sortedPlayers.map((player) => <option key={`${player.teamId}-${player.playerId}`} value={`${player.teamId}|${player.playerId}`}>{player.school} · {player.name} · {player.position}</option>)}</select></label>
+      <label>PLAYER · 이번 주 선수 (선택)<select value={form.playerKey} onChange={(e) => setForm({ ...form, playerKey: e.target.value })}><option value="">선수 소개 없이 발행</option>{sortedPlayers.map((player) => <option key={`${player.teamId}-${player.playerId}`} value={`${player.teamId}|${player.playerId}`}>{player.school} · {player.name} · {player.position}</option>)}</select></label>
       <label>ONE ISSUE · 소제목<input required minLength={2} maxLength={100} value={form.oneIssueTitle} onChange={(e) => setForm({ ...form, oneIssueTitle: e.target.value })} /></label>
       <label>본문<textarea className="weekly-admin-body" required minLength={20} maxLength={5000} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="문단 사이를 한 줄 비워 작성하세요." /></label>
       <label>ON · 행동 문구<input required minLength={2} maxLength={160} value={form.onMessage} onChange={(e) => setForm({ ...form, onMessage: e.target.value })} /></label>
-      <label>대표 이미지 (JPG·PNG·WEBP, 4MB 이하)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setCover(e.target.files?.[0] || null)} />{form.coverUrl && <small>현재 이미지 등록됨 · 새 파일을 고르면 교체됩니다.</small>}</label>
+      <label>대표 이미지 (선택 · 없으면 아마ON 기본 이미지)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setCover(e.target.files?.[0] || null)} />{form.coverUrl && <small>현재 이미지 등록됨 · 새 파일을 고르면 교체됩니다.</small>}</label>
       <label className="weekly-admin-publish"><input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} /> 지금 공개하기</label>
       <div className="weekly-admin-buttons"><button disabled={busy}>{busy ? "저장 중…" : form.published ? "저장하고 공개" : "임시저장"}</button>{form.id && <button type="button" onClick={() => { setForm(empty); setCover(null); }}>새 글 작성</button>}</div>
       {notice && <p className="weekly-admin-notice" role="status">{notice}</p>}

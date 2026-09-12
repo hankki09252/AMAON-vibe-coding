@@ -33,6 +33,7 @@ export default async function WeeklyDetailPage({ params }: Props) {
   const { slug } = await params;
   const post = await readWeeklyBySlug(slug);
   if (!post) notFound();
+  const hasPlayer = Boolean(post.playerId);
   const profileUrl = weeklyPlayerUrl(post);
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -61,21 +62,21 @@ export default async function WeeklyDetailPage({ params }: Props) {
       </header>
       <figure className={styles.heroImage}><Image src={weeklyCoverUrl(post)} alt={`${post.title} 대표 이미지`} fill sizes="(max-width: 900px) 100vw, 1100px" priority /></figure>
 
-      <section className={styles.playerSpotlight} aria-labelledby="weekly-player-title">
+      {hasPlayer && <section className={styles.playerSpotlight} aria-labelledby="weekly-player-title">
         <span className={styles.number}>01</span><div><small>PLAYER · THIS WEEK</small><h2 id="weekly-player-title">{post.playerName}</h2><p>{post.schoolName} · {post.position || "고교야구 선수"}</p></div>
         <WeeklyTrackedLink weeklyId={post.id} eventType="player_profile" href={profileUrl}>선수 프로필 보기 →</WeeklyTrackedLink>
-      </section>
+      </section>}
 
       <section className={styles.issue} aria-labelledby="weekly-issue-title">
-        <header><span className={styles.number}>02</span><div><small>ONE ISSUE</small><h2 id="weekly-issue-title">{post.oneIssueTitle}</h2></div></header>
+        <header><span className={styles.number}>{hasPlayer ? "02" : "01"}</span><div><small>ONE ISSUE</small><h2 id="weekly-issue-title">{post.oneIssueTitle}</h2></div></header>
         <div className={styles.body}>{post.body.split(/\n{2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`}>{paragraph}</p>)}</div>
       </section>
 
       <section className={styles.on} aria-labelledby="weekly-on-title">
-        <span className={styles.number}>03</span><div><small>ON · CONNECT TO AMAON</small><h2 id="weekly-on-title">{post.onMessage}</h2><p>기록은 기본. 영상은 증명. 프로필은 나를 설명합니다.</p></div>
+        <span className={styles.number}>{hasPlayer ? "03" : "02"}</span><div><small>ON · CONNECT TO AMAON</small><h2 id="weekly-on-title">{post.onMessage}</h2><p>기록은 기본. 영상은 증명. 프로필은 나를 설명합니다.</p></div>
         <div className={styles.actions}>
-          <WeeklyTrackedLink weeklyId={post.id} eventType="player_profile" href={profileUrl}>선수 프로필 보기</WeeklyTrackedLink>
-          <WeeklyTrackedLink weeklyId={post.id} eventType="player_video" href={profileUrl}>선수 영상 보기</WeeklyTrackedLink>
+          {hasPlayer && <WeeklyTrackedLink weeklyId={post.id} eventType="player_profile" href={profileUrl}>선수 프로필 보기</WeeklyTrackedLink>}
+          {hasPlayer && <WeeklyTrackedLink weeklyId={post.id} eventType="player_video" href={profileUrl}>선수 영상 보기</WeeklyTrackedLink>}
           <WeeklyTrackedLink weeklyId={post.id} eventType="profile_submission" href="/#top">사진·영상 등록하기</WeeklyTrackedLink>
         </div>
       </section>
