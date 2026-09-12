@@ -69,7 +69,7 @@ export default async function WeeklyDetailPage({ params }: Props) {
 
       <section className={styles.issue} aria-labelledby="weekly-issue-title">
         <header><span className={styles.number}>{hasPlayer ? "02" : "01"}</span><div><small>ONE ISSUE</small><h2 id="weekly-issue-title">{post.oneIssueTitle}</h2></div></header>
-        <div className={styles.body}>{post.body.split(/\n{2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`}>{paragraph}</p>)}</div>
+        <div className={styles.body}>{post.body.split(/(?:\r?\n){2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`} style={{ whiteSpace: "pre-line", wordBreak: "keep-all", overflowWrap: "break-word" }}>{paragraph}</p>)}</div>
       </section>
 
       <section className={styles.on} aria-labelledby="weekly-on-title">

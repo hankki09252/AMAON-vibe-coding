@@ -8,7 +8,7 @@ const uuidPattern = /^[a-f0-9-]{36}$/;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function text(form: FormData, key: string, max: number) {
-  return String(form.get(key) || "").replace(/\0/g, "").trim().slice(0, max);
+  return String(form.get(key) || "").replace(/\r\n?/g, "\n").replace(/\0/g, "").trim().slice(0, max);
 }
 
 function extension(file: File) {
