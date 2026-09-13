@@ -1,100 +1,51 @@
-# vinext-starter
+# 아마ON (AMAON)
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+아마ON은 한끼방패가 운영하는 **아마야구 선수 프로필·영상 포트폴리오 플랫폼**입니다. 학교별 선수 프로필과 경기 영상을 보여주고, 선수의 기록과 이야기를 개인 링크로 공유할 수 있도록 만든 서비스입니다.
 
-## Prerequisites
+운영 주소: https://www.amaon.kr
 
-- Node.js `>=22.13.0`
+## 기술 구성
 
-## Quick Start
+- Next.js 16 / React 19 / TypeScript
+- Supabase Auth, Database, Storage
+- Vercel 배포 및 Analytics
+- PWA 지원
+
+## 로컬 실행
+
+Node.js `>=22.13.0`과 pnpm을 사용합니다.
 
 ```bash
-npm install
-npm run dev
-npm run build
+pnpm install
+cp .env.example .env.local
+pnpm dev
 ```
 
-This starter does not use `wrangler.jsonc`.
+`.env.local`에는 실제 Supabase 프로젝트 값을 넣습니다. 비밀키와 운영 환경 변수는 저장소에 커밋하지 않습니다.
 
-## Included Shape
+## 확인 명령
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+pnpm lint
+pnpm build
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+변경 범위에 맞는 최소한의 검사를 우선 사용합니다. 문서만 고친 경우에는 전체 빌드가 필요하지 않습니다.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## 주요 위치
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+- `app/`: 화면, API 라우트, 인증, 선수 프로필 및 서비스 로직
+- `supabase/schema.sql`: 데이터베이스 스키마의 저장소 기준본
+- `.env.example`: 필요한 환경 변수 이름 예시
+- `VERCEL_DEPLOYMENT.md`: Vercel + Supabase 배포 시 참고할 운영 문서
+- `AGENTS.md`: Codex/코딩 에이전트용 작업 원칙
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+## 인증과 데이터
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+회원 인증은 Supabase Auth를 사용합니다. 서버 코드는 필요한 경우 Supabase 서버 클라이언트를 통해 현재 사용자를 확인하며, 관리자 권한은 서버 환경 변수와 사용자 정보에 기반해 처리합니다.
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+선수 프로필·미디어·커뮤니티 등 영속 데이터는 Supabase 기반입니다. 데이터베이스 구조를 바꿀 때는 먼저 `supabase/schema.sql`과 관련 코드를 함께 검토하고, 실제 운영 DB 반영은 별도의 명시적 배포 작업으로 다룹니다.
 
-## Useful Commands
+## 배포
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+운영 배포나 Supabase 설정 변경이 필요한 작업에서만 `VERCEL_DEPLOYMENT.md`를 확인하세요. 일반적인 UI·로직 수정 전에 배포 문서를 읽을 필요는 없습니다.
