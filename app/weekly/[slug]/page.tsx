@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import WeeklyTrackedLink from "../weekly-actions";
 import { readWeeklyBySlug, weeklyCoverUrl, weeklyPlayerUrl } from "../weekly-data";
+import type { WeeklyPost } from "../weekly-data";
 import styles from "../weekly.module.css";
+import inlineStyles from "../weekly-inline.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +38,12 @@ export default async function WeeklyDetailPage({ params }: Props) {
   if (!post) notFound();
   const hasPlayer = Boolean(post.playerId);
   const profileUrl = weeklyPlayerUrl(post);
+  const paragraphs = post.body.split(/(?:\r?\n){2,}/);
+  const imagesAfter = (afterParagraph: number) => post.images.filter((image) => image.afterParagraph === afterParagraph);
+  const renderImage = (image: WeeklyPost["images"][number]) => <figure className={inlineStyles.inlineImage} key={image.id}>
+    <span className={inlineStyles.imageFrame}><Image src={`/api/weekly/image/${image.id}`} alt={image.caption || `${post.title} 본문 사진`} fill sizes="(max-width: 760px) 100vw, 720px" /></span>
+    {image.caption && <figcaption>{image.caption}</figcaption>}
+  </figure>;
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -69,7 +78,11 @@ export default async function WeeklyDetailPage({ params }: Props) {
 
       <section className={styles.issue} aria-labelledby="weekly-issue-title">
         <header><span className={styles.number}>{hasPlayer ? "02" : "01"}</span><div><small>ONE ISSUE</small><h2 id="weekly-issue-title">{post.oneIssueTitle}</h2></div></header>
-        <div className={styles.body}>{post.body.split(/(?:\r?\n){2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`} style={{ whiteSpace: "pre-line", wordBreak: "keep-all", overflowWrap: "break-word" }}>{paragraph}</p>)}</div>
+        <div className={styles.body}>
+          {imagesAfter(0).map(renderImage)}
+          {paragraphs.map((paragraph, index) => <Fragment key={`${index}-${paragraph.slice(0, 20)}`}><p style={{ whiteSpace: "pre-line", wordBreak: "keep-all", overflowWrap: "break-word" }}>{paragraph}</p>{imagesAfter(index + 1).map(renderImage)}</Fragment>)}
+          {post.images.filter((image) => image.afterParagraph > paragraphs.length).map(renderImage)}
+        </div>
       </section>
 
       <section className={styles.on} aria-labelledby="weekly-on-title">

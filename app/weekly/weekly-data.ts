@@ -19,7 +19,10 @@ export type WeeklyPost = {
   published: boolean;
   publishedAt: string;
   updatedAt: string;
+  images: WeeklyImage[];
 };
+
+export type WeeklyImage = { id: string; storageKey: string; caption: string; afterParagraph: number; sortOrder: number };
 
 type WeeklyRow = {
   id: string;
@@ -39,9 +42,11 @@ type WeeklyRow = {
   published: boolean;
   published_at: string | null;
   updated_at: string;
+  weekly_images?: Array<{ id: string; storage_key: string; caption: string; after_paragraph: number; sort_order: number }> | null;
 };
 
 const fields = "id,issue_number,slug,title,summary,one_issue_title,body,on_message,cover_storage_key,team_id,player_id,player_name,school_name,position,published,published_at,updated_at";
+const imageFields = "id,storage_key,caption,after_paragraph,sort_order";
 
 function mapPost(row: WeeklyRow): WeeklyPost {
   return {
@@ -62,6 +67,7 @@ function mapPost(row: WeeklyRow): WeeklyPost {
     published: row.published,
     publishedAt: row.published_at || row.updated_at,
     updatedAt: row.updated_at,
+    images: (row.weekly_images || []).map((image) => ({ id: image.id, storageKey: image.storage_key, caption: image.caption, afterParagraph: image.after_paragraph, sortOrder: image.sort_order })).sort((a, b) => a.sortOrder - b.sortOrder),
   };
 }
 
@@ -78,14 +84,22 @@ export async function readPublishedWeekly(limit = 20): Promise<WeeklyPost[]> {
 
 export const readWeeklyBySlug = cache(async (slug: string): Promise<WeeklyPost | null> => {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null;
-  const { data, error } = await createSupabaseAdminClient()
+  const db = createSupabaseAdminClient();
+  const { data, error } = await db
     .from("weekly_posts")
     .select(fields)
     .eq("slug", slug)
     .eq("published", true)
     .maybeSingle();
   if (error) throw new Error("AMAON WEEKLY 글을 불러오지 못했습니다.");
-  return data ? mapPost(data as WeeklyRow) : null;
+  if (!data) return null;
+  const { data: images, error: imageError } = await db
+    .from("weekly_images")
+    .select(imageFields)
+    .eq("weekly_id", data.id)
+    .order("sort_order");
+  if (imageError) throw new Error("AMAON WEEKLY 본문 사진을 불러오지 못했습니다.");
+  return mapPost({ ...(data as WeeklyRow), weekly_images: images || [] });
 });
 
 export function weeklyCoverUrl(post: Pick<WeeklyPost, "id" | "coverStorageKey">) {

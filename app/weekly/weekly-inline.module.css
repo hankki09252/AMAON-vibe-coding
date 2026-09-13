@@ -1,0 +1,2 @@
+.inlineImage{margin:34px 0 42px}.imageFrame{position:relative;display:block;width:100%;aspect-ratio:16/10;overflow:hidden;background:#151515;border:1px solid #333}.imageFrame img{object-fit:contain}.inlineImage figcaption{margin-top:10px;color:#929292;font-size:13px;line-height:1.55;text-align:center}
+@media(max-width:760px){.inlineImage{margin:26px -10px 34px}.imageFrame{aspect-ratio:4/3}.inlineImage figcaption{padding:0 14px;font-size:12px}}
