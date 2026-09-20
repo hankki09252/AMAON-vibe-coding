@@ -1,0 +1,28 @@
+.home{--home-orange:#ff6500}
+.home :global(.hero){display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;padding:64px clamp(22px,5vw,90px) 36px;background:radial-gradient(ellipse at 85% 10%,#2a170e,transparent 55%),#090909;min-height:0}
+.home :global(.hero-copy){display:contents}
+.home :global(.hero-copy>.kicker){grid-column:1;margin:0;color:#ff8a3e;font-size:12px;letter-spacing:1px}
+.home :global(.hero-purpose-title){grid-column:1;margin:0;font-size:clamp(36px,4.2vw,68px);line-height:1.17;letter-spacing:-2px}
+.home :global(.hero-purpose-title .hero-title-line),.home :global(.hero-purpose-title .hero-purpose-line){font-size:inherit;white-space:normal;letter-spacing:inherit}
+.home :global(.hero-purpose-line){color:var(--home-orange)}
+.home :global(.hero-lead){grid-column:1;margin:0;color:#bdbdbd;font-size:16px;line-height:1.9}
+.home :global(.hero-lead strong){color:#fff;font-size:20px;display:inline-block;margin-bottom:12px}
+.intro{grid-column:2;grid-row:1/4;align-self:center;min-width:0}
+.poster{position:relative;border:1px solid #493020;background:#101010;overflow:hidden}
+.poster>img{display:block;width:100%;height:auto}
+.poster video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#080808}
+.posterCaption{padding:20px;border-top:1px solid #39271b;display:grid;gap:8px}
+.posterCaption span{font-size:10px;letter-spacing:2px;color:#ff893c}.posterCaption strong{color:#fff;font-size:18px}
+.home :global(.hero-search-wrap){grid-column:1/-1;width:100%;max-width:none;margin:12px 0 0}
+.home :global(.hero-search){width:100%;max-width:none;min-height:66px;background:#fff;color:#111;border:0;border-radius:8px;overflow:hidden}
+.home :global(.hero-search input){color:#111;background:#fff;font-size:17px;min-width:0}.home :global(.hero-search button){background:var(--home-orange);color:#090909;min-width:100px}
+.home :global(.hero-instagram-cta){grid-column:1/-1;width:100%;max-width:none;margin:0;padding:28px;border:1px solid #623516;border-left:4px solid var(--home-orange);background:linear-gradient(100deg,#241409,#101010);display:flex;justify-content:space-between;gap:24px;align-items:center}
+.home :global(.hero-instagram-cta strong){font-size:clamp(20px,2vw,28px)}
+.home :global(.amaon-guide-trigger){grid-column:1;margin:0;max-width:none}.home :global(.hero-counts){grid-column:2;margin:0;align-self:center;justify-content:flex-end}
+.home :global(.hero-dashboard[hidden]){display:none!important}
+.shortcuts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin:24px clamp(22px,5vw,90px) 48px;border:1px solid #333}
+.shortcuts>a,.shortcuts>button,.shortcuts>div{display:flex;flex-direction:column;gap:12px;padding:22px 14px;text-align:left;background:#101010;color:#fff;text-decoration:none;border:0;border-right:1px solid #333;min-width:0}
+.shortcuts>button,.shortcuts>a{cursor:pointer}.shortcuts>button:hover,.shortcuts>a:hover{background:#24170e}.shortcuts small,.originals small{color:#ff8230;font-size:10px;letter-spacing:1.5px}.shortcuts strong{font-size:15px}.shortcuts span{font-size:12px;line-height:1.6;color:#aaa}.shortcuts>[aria-disabled]{opacity:.5}
+.originals{margin:0 clamp(22px,5vw,90px) 48px;padding:32px;display:grid;grid-template-columns:1fr 1.2fr;gap:32px;align-items:center;background:#121212;border:1px solid #333}
+.originals h2{color:white;font-size:clamp(26px,3vw,40px);line-height:1.3;margin:14px 0}.originals p{color:#aaa;line-height:1.7}.originals a{display:block;color:#ff8a3e;margin-top:16px;font-size:14px}.originals img{width:100%;height:auto}
+@media(max-width:760px){.home :global(.hero){grid-template-columns:minmax(0,1fr);padding:34px 20px 24px;gap:20px}.home :global(.hero-purpose-title){font-size:clamp(30px,7.7vw,48px);letter-spacing:-1.5px}.home :global(.hero-lead){font-size:14px}.home :global(.hero-lead strong){font-size:17px}.intro{grid-column:1;grid-row:6}.home :global(.hero-search-wrap){grid-row:4;margin:0}.home :global(.hero-instagram-cta){grid-row:5;display:grid;padding:20px;gap:16px}.home :global(.hero-counts){grid-column:1;justify-content:space-between}.home :global(.hero-search input){font-size:14px}.home :global(.hero-search button){min-width:64px}.shortcuts{grid-template-columns:repeat(2,minmax(0,1fr));margin:16px 20px 32px}.shortcuts>*{border-bottom:1px solid #333!important}.originals{margin:0 20px 32px;padding:22px;grid-template-columns:1fr;gap:20px}.posterCaption{padding:14px}}

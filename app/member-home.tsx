@@ -3,6 +3,8 @@
 // Public browsing; member actions remain protected by server API checks.
 
 import Image from "next/image";
+import homeStyles from "./home-redesign.module.css";
+import HomeIntroVideo from "./home-intro-video";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { schools } from "./school-catalog";
@@ -569,7 +571,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   }
 
   return (
-    <main className={`member-home${pendingProfile ? " profile-entry-pending" : ""}`}>
+    <main className={`member-home ${homeStyles.home}${pendingProfile ? " profile-entry-pending" : ""}`}>
       {pendingProfile && <div className="profile-entry-gate" role={profileEntryError ? "alert" : "status"} aria-live="polite">
         <div><small>AMAON · PLAYER PROFILE</small><strong>{profileEntryError || "선수 프로필을 준비하고 있습니다"}</strong>
           {profileEntryError ? <p><button type="button" onClick={() => window.location.reload()}>다시 시도</button><a href="/">아마ON 홈으로</a></p>
@@ -675,13 +677,13 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="kicker"><span /> PLAYER SPOTLIGHT PLATFORM</p>
+          <p className="kicker"><span /> 아마야구 선수 프로필 · 영상 · 이야기</p>
           <h1 className="hero-purpose-title">
-            <span className="hero-title-line">아마ON,</span><br />
-            <em className="hero-purpose-line">이제는 선수를 알리는 시대.</em>
+            <span className="hero-title-line">기록만으로 선수를</span><br />
+            <em className="hero-purpose-line">다 보여줄 수 있을까?</em>
           </h1>
           <p className="hero-lead">
-            아마온(아마ON), 한끼방패의 아마야구 선수 포트폴리오.<br />
+            <strong>아마ON, 이제는 선수를 알리는 시대.</strong><br />
             기록은 결과를, 영상은 과정을,<br />
             프로필은 선수의 이야기를 보여줍니다.
           </p>
@@ -733,7 +735,10 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           </div>
         </div>
 
-        <div className="hero-visual hero-dashboard" aria-label="아마ON 빠른 시작">
+        <div className={homeStyles.intro} aria-label="아마ON 소개">
+          <HomeIntroVideo />
+        </div>
+        <div className="hero-visual hero-dashboard" hidden aria-hidden="true">
           <div className="score-grid" />
           <div className="hero-dashboard-shell">
             <div className="hero-dashboard-head">
@@ -755,6 +760,20 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         </div>
       </section>
 
+      {!pendingProfile && <nav className={homeStyles.shortcuts} aria-label="아마ON 콘텐츠 바로가기">
+        <button onClick={() => jumpToSection("players")}><small>PLAYER</small><strong>선수 검색 ↗</strong><span>선수의 이야기를 만나보세요</span></button>
+        <button onClick={() => jumpToSection("schools")}><small>TEAM</small><strong>학교별 보기 ↗</strong><span>우리 학교 선수 찾기</span></button>
+        <button onClick={() => jumpToSection("video-ranking")}><small>PLAY</small><strong>영상 하이라이트 ↗</strong><span>경기 속 플레이를 확인하세요</span></button>
+        <Link href="/weekly"><small>WEEKLY</small><strong>아마ON WEEKLY ↗</strong><span>선수와 부모를 위한 이야기</span></Link>
+        <button onClick={() => jumpToSection("community")}><small>TOGETHER</small><strong>커뮤니티 ↗</strong><span>함께 나누는 야구 이야기</span></button>
+        <div aria-disabled="true"><small>COMING SOON</small><strong>식단 가이드</strong><span>준비 중</span></div>
+      </nav>}
+
+      {!pendingProfile && <section className={homeStyles.originals} aria-labelledby="amaon-originals-title">
+        <div><small>AMAON ORIGINALS</small><h2 id="amaon-originals-title">야구를 담고,<br />선수를 알립니다.</h2><p>아마ON의 소식과 카드뉴스를 만나보세요.</p><a href="https://www.instagram.com/hankki09252/" target="_blank" rel="noopener noreferrer">한끼방패 공식 인스타그램 ↗</a><Link href="/about">아마ON 이야기 →</Link></div>
+        <Image src="/og.png" alt="아마ON — 오늘의 선수를 내일의 이름으로" width={1731} height={909} sizes="(max-width: 760px) 100vw, 50vw" loading="lazy" />
+      </section>}
+
       {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
         <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><Link href="/weekly">전체 보기 →</Link></header>
         <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
@@ -766,18 +785,18 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       {!pendingProfile && recentPlayerCards.length > 0 && (
         <section className="recent-player-section" aria-labelledby="recent-player-title">
           <header className="recent-player-head">
-            <div><small><i /> LIVE UPDATE</small><h2 id="recent-player-title">최근 업데이트된 선수 프로필</h2><p>새롭게 등록되거나 사진·영상·프로필이 업데이트된 선수를 만나보세요.</p></div>
+            <div><small><i /> PLAYER SPOTLIGHT</small><h2 id="recent-player-title">주목할 선수</h2><p>최근 업데이트된 공개 프로필 중 사진이 있는 선수를 우선 소개합니다.</p></div>
             <div className="recent-player-controls" aria-label="최근 선수 프로필 슬라이드 이동">
               <button type="button" onClick={() => scrollRecentPlayers(-1)} aria-label="이전 선수 보기">←</button>
-              <span>{String(recentPlayerCards.length).padStart(2, "0")} PLAYERS</span>
+              <span>{String(Math.min(recentPlayerCards.length, 5)).padStart(2, "0")} PLAYERS</span>
               <button type="button" onClick={() => scrollRecentPlayers(1)} aria-label="다음 선수 보기">→</button>
             </div>
           </header>
           <div className="recent-player-track" ref={recentPlayersRef}>
-            {recentPlayerCards.map(({ recent, directoryEntry }, index) => (
+            {[...recentPlayerCards].sort((a, b) => Number(Boolean(b.recent.cardImageUrl)) - Number(Boolean(a.recent.cardImageUrl))).slice(0, 5).map(({ recent, directoryEntry }) => (
               <button type="button" className="recent-player-card" key={`${recent.teamId}-${recent.playerId}`} onClick={() => openSearchedPlayer(directoryEntry)}>
                 <span className="recent-player-photo">
-                  {recent.cardImageUrl ? <Image src={recent.cardImageUrl} alt={`${directoryEntry.player.name} 선수 프로필 미리보기`} width={320} height={400} sizes="(max-width: 760px) 68vw, 260px" loading={index < 2 ? "eager" : "lazy"} /> : <b aria-hidden="true"><small>{directoryEntry.school.slice(0, 2)}</small>{directoryEntry.player.number}</b>}
+                  {recent.cardImageUrl ? <Image src={recent.cardImageUrl} alt={`${directoryEntry.player.name} 선수 프로필 미리보기`} width={320} height={400} sizes="(max-width: 760px) 68vw, 260px" loading="lazy" /> : <b aria-hidden="true"><small>{directoryEntry.school.slice(0, 2)}</small>{directoryEntry.player.number}</b>}
                   <em>{recent.updateType}</em>
                 </span>
                 <span className="recent-player-info">
