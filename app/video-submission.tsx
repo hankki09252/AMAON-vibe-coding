@@ -61,6 +61,8 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
   const [consent, setConsent] = useState(false);
   const [socialConsent, setSocialConsent] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStage, setSubmitStage] = useState<"idle" | "creating" | "uploading" | "confirming">("idle");
   const [notice, setNotice] = useState("");
   const [successId, setSuccessId] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
@@ -70,7 +72,7 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
     if (!keyword) return [];
     return players.filter(({ school, player }) => `${school}${player.name}${player.number}`.replace(/\s+/g, "").toLowerCase().includes(keyword)).slice(0, 8);
   }, [players, query]);
-  const uploading = progress !== null && progress < 100;
+  const uploading = submitting;
   const needsFile = mode !== "profile" && mode !== "transfer";
   const validContent = mode === "transfer"
     ? Boolean(profileForm.transferTeamId)
@@ -130,10 +132,24 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
     });
   }
 
+  async function confirmUpload(endpoint: string, submissionId: string) {
+    const retryDelays = [0, 700, 1500, 3000];
+    let lastError = "업로드 완료를 확인하지 못했습니다.";
+    for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
+      if (retryDelays[attempt]) await new Promise((resolve) => window.setTimeout(resolve, retryDelays[attempt]));
+      const response = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "complete", submissionId }) });
+      const payload = await response.json().catch(() => ({})) as { error?: string };
+      if (response.ok) return;
+      lastError = payload.error || lastError;
+      if (response.status !== 404 && response.status !== 409) break;
+    }
+    throw new Error(lastError);
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!selected || !validContent || !contact.trim() || !consent || uploading) return setNotice("선수, 등록 내용, 연락처와 필수 동의를 모두 확인해 주세요.");
-    setNotice(""); setSuccessId(""); setProgress(needsFile ? 0 : null);
+    setNotice(""); setSuccessId(""); setProgress(needsFile ? 0 : null); setSubmitting(true); setSubmitStage("creating");
     try {
       const isVideo = mode === "video";
       const endpoint = isVideo ? "/api/video-submissions" : "/api/player-submissions";
@@ -151,15 +167,21 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
         for (let index = 0; index < sources.length; index += 1) {
           const source = sources[index];
           const currentTicket = tickets[index];
+          setSubmitStage("uploading");
           await upload(currentTicket, source, fileContentType(source, mode), (ratio) => setProgress(Math.min(98, Math.round(((index + ratio) / sources.length) * 98))));
-          const completeResponse = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "complete", submissionId: currentTicket.submissionId }) });
-          const complete = await completeResponse.json().catch(() => ({})) as { error?: string };
-          if (!completeResponse.ok) throw new Error(complete.error || `${index + 1}번째 사진의 업로드 완료를 확인하지 못했습니다.`);
+          setSubmitStage("confirming");
+          await confirmUpload(endpoint, currentTicket.submissionId);
         }
         setProgress(100);
       }
       setSuccessId(ticket.submissionId.slice(0, 8).toUpperCase());
-    } catch (error) { setProgress(null); setNotice(error instanceof Error ? error.message : "등록 중 오류가 발생했습니다."); }
+    } catch (error) {
+      setProgress(null);
+      setNotice(`아직 접수되지 않았습니다. ${error instanceof Error ? error.message : "등록 중 오류가 발생했습니다."} 입력한 내용은 그대로이니 네트워크를 확인한 뒤 다시 눌러주세요.`);
+    } finally {
+      setSubmitting(false);
+      setSubmitStage("idle");
+    }
   }
 
   function resetAndClose() {
@@ -177,7 +199,14 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
       <section className="video-submit-step"><b>02</b><div><h3>선수 찾기</h3><p>학교명 또는 선수 이름을 입력하세요.</p><input value={query} onChange={(event) => { setQuery(event.target.value); setSelected(null); }} placeholder="학교명 또는 선수명 입력" aria-label="등록할 선수 검색" />{selected ? <button className="video-submit-selected" type="button" onClick={() => { setSelected(null); setQuery(""); setProfileForm(emptyProfile); }}><strong>{selected.player.number} {selected.player.name}</strong><span>{selected.school} · {selected.player.position} · {selected.player.grade}</span><em>다시 선택</em></button> : results.length > 0 && <div className="video-submit-results">{results.map((item) => <button type="button" key={`${item.sectionId}-${item.player.id}`} onClick={() => choosePlayer(item)}><strong>{item.player.name}</strong><span>{item.school} · {item.player.position} · {item.player.grade}</span><em>{item.player.number}</em></button>)}</div>}</div></section>
       <section className="video-submit-step"><b>03</b><div><h3>{activeLabel}</h3>{mode === "video" && <><p>90초 이내 · 최대 150MB · MP4/MOV/WEBM</p><div className="video-submit-category">{Object.entries(categoryLabels).map(([value, label]) => <button type="button" className={category === value ? "active" : ""} key={value} onClick={() => setCategory(value as keyof typeof categoryLabels)}>{label}</button>)}</div></>}{(mode === "profile_photo" || mode === "photo") && <p>JPG·PNG·WEBP · 사진당 최대 12MB {mode === "profile_photo" ? "· 새 사진이 대표사진으로 표시됩니다." : "· 한 번에 최대 10장까지 선택할 수 있습니다."}</p>}{needsFile && <><input ref={fileInput} hidden type="file" multiple={mode === "photo"} accept={mode === "video" ? "video/mp4,video/quicktime,video/webm,.m4v" : "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"} onChange={chooseFile} /><button className={`video-submit-file${file || photoFiles.length ? " ready" : ""}`} type="button" onClick={() => fileInput.current?.click()}><span>{file || photoFiles.length ? "✓" : "+"}</span><strong>{mode === "photo" && photoFiles.length ? `${photoFiles.length}장 선택됨` : file ? file.name : mode === "video" ? "휴대폰에서 영상 선택" : mode === "photo" ? "휴대폰에서 사진 여러 장 선택" : "휴대폰에서 사진 선택"}</strong>{mode === "photo" && photoFiles.length ? <small>총 {(photoFiles.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024).toFixed(1)}MB · 다시 눌러 변경</small> : file && <small>{(file.size / 1024 / 1024).toFixed(1)}MB{mode === "video" ? ` · ${Math.ceil(duration)}초` : ""}</small>}</button></>}{mode === "profile" && <ProfileFields value={profileForm} onChange={setProfileForm} />}{mode === "transfer" && <TransferFields value={profileForm.transferTeamId} currentTeamId={selected?.sectionId || ""} onChange={(transferTeamId) => setProfileForm((current) => ({ ...current, transferTeamId }))} />}</div></section>
       <section className="video-submit-step"><b>04</b><div><h3>연락처와 동의</h3><p>확인 결과를 안내받을 연락처를 남겨주세요.</p><div className="video-submit-relationship"><button type="button" className={relationship === "guardian" ? "active" : ""} onClick={() => setRelationship("guardian")}>보호자</button><button type="button" className={relationship === "player" ? "active" : ""} onClick={() => setRelationship("player")}>선수 본인</button></div><input value={contact} onChange={(event) => setContact(event.target.value)} maxLength={80} placeholder="휴대폰 번호 또는 카카오톡 ID" aria-label="연락처" /><label className="video-submit-consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>필수 · 본인은 선수 또는 보호자이며, 제출 내용의 아마ON 공개와 운영팀 확인·편집에 동의합니다.</span></label><label className="video-submit-consent optional"><input type="checkbox" checked={socialConsent} onChange={(event) => setSocialConsent(event.target.checked)} /><span>선택 · 한끼방패 공식 인스타그램 등 SNS에서 제출 자료를 편집·게시하는 데 동의합니다.</span></label></div></section>
-      {notice && <p className="video-submit-notice" role="alert">{notice}</p>}{progress !== null && <div className="video-submit-progress" aria-live="polite"><span style={{ width: `${progress}%` }} /><strong>{progress < 100 ? `안전하게 업로드 중 ${progress}%` : "업로드 완료"}</strong></div>}<button className="video-submit-primary" disabled={uploading || !selected || !validContent || !contact.trim() || !consent}>{uploading ? "파일을 올리고 있습니다…" : "운영팀에 승인 요청"}</button><small className="video-submit-policy">승인 전에는 사이트에 공개되지 않습니다. 부적절하거나 선수 관계가 확인되지 않는 요청은 반려되며 파일은 삭제됩니다.</small>
+      {notice && <p className="video-submit-notice" role="alert">{notice}</p>}
+      <div className="video-submit-final">
+        {needsFile && validContent && !submitting && <p className="video-submit-ready-note"><strong>파일 선택 완료</strong> 아래 주황색 버튼을 누르고 접수번호까지 확인해야 정상 접수됩니다.</p>}
+        {progress !== null && <div className="video-submit-progress" aria-live="polite"><span style={{ width: `${progress}%` }} /><strong>{submitStage === "creating" ? "접수 준비 중" : submitStage === "confirming" ? "업로드 확인 중" : progress < 100 ? `안전하게 업로드 중 ${progress}%` : "업로드 완료"}</strong></div>}
+        <button className="video-submit-primary" disabled={submitting || !selected || !validContent || !contact.trim() || !consent}>{submitting ? (submitStage === "confirming" ? "업로드를 확인하고 있습니다…" : submitStage === "creating" ? "접수를 준비하고 있습니다…" : "파일을 올리고 있습니다…") : needsFile ? "업로드하고 접수 완료하기" : "운영팀에 승인 요청 보내기"}</button>
+        <small className="video-submit-completion-guide">✓ 접수 완료 화면과 접수번호가 표시되어야 운영팀에 전달된 것입니다.</small>
+        <small className="video-submit-policy">승인 전에는 사이트에 공개되지 않습니다. 부적절하거나 선수 관계가 확인되지 않는 요청은 반려되며 파일은 삭제됩니다.</small>
+      </div>
     </form>}
   </div></section>;
 }

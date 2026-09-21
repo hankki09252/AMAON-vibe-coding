@@ -1852,8 +1852,13 @@ footer p, footer small { color: #777; }
 .video-submit-progress { position: relative; height: 46px; margin-top: 16px; overflow: hidden; border: 1px solid #4a2a16; background: #15100d; }
 .video-submit-progress span { position: absolute; inset: 0 auto 0 0; background: var(--brand-orange); transition: width .2s ease; }
 .video-submit-progress strong { position: relative; z-index: 1; height: 100%; display: grid; place-items: center; color: #fff; mix-blend-mode: difference; font-size: 11px; }
+.video-submit-final { position: sticky; bottom: 0; z-index: 2; margin: 18px -28px -28px; padding: 14px 28px 22px; border-top: 1px solid #333; background: rgba(11,11,11,.98); box-shadow: 0 -16px 34px rgba(0,0,0,.48); }
+.video-submit-ready-note { margin: 0 0 10px; padding: 10px 12px; border-left: 3px solid var(--brand-orange); background: #1c120b; color: #d7d7d7; font-size: 11px; line-height: 1.5; }
+.video-submit-ready-note strong { display: block; color: var(--brand-orange); }
 .video-submit-primary { width: 100%; min-height: 58px; margin-top: 18px; border: 0; background: var(--brand-orange); color: #080808; font: inherit; font-size: 14px; font-weight: 1000; cursor: pointer; }
+.video-submit-final .video-submit-primary { margin-top: 0; }
 .video-submit-primary:disabled { background: #292929; color: #777; cursor: not-allowed; }
+.video-submit-completion-guide { display: block; margin-top: 10px; color: #fff; font-size: 10px; line-height: 1.5; }
 .video-submit-policy { display: block; margin-top: 11px; color: #777; font-size: 9px; line-height: 1.55; }
 .video-submit-success { min-height: 430px; display: grid; place-items: center; align-content: center; padding: 44px; text-align: center; }
 .video-submit-success > span { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 50%; background: var(--brand-orange); color: #080808; font-size: 35px; font-weight: 1000; }
@@ -1886,6 +1891,7 @@ footer p, footer small { color: #777; }
   .video-submit-modal { align-items: end; padding: 0; }
   .video-submit-sheet { width: 100%; max-height: 100dvh; border-inline: 0; border-bottom: 0; }
   .video-submit-sheet > header { padding: 20px; }.video-submit-sheet form { padding: 2px 20px 90px; }
+  .video-submit-final { margin-inline: -20px; padding-inline: 20px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
   .video-submit-step { grid-template-columns: 40px 1fr; gap: 10px; padding: 21px 0; }.video-submit-step > b { font-size: 22px; }
   .player-submit-modes { grid-template-columns: 1fr; }.player-profile-request-fields .compact { grid-template-columns: 1fr 1fr; }
   .video-review-list article { grid-template-columns: 1fr; }.video-review-list video, .video-review-list article > img, .player-request-profile-mark { width: 100%; height: min(55vw, 280px); }.video-review-actions { grid-template-columns: 1fr 1fr !important; }.video-review-actions a { grid-column: 1 / -1; }

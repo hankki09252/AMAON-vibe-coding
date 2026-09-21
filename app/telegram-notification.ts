@@ -9,7 +9,10 @@ function escapeHtml(value: string) {
 export async function sendTelegramSubmissionNotification(notification: SubmissionNotification) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
-  if (!token || !chatId) return;
+  if (!token || !chatId) {
+    console.error("Telegram notification is not configured", { hasToken: Boolean(token), hasChatId: Boolean(chatId) });
+    return;
+  }
 
   const text = [
     "<b>🔔 아마ON 새 승인 요청</b>",
@@ -36,8 +39,8 @@ export async function sendTelegramSubmissionNotification(notification: Submissio
       cache: "no-store",
       signal: AbortSignal.timeout(5000),
     });
-    if (!response.ok) console.error("Telegram notification request failed", response.status);
-  } catch {
-    console.error("Telegram notification request failed");
+    if (!response.ok) console.error("Telegram notification request failed", { status: response.status });
+  } catch (error) {
+    console.error("Telegram notification request failed", { error: error instanceof Error ? error.message : "unknown" });
   }
 }
