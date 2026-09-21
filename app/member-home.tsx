@@ -4,7 +4,6 @@
 
 import Image from "next/image";
 import homeStyles from "./home-redesign.module.css";
-import HomeIntroVideo from "./home-intro-video";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { schools } from "./school-catalog";
@@ -676,6 +675,15 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       )}
 
       <section className="hero" id="top">
+        <div className={homeStyles.heroMedia} aria-hidden="true">
+          <Image
+            src="/amaon-hero-player-5-uniform.png"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+          />
+        </div>
         <div className="hero-copy">
           <p className="kicker"><span /> 아마야구 선수 프로필 · 영상 · 이야기</p>
           <h1 className="hero-purpose-title">
@@ -687,6 +695,11 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             기록은 결과를, 영상은 과정을,<br />
             프로필은 선수의 이야기를 보여줍니다.
           </p>
+          <Link className={homeStyles.introLink} href="/about" aria-label="아마ON 소개 보기">
+            <span aria-hidden="true">▶</span>
+            <strong>아마ON 소개 보기</strong>
+            <small>BEYOND RECORD,<br />SHOW THE PLAYER</small>
+          </Link>
           <div className="hero-search-wrap">
             <form className="hero-search" onSubmit={searchSchool}>
               <span aria-hidden="true">⌕</span>
@@ -715,72 +728,31 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
               </div>
             )}
           </div>
-          <aside className="hero-instagram-cta" aria-label="선수 프로필 직접 등록 안내">
-            <div>
-              <small>PLAYER PROFILE · DIRECT REQUEST</small>
-              <strong>사진·영상·프로필을 직접 등록하세요.</strong>
-              <p>로그인 없이 필요한 항목 하나만 보내주세요. 운영팀 확인 후 선수 프로필에 반영합니다.</p>
-            </div>
-            <div className="hero-registration-actions"><button type="button" onClick={() => setVideoSubmissionOpen(true)}><span>선수 프로필 등록·수정</span><b aria-hidden="true">→</b></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">직접 등록이 어렵다면 한끼방패 DM ↗</a></div>
-          </aside>
-          <a className="amaon-guide-trigger" href="/guide">
-            <span>AMAON GUIDE</span>
-            <strong>아마온(아마ON) 사용설명서</strong>
-            <small>선수 등록부터 SNS 프로필 공유까지 <b>→</b></small>
-          </a>
-          <div className="hero-counts" aria-label="현재 공개 현황">
-            <div><strong>{publishedSchools.length}</strong><span>공개 학교</span></div>
-            <div><strong>{publishedPlayerCount.toLocaleString()}</strong><span>등록 선수</span></div>
-            <div><strong>{visibleRegions.length}</strong><span>공개 지역</span></div>
-          </div>
-        </div>
-
-        <div className={homeStyles.intro} aria-label="아마ON 소개">
-          <HomeIntroVideo />
-        </div>
-        <div className="hero-visual hero-dashboard" hidden aria-hidden="true">
-          <div className="score-grid" />
-          <div className="hero-dashboard-shell">
-            <div className="hero-dashboard-head">
-              <span className="hero-dashboard-live"><i /> LIVE DIRECTORY</span>
-              <small>AMAON · 2026</small>
-            </div>
-            <div className="hero-dashboard-copy">
-              <p>PLAYER FIRST PLATFORM</p>
-              <h2>선수의 이름이<br /><em>하나의 브랜드가 되도록.</em></h2>
-              <span>학교를 찾고, 선수의 영상을 보고, 프로필 링크를 공유하세요.</span>
-            </div>
-            <div className="hero-quick-grid">
-              <button type="button" onClick={() => jumpToSection("schools")}><small>01 · TEAM</small><strong>학교 찾기</strong><span>{publishedSchools.length}팀 <b>→</b></span></button>
-              <button type="button" onClick={() => jumpToSection("players")}><small>02 · PLAYER</small><strong>선수 보기</strong><span>{publishedPlayerCount.toLocaleString()}명 <b>→</b></span></button>
-              <button type="button" onClick={() => jumpToSection("video-ranking")}><small>03 · FILM</small><strong>영상 TOP 5</strong><span>PLAY <b>→</b></span></button>
-            </div>
-            <div className="hero-dashboard-foot"><b>ON</b><span>DIRECT PROFILE · YOUTUBE FILM · COMMUNITY</span></div>
-          </div>
         </div>
       </section>
 
+      {!pendingProfile && <aside className="hero-instagram-cta" aria-label="선수 프로필 직접 등록 안내">
+        <div className={homeStyles.requestIcon} aria-hidden="true">5</div>
+        <div>
+          <small>PLAYER PROFILE · DIRECT REQUEST</small>
+          <strong>사진·영상·프로필을 직접 등록하세요.</strong>
+          <p>로그인 없이 필요한 항목 하나만 보내주세요. 운영팀 확인 후 선수 프로필에 반영합니다.</p>
+        </div>
+        <div className="hero-registration-actions"><button type="button" onClick={() => setVideoSubmissionOpen(true)}><span>선수 프로필 등록·수정</span><b aria-hidden="true">→</b></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">직접 등록이 어렵다면 한끼방패 DM ↗</a></div>
+      </aside>}
+
+      {!pendingProfile && <div className={homeStyles.homeMeta}>
+        <a className="amaon-guide-trigger" href="/guide"><span>AMAON GUIDE</span><strong>아마온 사용설명서</strong><small>처음이라면 여기부터 <b>→</b></small></a>
+        <div className="hero-counts" aria-label="현재 공개 현황"><div><strong>{publishedSchools.length}</strong><span>공개 학교</span></div><div><strong>{publishedPlayerCount.toLocaleString()}</strong><span>등록 선수</span></div><div><strong>{visibleRegions.length}</strong><span>공개 지역</span></div></div>
+      </div>}
+
       {!pendingProfile && <nav className={homeStyles.shortcuts} aria-label="아마ON 콘텐츠 바로가기">
-        <button onClick={() => jumpToSection("players")}><small>PLAYER</small><strong>선수 검색 ↗</strong><span>선수의 이야기를 만나보세요</span></button>
-        <button onClick={() => jumpToSection("schools")}><small>TEAM</small><strong>학교별 보기 ↗</strong><span>우리 학교 선수 찾기</span></button>
-        <button onClick={() => jumpToSection("video-ranking")}><small>PLAY</small><strong>영상 하이라이트 ↗</strong><span>경기 속 플레이를 확인하세요</span></button>
-        <Link href="/weekly"><small>WEEKLY</small><strong>아마ON WEEKLY ↗</strong><span>선수와 부모를 위한 이야기</span></Link>
-        <button onClick={() => jumpToSection("community")}><small>TOGETHER</small><strong>커뮤니티 ↗</strong><span>함께 나누는 야구 이야기</span></button>
-        <div aria-disabled="true"><small>COMING SOON</small><strong>식단 가이드</strong><span>준비 중</span></div>
+        <button onClick={() => jumpToSection("players")}><i aria-hidden="true">◎</i><small>PLAYER</small><strong>선수 검색</strong><span>선수를 더 가까이</span></button>
+        <button onClick={() => jumpToSection("schools")}><i aria-hidden="true">▦</i><small>TEAM</small><strong>학교별 보기</strong><span>우리 학교 선수들</span></button>
+        <button onClick={() => jumpToSection("video-ranking")}><i aria-hidden="true">▷</i><small>PLAY</small><strong>영상 하이라이트</strong><span>경기를 다시, 생생하게</span></button>
+        <Link href="/weekly"><i aria-hidden="true">▤</i><small>WEEKLY</small><strong>아마ON WEEKLY</strong><span>선수를 위한 인사이트</span></Link>
+        <button onClick={() => jumpToSection("community")}><i aria-hidden="true">◌</i><small>TOGETHER</small><strong>커뮤니티</strong><span>함께 만드는 이야기</span></button>
       </nav>}
-
-      {!pendingProfile && <section className={homeStyles.originals} aria-labelledby="amaon-originals-title">
-        <div><small>AMAON ORIGINALS</small><h2 id="amaon-originals-title">야구를 담고,<br />선수를 알립니다.</h2><p>아마ON의 소식과 카드뉴스를 만나보세요.</p><a href="https://www.instagram.com/hankki09252/" target="_blank" rel="noopener noreferrer">한끼방패 공식 인스타그램 ↗</a><Link href="/about">아마ON 이야기 →</Link></div>
-        <Image src="/og.png" alt="아마ON — 오늘의 선수를 내일의 이름으로" width={1731} height={909} sizes="(max-width: 760px) 100vw, 50vw" loading="lazy" />
-      </section>}
-
-      {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
-        <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><Link href="/weekly">전체 보기 →</Link></header>
-        <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
-          <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
-          <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>3분 읽기 →</em></b></span>
-        </Link>)}</div>
-      </section>}
 
       {!pendingProfile && recentPlayerCards.length > 0 && (
         <section className="recent-player-section" aria-labelledby="recent-player-title">
@@ -799,17 +771,31 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
                   {recent.cardImageUrl ? <Image src={recent.cardImageUrl} alt={`${directoryEntry.player.name} 선수 프로필 미리보기`} width={320} height={400} sizes="(max-width: 760px) 68vw, 260px" loading="lazy" /> : <b aria-hidden="true"><small>{directoryEntry.school.slice(0, 2)}</small>{directoryEntry.player.number}</b>}
                   <em>{recent.updateType}</em>
                 </span>
-                <span className="recent-player-info">
-                  <small>{directoryEntry.school} · {directoryEntry.player.position}</small>
-                  <strong><em>{directoryEntry.player.number}</em> {directoryEntry.player.name}</strong>
-                  <span>{directoryEntry.player.grade}<b>{recent.updatedLabel} 업데이트 →</b></span>
-                </span>
+                <span className="recent-player-info"><small>{directoryEntry.school} · {directoryEntry.player.position}</small><strong><em>{directoryEntry.player.number}</em> {directoryEntry.player.name}</strong><span>{directoryEntry.player.grade}<b>{recent.updatedLabel} 업데이트 →</b></span></span>
               </button>
             ))}
           </div>
           <p className="recent-player-swipe">좌우로 밀어 선수 프로필을 더 볼 수 있습니다. <span>↔</span></p>
         </section>
       )}
+
+      {!pendingProfile && <section className={homeStyles.promoGrid} aria-label="아마ON 추천 콘텐츠">
+        <Link className={homeStyles.brandPromo} href="/about"><small>ABOUT AMAON</small><strong>아마야구,<br />선수의 내일을 응원합니다.</strong><span>아마ON 이야기 보기 →</span></Link>
+        <Link className={homeStyles.nutritionPromo} href="/weekly"><small>PLAYER NUTRITION</small><strong>운동선수를 위한<br />맞춤 식단 가이드</strong><span>아마ON WEEKLY에서 보기 →</span></Link>
+      </section>}
+
+      {!pendingProfile && <section className={homeStyles.originals} aria-labelledby="amaon-originals-title">
+        <div><small>AMAON ORIGINALS</small><h2 id="amaon-originals-title">야구를 담고,<br />선수를 알립니다.</h2><p>아마ON의 소식과 카드뉴스를 만나보세요.</p><a href="https://www.instagram.com/hankki09252/" target="_blank" rel="noopener noreferrer">한끼방패 공식 인스타그램 ↗</a><Link href="/about">아마ON 이야기 →</Link></div>
+        <Image src="/og.png" alt="아마ON — 오늘의 선수를 내일의 이름으로" width={1731} height={909} sizes="(max-width: 760px) 100vw, 50vw" loading="lazy" />
+      </section>}
+
+      {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
+        <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><Link href="/weekly">전체 보기 →</Link></header>
+        <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
+          <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
+          <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>3분 읽기 →</em></b></span>
+        </Link>)}</div>
+      </section>}
 
       {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} onOpenPlayer={openSearchedPlayer} />}
 
