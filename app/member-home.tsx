@@ -51,7 +51,7 @@ import type { RecentPlayerProfile } from "./recent-player-data";
 import type { WeeklyPost } from "./weekly/weekly-data";
 
 const VideoSubmission = dynamic(() => import("./video-submission"));
-type WeeklyPreview = Pick<WeeklyPost, "id" | "issueNumber" | "slug" | "title" | "summary" | "coverStorageKey" | "playerName" | "schoolName">;
+type WeeklyPreview = Pick<WeeklyPost, "id" | "issueNumber" | "slug" | "title" | "summary" | "coverStorageKey" | "previewImageId" | "playerName" | "schoolName">;
 
 
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
@@ -156,6 +156,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   const [regionEditorRegion, setRegionEditorRegion] = useState("서울");
   const [isAdmin, setIsAdmin] = useState(false);
   const [videoSubmissionOpen, setVideoSubmissionOpen] = useState(false);
+  const [introVideoOpen, setIntroVideoOpen] = useState(false);
   const [regionSettingsOpen, setRegionSettingsOpen] = useState(false);
   const [savingRegions, setSavingRegions] = useState(false);
   const [regionNotice, setRegionNotice] = useState("");
@@ -206,6 +207,15 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       .then((data) => { if (Array.isArray(data?.items)) setManagedRosterPlayers(data.items); })
       .catch(() => undefined);
   }, [initialProfile, pendingProfile]);
+
+  useEffect(() => {
+    if (!introVideoOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIntroVideoOpen(false);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [introVideoOpen]);
 
   useEffect(() => {
     if (!pendingProfile) return;
@@ -695,11 +705,11 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             기록은 결과를, 영상은 과정을,<br />
             프로필은 선수의 이야기를 보여줍니다.
           </p>
-          <Link className={homeStyles.introLink} href="/about" aria-label="아마ON 소개 보기">
+          <button type="button" className={homeStyles.introLink} onClick={() => setIntroVideoOpen(true)} aria-label="아마ON 소개 영상 보기">
             <span aria-hidden="true">▶</span>
-            <strong>아마ON 소개 보기</strong>
+            <strong>아마ON 소개 영상 보기</strong>
             <small>BEYOND RECORD,<br />SHOW THE PLAYER</small>
-          </Link>
+          </button>
           <div className="hero-search-wrap">
             <form className="hero-search" onSubmit={searchSchool}>
               <span aria-hidden="true">⌕</span>
@@ -792,7 +802,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
         <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><Link href="/weekly">전체 보기 →</Link></header>
         <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
-          <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
+          <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : post.previewImageId ? `/api/weekly/image/${post.previewImageId}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
           <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>3분 읽기 →</em></b></span>
         </Link>)}</div>
       </section>}
@@ -802,6 +812,27 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       {!pendingProfile && <CommunityBoard signedIn={signedIn} weeklyPlayerOptions={weeklyPlayerOptions} />}
 
       {videoSubmissionOpen && <VideoSubmission open players={publishedPlayerSearchIndex} onClose={() => setVideoSubmissionOpen(false)} />}
+
+      {introVideoOpen && (
+        <div className={homeStyles.introModalBackdrop} role="dialog" aria-modal="true" aria-labelledby="amaon-intro-video-title" onMouseDown={() => setIntroVideoOpen(false)}>
+          <section className={homeStyles.introModal} onMouseDown={(event) => event.stopPropagation()}>
+            <header>
+              <div><small>AMAON ORIGINAL</small><h2 id="amaon-intro-video-title">아마ON 소개 영상</h2></div>
+              <button type="button" onClick={() => setIntroVideoOpen(false)} aria-label="소개 영상 닫기">×</button>
+            </header>
+            <div className={homeStyles.introEmbed}>
+              <iframe
+                src="https://www.instagram.com/reel/Dcrp5kSTijx/embed"
+                title="아마ON 인스타그램 소개 영상"
+                loading="lazy"
+                allow="autoplay; encrypted-media; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            <a href="https://www.instagram.com/reel/Dcrp5kSTijx/" target="_blank" rel="noopener noreferrer">인스타그램에서 크게 보기 ↗</a>
+          </section>
+        </div>
+      )}
 
       <section className="school-section" id="schools">
         <div className="section-console-bar">
