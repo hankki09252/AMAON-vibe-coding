@@ -51,6 +51,7 @@ import type { RecentPlayerProfile } from "./recent-player-data";
 import type { WeeklyPost } from "./weekly/weekly-data";
 
 const VideoSubmission = dynamic(() => import("./video-submission"));
+const WeeklyAdmin = dynamic(() => import("./weekly-admin"));
 type WeeklyPreview = Pick<WeeklyPost, "id" | "issueNumber" | "slug" | "title" | "summary" | "coverStorageKey" | "previewImageId" | "playerName" | "schoolName">;
 
 
@@ -216,6 +217,12 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [introVideoOpen]);
+
+  useEffect(() => {
+    if (!isAdmin || window.location.hash !== "#weekly-editor") return;
+    const frame = window.requestAnimationFrame(() => document.getElementById("weekly-editor")?.scrollIntoView());
+    return () => window.cancelAnimationFrame(frame);
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!pendingProfile) return;
@@ -604,6 +611,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           <a href="#schools">경기·인천 학교</a>
           <a href="#players">선수 프로필</a>
           <Link href="/weekly">AMAON WEEKLY</Link>
+          {isAdmin && <a href="#weekly-editor">위클리 글쓰기</a>}
           <a href="#community">커뮤니티</a>
         </nav>
         <PwaInstallButton />
@@ -663,6 +671,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
               })}
             </nav>
           <Link className="mobile-weekly-link" href="/weekly"><span><small>NEW CONTENT</small><strong>AMAON WEEKLY</strong></span><b>→</b></Link>
+          {isAdmin && <a className="mobile-weekly-link" href="#weekly-editor" onClick={() => setMobileMenuOpen(false)}><span><small>OPERATOR ONLY</small><strong>위클리 글쓰기</strong></span><b>→</b></a>}
           <button type="button" className="mobile-guide-link" onClick={() => { setMobileMenuOpen(false); setGuideOpen(true); }}>
             <span><small>START HERE</small><strong>아마ON 사용설명서</strong></span><b>→</b>
           </button>
@@ -800,16 +809,21 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       </section>}
 
       {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
-        <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><Link href="/weekly">전체 보기 →</Link></header>
+        <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><div className={homeStyles.weeklyHeaderActions}><Link href="/weekly">전체 보기 →</Link>{isAdmin && <a href="#weekly-editor">글쓰기 →</a>}</div></header>
         <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
           <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : post.previewImageId ? `/api/weekly/image/${post.previewImageId}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
           <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>3분 읽기 →</em></b></span>
         </Link>)}</div>
       </section>}
 
+      {!pendingProfile && isAdmin && <section id="weekly-editor" className={homeStyles.weeklyEditor} aria-label="운영자 위클리 글쓰기">
+        <div className={homeStyles.weeklyEditorIntro}><small>OPERATOR WORKSPACE</small><h2>위클리 글쓰기</h2><p>새 글을 작성하거나 아래 목록에서 기존 글을 수정할 수 있습니다.</p></div>
+        <WeeklyAdmin playerOptions={weeklyPlayerOptions} />
+      </section>}
+
       {!pendingProfile && <VideoRankings players={publishedPlayerSearchIndex} visibleRegions={visibleRegions} schoolRegions={schoolRegionByName} onOpenPlayer={openSearchedPlayer} />}
 
-      {!pendingProfile && <CommunityBoard signedIn={signedIn} weeklyPlayerOptions={weeklyPlayerOptions} />}
+      {!pendingProfile && <CommunityBoard signedIn={signedIn} />}
 
       {videoSubmissionOpen && <VideoSubmission open players={publishedPlayerSearchIndex} onClose={() => setVideoSubmissionOpen(false)} />}
 

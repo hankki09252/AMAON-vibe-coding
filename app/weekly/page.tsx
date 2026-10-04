@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { adminRole } from "../auth";
 import { readPublishedWeekly, weeklyPreviewUrl } from "./weekly-data";
 import styles from "./weekly.module.css";
+import writeStyles from "./write-link.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +25,11 @@ function dateLabel(value: string) {
 }
 
 export default async function WeeklyArchivePage() {
-  const posts = await readPublishedWeekly();
+  const [posts, role] = await Promise.all([readPublishedWeekly(), adminRole()]);
   return <main className={styles.page}>
-    <header className={styles.topbar}>
+    <header className={`${styles.topbar} ${writeStyles.responsiveTopbar}`}>
       <Link href="/" className={styles.brand}>아마ON</Link>
-      <nav aria-label="WEEKLY 메뉴"><Link href="/">홈</Link><Link href="/about">아마온 소개</Link><Link href="/#players">선수 찾기</Link></nav>
+      <nav aria-label="WEEKLY 메뉴"><Link href="/">홈</Link><Link href="/about">아마온 소개</Link><Link href="/#players">선수 찾기</Link>{role && <Link className={writeStyles.writeLink} href="/#weekly-editor">글쓰기</Link>}</nav>
     </header>
     <section className={styles.archiveHero}>
       <small>PLAYER · ONE ISSUE · ON</small>
@@ -36,7 +38,7 @@ export default async function WeeklyArchivePage() {
       <span>매주 한 선수와 꼭 필요한 이야기 하나를 3분 안에 전합니다.</span>
     </section>
     <section className={styles.archive} aria-labelledby="weekly-list-title">
-      <div className={styles.sectionHead}><div><small>WEEKLY ARCHIVE</small><h2 id="weekly-list-title">지난 브리핑</h2></div><span>{String(posts.length).padStart(2, "0")} STORIES</span></div>
+      <div className={styles.sectionHead}><div><small>WEEKLY ARCHIVE</small><h2 id="weekly-list-title">지난 브리핑</h2></div><div className={writeStyles.sectionActions}><span>{String(posts.length).padStart(2, "0")} STORIES</span>{role && <Link href="/#weekly-editor">+ 새 글 작성</Link>}</div></div>
       {posts.length ? <div className={styles.archiveGrid}>{posts.map((post, index) => <Link className={styles.archiveCard} href={`/weekly/${post.slug}`} key={post.id}>
         <span className={styles.cover}><Image src={weeklyPreviewUrl(post)} alt={`${post.title} 대표 이미지`} fill sizes="(max-width: 760px) 100vw, 50vw" priority={index === 0} /></span>
         <span className={styles.cardCopy}><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")} · {dateLabel(post.publishedAt)}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName} 선수` : "고교야구 주간 브리핑"} <em>읽기 →</em></b></span>
