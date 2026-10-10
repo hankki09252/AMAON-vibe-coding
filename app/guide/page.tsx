@@ -34,7 +34,7 @@ export default function GuidePage() {
       <script id="amaon-guide-schema" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <header className={styles.header}>
         <Link className={styles.brand} href="/" aria-label="아마온 홈으로">
-          <Image src="/yamaon-logo.png" alt="아마온 아마ON 로고" width={72} height={72} priority />
+          <Image src="/amaon-emblem-2026.png" alt="아마온 아마ON 로고" width={72} height={72} priority />
           <span><strong>아마온 사용설명서</strong><small>AMAON PLAYER GUIDE</small></span>
         </Link>
         <nav className={styles.nav} aria-label="사용설명서 메뉴"><Link href="/">홈</Link><Link href="/about">아마온 소개</Link><Link href="/#players">선수 찾기</Link></nav>

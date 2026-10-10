@@ -1,11 +1,11 @@
-const CACHE_NAME = "amaon-shell-v1";
+const CACHE_NAME = "amaon-shell-v2";
 const APP_SHELL = [
   "/offline.html",
-  "/manifest.webmanifest",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/icon-maskable-512.png",
-  "/icons/apple-touch-icon.png"
+  "/manifest.webmanifest?v=20261011",
+  "/icons/amaon-emblem-192.png",
+  "/icons/amaon-emblem-512.png",
+  "/icons/amaon-emblem-maskable-512.png",
+  "/icons/amaon-emblem-apple-180.png"
 ];
 
 self.addEventListener("install", (event) => {

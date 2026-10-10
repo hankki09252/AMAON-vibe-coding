@@ -12,6 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(origin),
     title: "아마온(아마ON) | 아마야구 선수 프로필·영상 포트폴리오",
     description: "아마온(아마ON)은 한끼방패가 운영하는 아마야구 선수 포트폴리오 플랫폼입니다. 학교별 선수 프로필과 경기 영상을 확인하고, 선수의 이야기를 개인 링크로 공유하세요.",
+    icons: {
+      icon: [{ url: "/icons/amaon-emblem-favicon-48.png", sizes: "48x48", type: "image/png" }],
+      apple: [{ url: "/icons/amaon-emblem-apple-180.png", sizes: "180x180", type: "image/png" }],
+    },
     verification: {
       google: process.env.GOOGLE_SITE_VERIFICATION ?? "FWxsCdCszxMRIq47xEGh1elBUuHvZIdA3rWafCLqE1Q",
       other: {
@@ -34,8 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ko">
       <head>
-        <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest?v=20261011" />
         <meta name="theme-color" content="#ff6200" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

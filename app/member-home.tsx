@@ -598,7 +598,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         <a className="brand-lockup" href="#top" aria-label="아마ON 홈">
           <Image
             className="brand-logo-image"
-            src="/yamaon-logo.png"
+            src="/amaon-emblem-2026.png"
             alt="아마ON by 한끼방패"
             width={72}
             height={72}
@@ -1061,7 +1061,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         <a className="brand-lockup footer-brand" href="#top" aria-label="아마ON 홈">
           <Image
             className="brand-logo-image"
-            src="/yamaon-logo.png"
+            src="/amaon-emblem-2026.png"
             alt="아마ON by 한끼방패"
             width={76}
             height={76}

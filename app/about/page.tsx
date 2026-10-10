@@ -32,7 +32,7 @@ export default function AboutPage() {
       <script id="about-amaon-schema" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <header className={styles.header}>
         <Link className={styles.brand} href="/" aria-label="아마온 홈으로">
-          <Image src="/yamaon-logo.png" alt="아마온 아마ON 로고" width={72} height={72} priority />
+          <Image src="/amaon-emblem-2026.png" alt="아마온 아마ON 로고" width={72} height={72} priority />
           <span><strong>아마온(아마ON)</strong><small>AMATEUR BASEBALL ON AIR</small></span>
         </Link>
         <nav className={styles.nav} aria-label="소개 페이지 메뉴"><Link href="/">홈</Link><Link href="/guide">사용설명서</Link><Link href="/#players">선수 찾기</Link></nav>
