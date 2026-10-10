@@ -696,7 +696,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       <section className="hero" id="top">
         <div className={homeStyles.heroMedia} aria-hidden="true">
           <Image
-            src="/amaon-hero-player-5-uniform.png"
+            src="/amaon-character-hero.png"
             alt=""
             fill
             priority
@@ -804,8 +804,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       </section>}
 
       {!pendingProfile && <section className={homeStyles.originals} aria-labelledby="amaon-originals-title">
-        <div><small>AMAON ORIGINALS</small><h2 id="amaon-originals-title">야구를 담고,<br />선수를 알립니다.</h2><p>아마ON의 소식과 카드뉴스를 만나보세요.</p><a href="https://www.instagram.com/hankki09252/" target="_blank" rel="noopener noreferrer">한끼방패 공식 인스타그램 ↗</a><Link href="/about">아마ON 이야기 →</Link></div>
-        <Image src="/og.png" alt="아마ON — 오늘의 선수를 내일의 이름으로" width={1731} height={909} sizes="(max-width: 760px) 100vw, 50vw" loading="lazy" />
+        <div><small>AMAON ORIGINALS</small><h2 id="amaon-originals-title">오늘도,<br />조금 더 나아가는 나.</h2><p>아마ON 선수 캐릭터와 함께 아마야구의 순간을 전합니다. 소식과 카드뉴스도 만나보세요.</p><a href="https://www.instagram.com/hankki09252/" target="_blank" rel="noopener noreferrer">한끼방패 공식 인스타그램 ↗</a><Link href="/about">아마ON 이야기 →</Link></div>
+        <Image src="/amaon-character-story.png" alt="아마ON 선수 캐릭터의 희망, 노력, 미소를 담은 일러스트" width={1254} height={1254} sizes="(max-width: 760px) 100vw, 50vw" loading="lazy" />
       </section>}
 
       {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
