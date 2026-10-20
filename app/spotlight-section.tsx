@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { PlayerSpotlight } from "./spotlight-data";
 import { parseSpotlightUrl } from "./spotlight-url";
@@ -19,7 +19,7 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
   items: PlayerSpotlight[]; isAdmin: boolean; playerOptions: WeeklyPlayerOption[];
 }) {
   const router = useRouter();
-  const [active, setActive] = useState<PlayerSpotlight | null>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
   const [adminRows, setAdminRows] = useState<AdminRow[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [playerSearch, setPlayerSearch] = useState("");
@@ -32,6 +32,13 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
     return sortedPlayers.filter((player) => `${player.school}${player.name}${player.position}`.replace(/\s+/g, "").toLowerCase().includes(query));
   }, [playerSearch, sortedPlayers]);
   const platform = parseSpotlightUrl(form.postUrl)?.platform;
+
+  function scrollCards(direction: -1 | 1) {
+    const track = cardsRef.current;
+    if (!track) return;
+    const card = track.querySelector<HTMLElement>(`[data-spotlight-card]`);
+    track.scrollBy({ left: direction * ((card?.offsetWidth || 340) + 16), behavior: "smooth" });
+  }
 
   const loadAdmin = useCallback(async () => {
     const response = await fetch("/api/spotlights", { cache: "no-store" });
@@ -80,19 +87,44 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
   return <section id="spotlight" className={styles.section} aria-labelledby="spotlight-title">
     <header className={styles.header}>
       <div><small>PLAYER STORIES · AROUND AMAON</small><h2 id="spotlight-title">이 선수 어때?</h2><p>숫자 너머의 플레이와 이야기를 만나보세요.</p></div>
-      {isAdmin && <a href="#spotlight-editor">게시물 등록 →</a>}
-    </header>
-    {items.length > 0 && <div className={styles.cards}>{items.map((item) => <article className={styles.card} key={item.id}>
-      <span className={styles.platform}>{platformLabel[item.platform]}</span>
-      <h3>{item.title}</h3>
-      <p>{item.summary || `${item.playerName} 선수의 ${item.platform === "blog" ? "글" : "게시물"}을 확인해 보세요.`}</p>
-      <span className={styles.player}>{item.schoolName} · {item.playerName}</span>
-      <div className={styles.actions}>
-        {item.platform === "instagram" && <button type="button" onClick={() => setActive(item)}>여기서 보기 ↗</button>}
-        <a href={item.postUrl} target="_blank" rel="noopener noreferrer">원문 보기 ↗</a>
-        <a href={`/?team=${encodeURIComponent(item.teamId)}&player=${encodeURIComponent(item.playerId)}`}>선수 프로필 →</a>
+      <div className={styles.headerActions}>
+        {isAdmin && <a href="#spotlight-editor">게시물 등록 →</a>}
+        {items.length > 1 && <div className={styles.controls} aria-label="선수 게시물 슬라이드 이동">
+          <button type="button" onClick={() => scrollCards(-1)} aria-label="이전 게시물 보기">←</button>
+          <span>{String(items.length).padStart(2, "0")} STORIES</span>
+          <button type="button" onClick={() => scrollCards(1)} aria-label="다음 게시물 보기">→</button>
+        </div>}
       </div>
-    </article>)}</div>}
+    </header>
+    {items.length > 0 && <>
+      <div className={styles.cards} ref={cardsRef} aria-label="이 선수 어때 게시물">
+        {items.map((item) => <article className={styles.card} data-spotlight-card="" key={item.id}>
+          <div className={styles.preview}>
+            {item.platform === "instagram" ? <iframe
+              title={`${item.playerName} 선수 인스타그램 게시물 미리보기`}
+              src={`${item.postUrl}embed/`}
+              loading="lazy"
+              tabIndex={-1}
+              aria-hidden="true"
+            /> : <div className={styles.previewFallback} aria-hidden="true"><span>{platformLabel[item.platform]}</span><strong>{item.playerName}</strong><small>선수의 이야기</small></div>}
+            <a className={styles.previewLink} href={item.postUrl} target="_blank" rel="noopener noreferrer" aria-label={`${item.playerName} 선수의 ${platformLabel[item.platform]} 게시물 열기`}>
+              <span>{platformLabel[item.platform]}에서 보기 ↗</span>
+            </a>
+          </div>
+          <div className={styles.cardBody}>
+            <span className={styles.platform}>{platformLabel[item.platform]}</span>
+            <h3>{item.title}</h3>
+            <p>{item.summary || `${item.playerName} 선수의 ${item.platform === "blog" ? "글" : "게시물"}을 확인해 보세요.`}</p>
+            <span className={styles.player}>{item.schoolName} · {item.playerName}</span>
+            <div className={styles.actions}>
+              <a href={item.postUrl} target="_blank" rel="noopener noreferrer">원문 보기 ↗</a>
+              <a href={`/?team=${encodeURIComponent(item.teamId)}&player=${encodeURIComponent(item.playerId)}`}>선수 프로필 →</a>
+            </div>
+          </div>
+        </article>)}
+      </div>
+      {items.length > 1 && <p className={styles.swipeHint}>좌우로 밀어 다른 선수의 게시물도 만나보세요. ↔</p>}
+    </>}
     {isAdmin && <div id="spotlight-editor" className={styles.editor}>
       <div className={styles.editorIntro}><small>OPERATOR ONLY</small><h3>선수 이야기 연결</h3><p>공개 선수와 게시물 링크를 선택하세요. 제목·소개는 비워도 됩니다. 게시물 자체는 원래 플랫폼에서 관리됩니다.</p></div>
       <form onSubmit={save} className={styles.form}>
@@ -114,12 +146,6 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
         <div><small>{row.published ? "공개" : "비공개"} · {platformLabel[row.platform]}</small><strong>{row.title}</strong><span>{row.school_name} · {row.player_name}</span></div>
         <div><button type="button" disabled={busy} onClick={() => { setPlayerSearch(`${row.school_name} ${row.player_name}`); setForm({ id: row.id, playerKey: `${row.team_id}|${row.player_id}`, postUrl: row.post_url, title: row.title, summary: row.summary, published: row.published, sortOrder: String(row.sort_order) }); document.getElementById("spotlight-editor")?.scrollIntoView({ behavior: "smooth" }); }}>수정</button><button type="button" disabled={busy} onClick={() => void remove(row.id)}>삭제</button></div>
       </div>)}</div>}
-    </div>}
-    {active && <div className={styles.backdrop}>
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="spotlight-embed-title"><header><h3 id="spotlight-embed-title">{active.playerName} 선수의 게시물</h3><button type="button" onClick={() => setActive(null)} aria-label="게시물 닫기">×</button></header>
-        <iframe title={`${active.playerName} 선수의 인스타그램 게시물`} src={`${active.postUrl}embed/`} loading="lazy" allow="encrypted-media" />
-        <a href={active.postUrl} target="_blank" rel="noopener noreferrer">게시물이 보이지 않나요? 인스타그램에서 보기 ↗</a>
-      </div>
     </div>}
   </section>;
 }
