@@ -22,9 +22,15 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
   const [active, setActive] = useState<PlayerSpotlight | null>(null);
   const [adminRows, setAdminRows] = useState<AdminRow[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [playerSearch, setPlayerSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const sortedPlayers = useMemo(() => [...playerOptions].sort((a, b) => `${a.school}${a.name}`.localeCompare(`${b.school}${b.name}`, "ko")), [playerOptions]);
+  const matchingPlayers = useMemo(() => {
+    const query = playerSearch.replace(/\s+/g, "").toLowerCase();
+    if (!query) return [];
+    return sortedPlayers.filter((player) => `${player.school}${player.name}${player.position}`.replace(/\s+/g, "").toLowerCase().includes(query));
+  }, [playerSearch, sortedPlayers]);
   const platform = parseSpotlightUrl(form.postUrl)?.platform;
 
   const loadAdmin = useCallback(async () => {
@@ -51,7 +57,7 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
           published: form.published, sortOrder: Number(form.sortOrder) }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) return setNotice(data.error || "게시물을 저장하지 못했습니다.");
-      setForm(emptyForm); setNotice("저장했습니다. 공개 글은 홈에 표시됩니다.");
+      setForm(emptyForm); setPlayerSearch(""); setNotice("저장했습니다. 공개 글은 홈에 표시됩니다.");
       await loadAdmin(); router.refresh();
     } catch { setNotice("연결 상태를 확인한 뒤 다시 시도해 주세요."); }
     finally { setBusy(false); }
@@ -64,7 +70,7 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
       const response = await fetch("/api/spotlights", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) return setNotice(data.error || "삭제하지 못했습니다.");
-      if (form.id === id) setForm(emptyForm);
+      if (form.id === id) { setForm(emptyForm); setPlayerSearch(""); }
       await loadAdmin(); router.refresh();
       setNotice("연결을 삭제했습니다.");
     } catch { setNotice("연결 상태를 확인한 뒤 다시 시도해 주세요."); }
@@ -90,8 +96,10 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
     {isAdmin && <div id="spotlight-editor" className={styles.editor}>
       <div className={styles.editorIntro}><small>OPERATOR ONLY</small><h3>선수 이야기 연결</h3><p>공개 선수와 게시물 링크를 선택하세요. 제목·소개는 비워도 됩니다. 게시물 자체는 원래 플랫폼에서 관리됩니다.</p></div>
       <form onSubmit={save} className={styles.form}>
+        <label>선수 검색 <input type="search" value={playerSearch} onChange={(event) => { setPlayerSearch(event.target.value); setForm((current) => ({ ...current, playerKey: "" })); }} placeholder="선수 이름 또는 학교명을 입력하세요" autoComplete="off" /></label>
+        <p className={styles.hint} role="status">{playerSearch.trim() ? matchingPlayers.length ? `검색 결과 ${matchingPlayers.length}명${matchingPlayers.length > 40 ? " · 상위 40명만 표시됩니다. 이름이나 학교를 더 입력해 주세요." : ""}` : "일치하는 선수가 없습니다." : "이름이나 학교를 검색하면 후보가 나타납니다."}</p>
         <label>선수 <select value={form.playerKey} required onChange={(event) => setForm({ ...form, playerKey: event.target.value })}>
-          <option value="">선수를 선택해 주세요</option>{sortedPlayers.map((player) => <option key={`${player.teamId}|${player.playerId}`} value={`${player.teamId}|${player.playerId}`}>{player.school} · {player.name} · {player.position}</option>)}
+          <option value="">{playerSearch.trim() ? "검색 결과에서 선수를 선택해 주세요" : "먼저 위에서 선수를 검색해 주세요"}</option>{matchingPlayers.slice(0, 40).map((player) => <option key={`${player.teamId}|${player.playerId}`} value={`${player.teamId}|${player.playerId}`}>{player.school} · {player.name} · {player.position}</option>)}
         </select></label>
         <label>게시물 링크 <input type="url" value={form.postUrl} onChange={(event) => setForm({ ...form, postUrl: event.target.value })} placeholder="https://www.instagram.com/reel/..." required /></label>
         <p className={styles.hint}>인스타그램 게시물·릴스, 스레드 게시물, 네이버 블로그·티스토리 글을 지원합니다. {platform && <b>{platformLabel[platform]} 링크 확인됨</b>}</p>
@@ -99,12 +107,12 @@ export default function SpotlightSection({ items, isAdmin, playerOptions }: {
         <label>짧은 소개 <textarea value={form.summary} onChange={(event) => setForm({ ...form, summary: event.target.value })} maxLength={240} rows={2} placeholder="게시물에 대한 한두 문장 (선택)" /></label>
         <div className={styles.formBottom}><label className={styles.check}><input type="checkbox" checked={form.published} onChange={(event) => setForm({ ...form, published: event.target.checked })} />지금 공개하기</label>
           <label className={styles.order}>순서 <input type="number" min={0} max={999} value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} /></label></div>
-        <div className={styles.formActions}><button type="submit" disabled={busy || !platform}>{busy ? "저장 중…" : form.id ? "수정 저장" : "게시물 연결"}</button>{form.id && <button type="button" onClick={() => setForm(emptyForm)}>새로 작성</button>}</div>
+        <div className={styles.formActions}><button type="submit" disabled={busy || !platform}>{busy ? "저장 중…" : form.id ? "수정 저장" : "게시물 연결"}</button>{form.id && <button type="button" onClick={() => { setForm(emptyForm); setPlayerSearch(""); }}>새로 작성</button>}</div>
         {notice && <p role="status" className={styles.notice}>{notice}</p>}
       </form>
       {adminRows.length > 0 && <div className={styles.adminList}><h4>등록한 링크</h4>{adminRows.map((row) => <div key={row.id} className={styles.adminRow}>
         <div><small>{row.published ? "공개" : "비공개"} · {platformLabel[row.platform]}</small><strong>{row.title}</strong><span>{row.school_name} · {row.player_name}</span></div>
-        <div><button type="button" disabled={busy} onClick={() => { setForm({ id: row.id, playerKey: `${row.team_id}|${row.player_id}`, postUrl: row.post_url, title: row.title, summary: row.summary, published: row.published, sortOrder: String(row.sort_order) }); document.getElementById("spotlight-editor")?.scrollIntoView({ behavior: "smooth" }); }}>수정</button><button type="button" disabled={busy} onClick={() => void remove(row.id)}>삭제</button></div>
+        <div><button type="button" disabled={busy} onClick={() => { setPlayerSearch(`${row.school_name} ${row.player_name}`); setForm({ id: row.id, playerKey: `${row.team_id}|${row.player_id}`, postUrl: row.post_url, title: row.title, summary: row.summary, published: row.published, sortOrder: String(row.sort_order) }); document.getElementById("spotlight-editor")?.scrollIntoView({ behavior: "smooth" }); }}>수정</button><button type="button" disabled={busy} onClick={() => void remove(row.id)}>삭제</button></div>
       </div>)}</div>}
     </div>}
     {active && <div className={styles.backdrop}>
