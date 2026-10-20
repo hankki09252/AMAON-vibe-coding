@@ -49,9 +49,11 @@ import { createSupabaseBrowserClient } from "./supabase/browser";
 import { ProfileEntryContext, type ProfileEntryData } from "./profile-entry-context";
 import type { RecentPlayerProfile } from "./recent-player-data";
 import type { WeeklyPost } from "./weekly/weekly-data";
+import type { PlayerSpotlight } from "./spotlight-data";
 
 const VideoSubmission = dynamic(() => import("./video-submission"));
 const WeeklyAdmin = dynamic(() => import("./weekly-admin"));
+const SpotlightSection = dynamic(() => import("./spotlight-section"));
 type WeeklyPreview = Pick<WeeklyPost, "id" | "issueNumber" | "slug" | "title" | "summary" | "coverStorageKey" | "previewImageId" | "playerName" | "schoolName">;
 
 
@@ -143,7 +145,7 @@ const playerSearchIndex = [
 
 type ProfileTarget = { team: string; player: string };
 
-export default function Home({ signedIn = false, initialProfile = null, profileEntry = null, recentPlayers = [], weeklyPosts = [] }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null; recentPlayers?: RecentPlayerProfile[]; weeklyPosts?: WeeklyPreview[] }) {
+export default function Home({ signedIn = false, initialProfile = null, profileEntry = null, recentPlayers = [], weeklyPosts = [], spotlights = [] }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null; recentPlayers?: RecentPlayerProfile[]; weeklyPosts?: WeeklyPreview[]; spotlights?: PlayerSpotlight[] }) {
   const [pendingProfile, setPendingProfile] = useState<ProfileTarget | null>(profileEntry ? null : initialProfile);
   const [profileEntryError, setProfileEntryError] = useState("");
   const [query, setQuery] = useState("");
@@ -309,6 +311,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       setActiveRosterSection(requestedRoster && schoolByRosterSection[requestedRoster] ? requestedRoster : null);
       if (params.has("player") || hash === "players") setActiveMobileSection("players");
       else if (hash === "video-ranking") setActiveMobileSection("video-ranking");
+      else if (hash === "spotlight" || hash === "spotlight-editor") setActiveMobileSection("spotlight");
       else if (hash === "community") setActiveMobileSection("community");
       else if (hash === "how") setActiveMobileSection("how");
       else if (hash === "schools" || hash.endsWith("-roster")) setActiveMobileSection("schools");
@@ -610,6 +613,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           <a href="#schools">학교 찾기</a>
           <a href="#schools">경기·인천 학교</a>
           <a href="#players">선수 프로필</a>
+          {(spotlights.length > 0 || isAdmin) && <a href="#spotlight">이 선수 어때?</a>}
           <Link href="/weekly">AMAON WEEKLY</Link>
           {isAdmin && <a href="#weekly-editor">위클리 글쓰기</a>}
           <a href="#community">커뮤니티</a>
@@ -650,6 +654,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
                 { id: "top", icon: "⌂", eyebrow: "HOME", label: "홈" },
                 { id: "schools", icon: "▦", eyebrow: "TEAM", label: "학교 찾기" },
                 { id: "players", icon: "◎", eyebrow: "PLAYER", label: "선수 프로필" },
+                ...(spotlights.length > 0 || isAdmin ? [{ id: "spotlight", icon: "✦", eyebrow: "DISCOVER", label: "이 선수 어때?" }] : []),
                 { id: "video-ranking", icon: "▶", eyebrow: "FILM", label: "영상 TOP 5" },
                 { id: "community", icon: "◌", eyebrow: "COMMUNITY", label: "커뮤니티" },
                 { id: "how", icon: "＋", eyebrow: "GUIDE", label: "등록 안내" },
@@ -672,6 +677,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             </nav>
           <Link className="mobile-weekly-link" href="/weekly"><span><small>NEW CONTENT</small><strong>AMAON WEEKLY</strong></span><b>→</b></Link>
           {isAdmin && <a className="mobile-weekly-link" href="#weekly-editor" onClick={() => setMobileMenuOpen(false)}><span><small>OPERATOR ONLY</small><strong>위클리 글쓰기</strong></span><b>→</b></a>}
+          {isAdmin && <a className="mobile-weekly-link" href="#spotlight-editor" onClick={() => setMobileMenuOpen(false)}><span><small>OPERATOR ONLY</small><strong>선수 게시물 연결</strong></span><b>→</b></a>}
           <button type="button" className="mobile-guide-link" onClick={() => { setMobileMenuOpen(false); setGuideOpen(true); }}>
             <span><small>START HERE</small><strong>아마ON 사용설명서</strong></span><b>→</b>
           </button>
@@ -797,6 +803,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           <p className="recent-player-swipe">좌우로 밀어 선수 프로필을 더 볼 수 있습니다. <span>↔</span></p>
         </section>
       )}
+
+      {!pendingProfile && (spotlights.length > 0 || isAdmin) && <SpotlightSection items={spotlights} isAdmin={isAdmin} playerOptions={weeklyPlayerOptions} />}
 
       {!pendingProfile && <section className={homeStyles.promoGrid} aria-label="아마ON 추천 콘텐츠">
         <Link className={homeStyles.brandPromo} href="/about"><small>ABOUT AMAON</small><strong>아마야구,<br />선수의 내일을 응원합니다.</strong><span>아마ON 이야기 보기 →</span></Link>
