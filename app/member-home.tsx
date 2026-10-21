@@ -4,6 +4,7 @@
 
 import Image from "next/image";
 import homeStyles from "./home-redesign.module.css";
+import { homePartnerAds } from "./home-partner-ads";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { schools } from "./school-catalog";
@@ -173,6 +174,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   const [activeMobileSection, setActiveMobileSection] = useState("top");
   const [showMobileBack, setShowMobileBack] = useState(false);
   const recentPlayersRef = useRef<HTMLDivElement>(null);
+  const partnerAdsRef = useRef<HTMLDivElement>(null);
+  const [activePartnerAd, setActivePartnerAd] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -779,12 +782,27 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         <button onClick={() => jumpToSection("community")}><i aria-hidden="true">◌</i><small>TOGETHER</small><strong>커뮤니티</strong><span>함께 만드는 이야기</span></button>
       </nav>}
 
-      {!pendingProfile && <aside className={homeStyles.partnerAd} aria-label="쿠팡 파트너스 제휴 광고">
-        <a className={homeStyles.partnerAdLink} href="https://link.coupang.com/a/h07R4a0jjo" target="_blank" rel="sponsored noopener noreferrer">
-          <span className={homeStyles.partnerAdLabel}>AD · COUPANG PARTNERS</span>
-          <span className={homeStyles.partnerAdCopy}><strong>뉴트리코스트<br />크레아틴 분말</strong><small>상품 정보는 쿠팡에서 확인하세요.</small></span>
-          <span className={homeStyles.partnerAdAction}>쿠팡에서 보기 ↗</span>
-        </a>
+      {!pendingProfile && homePartnerAds.length > 0 && <aside className={homeStyles.partnerAd} aria-label="쿠팡 파트너스 제휴 광고">
+        <div className={homeStyles.partnerAdHead}>
+          <span>AD · COUPANG PARTNERS</span>
+          {homePartnerAds.length > 1 && <div className={homeStyles.partnerAdControls} aria-label="광고 배너 이동">
+            <button type="button" onClick={() => partnerAdsRef.current?.scrollBy({ left: -partnerAdsRef.current.clientWidth, behavior: "smooth" })} aria-label="이전 광고 보기">←</button>
+            <span>{activePartnerAd + 1} / {homePartnerAds.length}</span>
+            <button type="button" onClick={() => partnerAdsRef.current?.scrollBy({ left: partnerAdsRef.current.clientWidth, behavior: "smooth" })} aria-label="다음 광고 보기">→</button>
+          </div>}
+        </div>
+        <div className={homeStyles.partnerAdTrack} ref={partnerAdsRef} onScroll={(event) => {
+          const track = event.currentTarget;
+          setActivePartnerAd(Math.min(homePartnerAds.length - 1, Math.round(track.scrollLeft / track.clientWidth)));
+        }}>
+          {homePartnerAds.map((ad) => <a className={homeStyles.partnerAdLink} key={ad.id} href={ad.href} target="_blank" rel="sponsored noopener noreferrer" aria-label={`${ad.title} 쿠팡에서 보기 (새 창)`}>
+            {/* Product thumbnail is served by the merchant and may change with its listing. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className={homeStyles.partnerAdImage} src={ad.imageUrl} alt={ad.imageAlt} width="116" height="116" loading="lazy" decoding="async" />
+            <span className={homeStyles.partnerAdCopy}><strong>{ad.title}</strong><small>{ad.detail}</small></span>
+            <span className={homeStyles.partnerAdAction}>상품 보기 <span aria-hidden="true">↗</span></span>
+          </a>)}
+        </div>
         <p>이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
       </aside>}
 
