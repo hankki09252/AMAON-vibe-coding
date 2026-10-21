@@ -31,6 +31,14 @@
 .shortcuts>a,.shortcuts>button{position:relative;min-width:0;min-height:126px;display:flex;flex-direction:column;align-items:center;gap:7px;padding:18px 12px;border:0;border-right:1px solid #2d2d2d;background:#050505;color:#fff;text-align:center;text-decoration:none;cursor:pointer}
 .shortcuts>*:last-child{border-right:0}.shortcuts>a:hover,.shortcuts>button:hover{background:#111}
 .shortcuts i{height:30px;color:var(--home-orange);font-size:28px;font-style:normal;line-height:1}.shortcuts small{color:#7b7b7b;font-size:8px;letter-spacing:1.2px}.shortcuts strong{font-size:15px}.shortcuts span{color:#8d8d8d;font-size:10px;line-height:1.5}
+.partnerAd{max-width:1372px;margin:0 auto 52px;padding:0 20px}
+.partnerAdLink{position:relative;min-height:210px;display:flex;align-items:end;justify-content:space-between;gap:24px;overflow:hidden;padding:58px 38px 32px;border:1px solid #8a431c;border-left:6px solid var(--home-orange);background:radial-gradient(circle at 80% 50%,rgba(255,101,0,.24),transparent 38%),linear-gradient(110deg,#15100d,#080808 70%);color:#fff;text-decoration:none;isolation:isolate}
+.partnerAdLink:before{content:"";position:absolute;z-index:-1;top:-145px;right:13%;width:370px;height:370px;border:1px solid rgba(255,119,37,.3);border-radius:50%;box-shadow:0 0 0 46px rgba(255,119,37,.045),0 0 0 100px rgba(255,119,37,.025)}
+.partnerAdLink:hover,.partnerAdLink:focus-visible{border-color:#ff9a57;outline:2px solid var(--home-orange);outline-offset:2px}
+.partnerAdLabel{position:absolute;top:26px;left:38px;color:#ff8a3e;font-size:11px;font-weight:900;letter-spacing:1.8px}
+.partnerAdCopy{display:grid;gap:11px;min-width:0}.partnerAdCopy strong{font-size:clamp(27px,3vw,40px);line-height:1.17;letter-spacing:-1.3px}.partnerAdCopy small{color:#c7c7c7;font-size:14px;line-height:1.5}
+.partnerAdAction{flex:0 0 auto;padding:15px 20px;background:var(--home-orange);color:#090909;font-size:14px;font-weight:900;white-space:nowrap}
+.partnerAd p{margin:11px 2px 0;color:#bcbcbc;font-size:12px;line-height:1.6}
 .promoGrid{max-width:1372px;margin:34px auto 48px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .promoGrid>a{position:relative;min-height:220px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;padding:32px;color:#fff;text-decoration:none;border:1px solid #363636;background:#111;isolation:isolate}
 .promoGrid>a:before{content:"";position:absolute;z-index:-2;inset:0;background-size:cover;background-position:center;transition:transform .35s}
@@ -51,3 +59,4 @@
 @media(max-width:640px){.weeklyHeaderActions{width:100%}.weeklyHeaderActions a{flex:1;text-align:center}.weeklyEditor{padding:36px 14px 42px}}
 .originals img{max-height:480px;object-fit:contain}
 @media(max-width:640px){.heroMedia img{object-position:center center;opacity:.82}.originals img{max-height:390px}}
+@media(max-width:640px){.partnerAd{margin-bottom:40px;padding:0 16px}.partnerAdLink{min-height:230px;align-items:stretch;flex-direction:column;gap:20px;padding:48px 20px 20px}.partnerAdLabel{top:19px;left:20px;font-size:9px}.partnerAdCopy strong{font-size:29px}.partnerAdCopy small{font-size:12px}.partnerAdAction{align-self:flex-start;padding:12px 16px;font-size:12px}.partnerAd p{font-size:12px}}

@@ -779,6 +779,15 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         <button onClick={() => jumpToSection("community")}><i aria-hidden="true">◌</i><small>TOGETHER</small><strong>커뮤니티</strong><span>함께 만드는 이야기</span></button>
       </nav>}
 
+      {!pendingProfile && <aside className={homeStyles.partnerAd} aria-label="쿠팡 파트너스 제휴 광고">
+        <a className={homeStyles.partnerAdLink} href="https://link.coupang.com/a/h07R4a0jjo" target="_blank" rel="sponsored noopener noreferrer">
+          <span className={homeStyles.partnerAdLabel}>AD · COUPANG PARTNERS</span>
+          <span className={homeStyles.partnerAdCopy}><strong>뉴트리코스트<br />크레아틴 분말</strong><small>상품 정보는 쿠팡에서 확인하세요.</small></span>
+          <span className={homeStyles.partnerAdAction}>쿠팡에서 보기 ↗</span>
+        </a>
+        <p>이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
+      </aside>}
+
       {!pendingProfile && recentPlayerCards.length > 0 && (
         <section className="recent-player-section" aria-labelledby="recent-player-title">
           <header className="recent-player-head">
