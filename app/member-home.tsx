@@ -44,6 +44,7 @@ import SuwonRoster, { players as suwonPlayers } from "./suwon-roster";
 import ShinheungRoster, { players as shinheungPlayers } from "./shinheung-roster";
 import AnsanTechnicalRoster, { players as ansanTechnicalPlayers } from "./ansan-technical-roster";
 import PwaInstallButton from "./pwa-install-button";
+import PromotionNotice from "./promotion-notice";
 import VideoRankings from "./video-rankings";
 import CommunityBoard from "./community-board";
 import { managedTeamOptions } from "./team-directory";
@@ -901,6 +902,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       {!pendingProfile && <CommunityBoard signedIn={signedIn} />}
 
       {videoSubmissionOpen && <VideoSubmission open players={publishedPlayerSearchIndex} onClose={() => setVideoSubmissionOpen(false)} />}
+
+      {!initialProfile && !pendingProfile && <PromotionNotice onRegister={() => setVideoSubmissionOpen(true)} />}
 
       {introVideoOpen && (
         <div className={homeStyles.introModalBackdrop} role="dialog" aria-modal="true" aria-labelledby="amaon-intro-video-title" onMouseDown={() => setIntroVideoOpen(false)}>
