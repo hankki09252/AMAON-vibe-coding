@@ -4,6 +4,7 @@
 
 import Image from "next/image";
 import homeStyles from "./home-redesign.module.css";
+import { DEFAULT_INTRO_VIDEO_URL, parseIntroVideoUrl } from "./intro-video";
 import { homePartnerAds } from "./home-partner-ads";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -146,7 +147,7 @@ const playerSearchIndex = [
 
 type ProfileTarget = { team: string; player: string };
 
-export default function Home({ signedIn = false, initialProfile = null, profileEntry = null, recentPlayers = [], weeklyPosts = [], spotlights = [] }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null; recentPlayers?: RecentPlayerProfile[]; weeklyPosts?: WeeklyPreview[]; spotlights?: PlayerSpotlight[] }) {
+export default function Home({ signedIn = false, initialProfile = null, profileEntry = null, recentPlayers = [], weeklyPosts = [], spotlights = [], initialIntroVideoUrl = DEFAULT_INTRO_VIDEO_URL }: { signedIn?: boolean; initialProfile?: ProfileTarget | null; profileEntry?: ProfileEntryData | null; recentPlayers?: RecentPlayerProfile[]; weeklyPosts?: WeeklyPreview[]; spotlights?: PlayerSpotlight[]; initialIntroVideoUrl?: string }) {
   const [pendingProfile, setPendingProfile] = useState<ProfileTarget | null>(profileEntry ? null : initialProfile);
   const [profileEntryError, setProfileEntryError] = useState("");
   const [query, setQuery] = useState("");
@@ -159,8 +160,14 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   const [regionEditingDraft, setRegionEditingDraft] = useState<string[]>([]);
   const [regionEditorRegion, setRegionEditorRegion] = useState("서울");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isOwnerAdmin, setIsOwnerAdmin] = useState(false);
   const [videoSubmissionOpen, setVideoSubmissionOpen] = useState(false);
   const [introVideoOpen, setIntroVideoOpen] = useState(false);
+  const [introVideoUrl, setIntroVideoUrl] = useState(initialIntroVideoUrl);
+  const [introVideoDraft, setIntroVideoDraft] = useState(initialIntroVideoUrl);
+  const [introVideoEditing, setIntroVideoEditing] = useState(false);
+  const [introVideoSaving, setIntroVideoSaving] = useState(false);
+  const [introVideoNotice, setIntroVideoNotice] = useState("");
   const [regionSettingsOpen, setRegionSettingsOpen] = useState(false);
   const [savingRegions, setSavingRegions] = useState(false);
   const [regionNotice, setRegionNotice] = useState("");
@@ -200,6 +207,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         if (firstSafeRegion) setRegionEditorRegion(firstSafeRegion);
       }
       setIsAdmin(Boolean(admin?.isAdmin));
+      setIsOwnerAdmin(admin?.role === "admin");
       if (Array.isArray(rosterManagement?.items)) setManagedRosterPlayers(rosterManagement.items);
     }).catch(() => {
       if (initialProfile) setProfileEntryError("선수 정보를 불러오지 못했습니다. 다시 시도해 주세요.");
@@ -592,6 +600,37 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
     window.location.replace("/");
   }
 
+  async function saveIntroVideo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const video = parseIntroVideoUrl(introVideoDraft);
+    if (!video) {
+      setIntroVideoNotice("인스타그램 릴스 또는 유튜브 영상 링크를 입력해 주세요.");
+      return;
+    }
+
+    setIntroVideoSaving(true);
+    setIntroVideoNotice("");
+    try {
+      const response = await fetch("/api/intro-video", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: video.url }),
+      });
+      const result = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !result.url) throw new Error(result.error || "소개 영상을 저장하지 못했습니다.");
+      setIntroVideoUrl(result.url);
+      setIntroVideoDraft(result.url);
+      setIntroVideoEditing(false);
+      setIntroVideoNotice("소개 영상을 교체했습니다.");
+    } catch (error) {
+      setIntroVideoNotice(error instanceof Error ? error.message : "소개 영상을 저장하지 못했습니다.");
+    } finally {
+      setIntroVideoSaving(false);
+    }
+  }
+
+  const introVideo = parseIntroVideoUrl(introVideoUrl) ?? parseIntroVideoUrl(DEFAULT_INTRO_VIDEO_URL)!;
+
   return (
     <main className={`member-home ${homeStyles.home}${pendingProfile ? " profile-entry-pending" : ""}`}>
       {pendingProfile && <div className="profile-entry-gate" role={profileEntryError ? "alert" : "status"} aria-live="polite">
@@ -723,9 +762,9 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             기록은 결과를, 영상은 과정을,<br />
             프로필은 선수의 이야기를 보여줍니다.
           </p>
-          <button type="button" className={homeStyles.introLink} onClick={() => setIntroVideoOpen(true)} aria-label="아마ON 소개 영상 보기">
+          <button type="button" className={homeStyles.introLink} onClick={() => { setIntroVideoEditing(false); setIntroVideoNotice(""); setIntroVideoOpen(true); }} aria-label={isOwnerAdmin ? "아마ON 소개 영상 보기 또는 교체" : "아마ON 소개 영상 보기"}>
             <span aria-hidden="true">▶</span>
-            <strong>아마ON 소개 영상 보기</strong>
+            <strong>{isOwnerAdmin ? "아마ON 소개 영상 보기·교체" : "아마ON 소개 영상 보기"}</strong>
             <small>BEYOND RECORD,<br />SHOW THE PLAYER</small>
           </button>
           <div className="hero-search-wrap">
@@ -872,14 +911,26 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             </header>
             <div className={homeStyles.introEmbed}>
               <iframe
-                src="https://www.instagram.com/reel/Dcrp5kSTijx/embed"
-                title="아마ON 인스타그램 소개 영상"
+                src={introVideo.embedUrl}
+                title={`아마ON ${introVideo.platform === "instagram" ? "인스타그램" : "유튜브"} 소개 영상`}
                 loading="lazy"
                 allow="autoplay; encrypted-media; picture-in-picture; web-share"
                 allowFullScreen
               />
             </div>
-            <a href="https://www.instagram.com/reel/Dcrp5kSTijx/" target="_blank" rel="noopener noreferrer">인스타그램에서 크게 보기 ↗</a>
+            <a href={introVideo.url} target="_blank" rel="noopener noreferrer">{introVideo.platform === "instagram" ? "인스타그램" : "유튜브"}에서 크게 보기 ↗</a>
+            {isOwnerAdmin && <div className={homeStyles.introEditor}>
+              <button type="button" onClick={() => { setIntroVideoDraft(introVideo.url); setIntroVideoEditing((editing) => !editing); setIntroVideoNotice(""); }}>
+                {introVideoEditing ? "영상 교체 취소" : "운영자 전용 · 소개 영상 교체"}
+              </button>
+              {introVideoEditing && <form onSubmit={saveIntroVideo}>
+                <label htmlFor="intro-video-url">새 소개 영상 링크</label>
+                <input id="intro-video-url" type="url" value={introVideoDraft} onChange={(event) => setIntroVideoDraft(event.target.value)} placeholder="인스타그램 릴스 또는 유튜브 링크" required maxLength={300} />
+                <p>인스타그램 릴스와 유튜브 영상 링크를 지원합니다. 저장하면 메인 소개 영상이 바로 교체됩니다.</p>
+                <button type="submit" disabled={introVideoSaving}>{introVideoSaving ? "저장 중…" : "새 영상으로 저장"}</button>
+              </form>}
+              {introVideoNotice && <p role="status" aria-live="polite">{introVideoNotice}</p>}
+            </div>}
           </section>
         </div>
       )}
