@@ -764,7 +764,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         <div>
           <small>PLAYER PROFILE · DIRECT REQUEST</small>
           <strong>사진·영상·프로필을 직접 등록하세요.</strong>
-          <p>로그인 없이 필요한 항목 하나만 보내주세요. 운영팀 확인 후 선수 프로필에 반영합니다.</p>
+          <p>로그인 없이 프로필 보완에 필요한 항목만 보내셔도 됩니다. 운영팀 확인 후 반영합니다.</p>
+          <p className={homeStyles.promotionNotice}><b>SNS 홍보 안내</b> 선수 프로필·사진·영상이 모두 등록된 경우에만 SNS 홍보를 진행할 수 있습니다.</p>
         </div>
         <div className="hero-registration-actions"><button type="button" onClick={() => setVideoSubmissionOpen(true)}><span>선수 프로필 등록·수정</span><b aria-hidden="true">→</b></button><a href="https://ig.me/m/hankki09252" target="_blank" rel="noopener noreferrer">직접 등록이 어렵다면 한끼방패 DM ↗</a></div>
       </aside>}
