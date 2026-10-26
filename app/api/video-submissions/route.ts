@@ -5,6 +5,7 @@ import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { managedTeamLabel } from "../../team-directory";
 import { sendTelegramSubmissionNotification } from "../../telegram-notification";
+import { resolveSubmissionPlayer } from "../../submission-player";
 
 const bucket = "media";
 const maxBytes = 150 * 1024 * 1024;
@@ -80,7 +81,12 @@ export async function POST(request: Request) {
   }
 
   const db = createSupabaseAdminClient();
-  const { data: player } = await db.from("roster_players").select("player_id,team_id,name,hidden").eq("player_id", playerId).eq("team_id", teamId).eq("hidden", false).maybeSingle();
+  let player;
+  try {
+    player = await resolveSubmissionPlayer(db, teamId, playerId);
+  } catch {
+    return Response.json({ error: "선수 명단을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." }, { status: 500 });
+  }
   if (!player) return Response.json({ error: "현재 공개된 선수 명단에서 선수를 찾지 못했습니다." }, { status: 404 });
 
   const cookieStore = await cookies();

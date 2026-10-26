@@ -5,6 +5,7 @@ import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
 import { managedTeamLabel } from "../../team-directory";
 import { sendTelegramSubmissionNotification } from "../../telegram-notification";
+import { ensureProfileRosterPlayer, resolveSubmissionPlayer } from "../../submission-player";
 
 const bucket = "media";
 const maxImageBytes = 12 * 1024 * 1024;
@@ -114,7 +115,12 @@ export async function POST(request: Request) {
   }
 
   const db = createSupabaseAdminClient();
-  const { data: player } = await db.from("roster_players").select("player_id,team_id,name,hidden").eq("player_id", playerId).eq("team_id", teamId).eq("hidden", false).maybeSingle();
+  let player;
+  try {
+    player = await resolveSubmissionPlayer(db, teamId, playerId);
+  } catch {
+    return Response.json({ error: "선수 명단을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." }, { status: 500 });
+  }
   if (!player) return Response.json({ error: "현재 공개된 선수 명단에서 선수를 찾지 못했습니다." }, { status: 404 });
 
   const requester = await requesterHash(contact);
@@ -230,6 +236,13 @@ export async function PATCH(request: Request) {
     const data = profilePayload(row.profile_data);
     const transferTeamId = typeof data.transferTeamId === "string" ? data.transferTeamId : "";
     const targetTeamId = transferTeamId || row.team_id;
+    try {
+      if (!await ensureProfileRosterPlayer(db, row.team_id, row.player_id, user.email || "")) {
+        return Response.json({ error: "선수 소속 또는 공개 상태가 변경되어 승인할 수 없습니다." }, { status: 409 });
+      }
+    } catch {
+      return Response.json({ error: "선수 정보를 확인하지 못했습니다." }, { status: 500 });
+    }
     if (transferTeamId) {
       const { error: transferError } = await db.rpc("admin_transfer_player", {
         p_player_id: row.player_id,
