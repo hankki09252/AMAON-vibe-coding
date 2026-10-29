@@ -799,6 +799,19 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         </div>
       </section>
 
+      {!pendingProfile && <aside className={homeStyles.collaboration} aria-label="아마ON 협업 코칭 안내">
+        <a className={homeStyles.collaborationLink} href="https://www.instagram.com/seobotde04/" target="_blank" rel="sponsored noopener noreferrer" aria-label="A2P Baseball 서동욱 코치 인스타그램 계정 보기 (새 창)">
+          <Image className={homeStyles.collaborationImage} src="/collaborations/a2p-baseball-coaching.jpg" alt="A2P Baseball 코칭 안내 이미지" width={132} height={132} loading="lazy" sizes="(max-width: 640px) 96px, 132px" />
+          <span className={homeStyles.collaborationCopy}>
+            <small>광고 · 아마ON 협업 · A2P BASEBALL</small>
+            <strong>서동욱 코치와 함께하는 타격·수비 코칭</strong>
+            <span>최강야구 몬스터즈 출연 · 레슨 및 코칭 안내</span>
+            <em>@seobotde04 인스타그램에서 보기 ↗</em>
+          </span>
+          <span className={homeStyles.collaborationAction} aria-hidden="true">계정 보기 ↗</span>
+        </a>
+      </aside>}
+
       {!pendingProfile && <aside className="hero-instagram-cta" aria-label="선수 프로필 직접 등록 안내">
         <div className={homeStyles.requestIcon} aria-hidden="true">5</div>
         <div>
