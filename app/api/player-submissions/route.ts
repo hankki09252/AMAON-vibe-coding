@@ -7,6 +7,7 @@ import { managedTeamLabel } from "../../team-directory";
 import { sendTelegramSubmissionNotification } from "../../telegram-notification";
 import { ensureProfileRosterPlayer, resolveSubmissionPlayer } from "../../submission-player";
 import { newOriginRows, parseSubmittedOrigins } from "../../submission-origins";
+import { presentMedia } from "../../media-read";
 
 const bucket = "media";
 const maxImageBytes = 12 * 1024 * 1024;
@@ -141,12 +142,30 @@ export async function POST(request: Request) {
     const data = profilePayload(body.profileData);
     const originInput = body.profileData && typeof body.profileData === "object" && !Array.isArray(body.profileData)
       ? (body.profileData as Record<string, unknown>).originSchools : undefined;
+    const featuredKey = body.profileData && typeof body.profileData === "object" && !Array.isArray(body.profileData)
+      ? (body.profileData as Record<string, unknown>).featuredVideoKey : undefined;
     const origins = originInput === undefined ? null : parseSubmittedOrigins(originInput);
+    if (featuredKey !== undefined && (typeof featuredKey !== "string" || !featuredKey || featuredKey.length > 300 || originInput !== undefined || Object.keys(data).length)) {
+      return Response.json({ error: "대표 영상 선택 내용을 다시 확인해 주세요." }, { status: 400 });
+    }
     if (originInput !== undefined && (!origins || Object.keys(data).length)) return Response.json({ error: "출신학교 정보를 다시 확인해 주세요." }, { status: 400 });
-    if (!Object.keys(data).length && !origins) return Response.json({ error: "수정할 프로필 내용을 하나 이상 입력해 주세요." }, { status: 400 });
-    const { error } = await db.from("player_profile_submissions").insert({ ...base, profile_data: origins ? { originSchools: origins } : data, status: "pending", content_type: "application/json", file_size: 0 });
+    if (!Object.keys(data).length && !origins && featuredKey === undefined) return Response.json({ error: "수정할 프로필 내용을 하나 이상 입력해 주세요." }, { status: 400 });
+    let featuredData: Record<string, string> | null = null;
+    if (typeof featuredKey === "string") {
+      const { data: media, error: mediaError } = await db.from("media_items")
+        .select("storage_key,player_id,category,content_type,uploaded_at").eq("storage_key", featuredKey).maybeSingle();
+      if (mediaError) return Response.json({ error: "영상을 확인하지 못했습니다." }, { status: 500 });
+      if (!media || ![playerId, `${teamId}--${playerId}`].includes(media.player_id)
+        || !["pitching", "batting", "fielding"].includes(media.category) || !media.content_type.startsWith("video/")) {
+        return Response.json({ error: "해당 선수의 공개 영상을 다시 선택해 주세요." }, { status: 400 });
+      }
+      const categoryLabel: Record<string, string> = { pitching: "투구", batting: "타격", fielding: "수비" };
+      featuredData = { featuredVideoRequest: "select-existing", featuredVideoKey: featuredKey,
+        featuredVideoLabel: `${categoryLabel[media.category]} · ${new Date(media.uploaded_at).toLocaleDateString("ko-KR")}` };
+    }
+    const { error } = await db.from("player_profile_submissions").insert({ ...base, profile_data: featuredData || (origins ? { originSchools: origins } : data), status: "pending", content_type: "application/json", file_size: 0 });
     if (error) return Response.json({ error: "프로필 수정 요청을 저장하지 못했습니다." }, { status: 500 });
-    const requestType = origins ? "출신학교 등록" : data.transferTeamId ? "전학 요청" : "선수 프로필 수정";
+    const requestType = featuredData ? "기존 영상 대표 지정" : origins ? "출신학교 등록" : data.transferTeamId ? "전학 요청" : "선수 프로필 수정";
     after(() => sendTelegramSubmissionNotification({ requestType }));
     const response = Response.json({ ok: true, submissionId: id }, { status: 201 });
     response.headers.append("Set-Cookie", `${visitorCookie}=${requester.visitorId}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`);
@@ -216,7 +235,14 @@ export async function GET() {
   const downloadable = rows.filter((row) => row.status !== "rejected" && row.storage_key);
   const signed = await Promise.all(downloadable.map(async (row) => ({ id: row.id, preview: (await db.storage.from(bucket).createSignedUrl(row.storage_key!, 20 * 60)).data?.signedUrl || "", download: (await db.storage.from(bucket).createSignedUrl(row.storage_key!, 20 * 60, { download: row.original_name || "amaon-photo" })).data?.signedUrl || "" })));
   const urlById = new Map(signed.map((item) => [item.id, item]));
-  return Response.json({ items: rows.map((row) => ({ ...row, previewUrl: urlById.get(row.id)?.preview || "", downloadUrl: urlById.get(row.id)?.download || "" })) }, { headers: { "Cache-Control": "private, no-store" } });
+  const featuredKeys = [...new Set(rows.map((row) => row.profile_data?.featuredVideoKey).filter((key): key is string => typeof key === "string"))];
+  const { data: featuredMedia, error: featuredError } = featuredKeys.length
+    ? await db.from("media_items").select("storage_key,player_id,category,content_type,uploaded_at").in("storage_key", featuredKeys)
+    : { data: [], error: null };
+  if (featuredError) return Response.json({ error: "대표 영상 미리보기를 불러오지 못했습니다." }, { status: 500 });
+  const featuredUrls = new Map((await presentMedia(featuredMedia || [])).map((item) => [item.key, item.url]));
+  return Response.json({ items: rows.map((row) => ({ ...row, previewUrl: urlById.get(row.id)?.preview || "", downloadUrl: urlById.get(row.id)?.download || "",
+    featuredPreviewUrl: typeof row.profile_data?.featuredVideoKey === "string" ? featuredUrls.get(row.profile_data.featuredVideoKey) || "" : "" })) }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function PATCH(request: Request) {
@@ -259,6 +285,27 @@ export async function PATCH(request: Request) {
     const { error: updateError } = await db.from("player_profile_submissions")
       .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.email }).eq("id", id).eq("status", "pending");
     if (updateError) return Response.json({ error: "승인 상태를 저장하지 못했습니다." }, { status: 500 });
+    return Response.json({ ok: true, profileUrl: `/?team=${encodeURIComponent(row.team_id)}&player=${encodeURIComponent(row.player_id)}#${encodeURIComponent(row.team_id)}` });
+  }
+
+  if (row.submission_type === "profile" && row.profile_data.featuredVideoRequest === "select-existing") {
+    const key = row.profile_data.featuredVideoKey;
+    if (typeof key !== "string" || !key || key.length > 300) return Response.json({ error: "대표 영상 선택 내용이 올바르지 않습니다." }, { status: 400 });
+    try {
+      if (!await resolveSubmissionPlayer(db, row.team_id, row.player_id)) return Response.json({ error: "선수 소속 또는 공개 상태가 변경되어 승인할 수 없습니다." }, { status: 409 });
+    } catch {
+      return Response.json({ error: "선수 정보를 확인하지 못했습니다." }, { status: 500 });
+    }
+    const { data: media, error: mediaError } = await db.from("media_items")
+      .select("player_id,category,content_type").eq("storage_key", key).maybeSingle();
+    if (mediaError) return Response.json({ error: "선택한 영상을 확인하지 못했습니다." }, { status: 500 });
+    if (!media || ![row.player_id, `${row.team_id}--${row.player_id}`].includes(media.player_id)
+      || !["pitching", "batting", "fielding"].includes(media.category) || !media.content_type.startsWith("video/")) {
+      return Response.json({ error: "선택한 영상이 삭제되었거나 선수 정보가 달라졌습니다." }, { status: 409 });
+    }
+    const { error: updateError } = await db.from("player_profile_submissions")
+      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.email }).eq("id", id).eq("status", "pending");
+    if (updateError) return Response.json({ error: "대표 영상 승인 상태를 저장하지 못했습니다." }, { status: 500 });
     return Response.json({ ok: true, profileUrl: `/?team=${encodeURIComponent(row.team_id)}&player=${encodeURIComponent(row.player_id)}#${encodeURIComponent(row.team_id)}` });
   }
 

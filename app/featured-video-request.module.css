@@ -1,0 +1,51 @@
+.root {
+  display: grid;
+  gap: 14px;
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.list button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #151515;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list button:hover,
+.list button:focus-visible,
+.list button.active {
+  border-color: #ff6b00;
+  background: #27170d;
+}
+
+.list button span {
+  color: #bdbdbd;
+  font-size: .85em;
+}
+
+.preview {
+  display: grid;
+  gap: 8px;
+}
+
+.preview iframe,
+.preview video {
+  width: 100%;
+  max-height: 360px;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 8px;
+  background: #000;
+}

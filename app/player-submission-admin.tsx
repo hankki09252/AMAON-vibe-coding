@@ -10,11 +10,11 @@ type Submission = {
   submission_type: "profile" | "profile_photo" | "photo"; relationship: "player" | "guardian";
   contact: string; social_consent: boolean; profile_data: Record<string, string | number | SubmittedOrigin[]>; original_name: string;
   file_size: number; status: "pending" | "approved" | "rejected"; review_reason: string; created_at: string;
-  previewUrl: string; downloadUrl: string;
+  previewUrl: string; downloadUrl: string; featuredPreviewUrl: string;
 };
 
 const typeLabels = { profile: "프로필 수정", profile_photo: "대표 프로필 사진", photo: "경기·훈련 사진" } as const;
-const fieldLabels: Record<string, string> = { transferTeamId: "전학할 학교", originSchools: "출신학교", year: "기준 연도", number: "등번호", grade: "학년", position: "포지션", height: "키", weight: "몸무게", batsThrows: "투타", introduction: "자기소개", strengths: "나의 장점", aspiration: "목표와 포부" };
+const fieldLabels: Record<string, string> = { transferTeamId: "전학할 학교", originSchools: "출신학교", featuredVideoLabel: "선택한 영상", year: "기준 연도", number: "등번호", grade: "학년", position: "포지션", height: "키", weight: "몸무게", batsThrows: "투타", introduction: "자기소개", strengths: "나의 장점", aspiration: "목표와 포부" };
 
 function fieldValue(key: string, value: string | number | SubmittedOrigin[]) {
   if (key === "originSchools" && Array.isArray(value)) return value.map((item) => `${item.region} ${item.school} · ${item.year}년 · ${item.position}`).join(" / ");
@@ -22,6 +22,7 @@ function fieldValue(key: string, value: string | number | SubmittedOrigin[]) {
 }
 
 function submissionLabel(item: Submission) {
+  if (item.submission_type === "profile" && item.profile_data.featuredVideoRequest === "select-existing") return "기존 영상 대표 지정";
   if (item.submission_type === "profile" && item.profile_data.originSchools) return "출신학교 등록";
   return item.submission_type === "profile" && item.profile_data.transferTeamId ? "전학 요청" : typeLabels[item.submission_type];
 }
@@ -69,13 +70,13 @@ export default function PlayerSubmissionAdmin() {
   const pending = items.filter((item) => item.status === "pending");
   const history = items.filter((item) => item.status !== "pending").slice(0, 12);
   return <section className="video-review-panel player-submission-review">
-    <div className="member-admin-heading"><div><h3>선수 사진·프로필·출신학교 승인</h3><p>사진, 프로필, 출신학교와 전학 요청을 확인한 뒤 반영하세요.</p></div><button type="button" onClick={() => void load()}>새로고침</button></div>
+    <div className="member-admin-heading"><div><h3>선수 사진·프로필·대표 영상 승인</h3><p>사진, 프로필, 대표 영상, 출신학교와 전학 요청을 확인한 뒤 반영하세요.</p></div><button type="button" onClick={() => void load()}>새로고침</button></div>
     <div className="video-review-summary"><strong>{pending.length}</strong><span>확인 대기</span><small>최근 요청 최대 40건 표시</small></div>
     {notice && <p className="member-verification-notice" role="status">{notice}</p>}
     {loading ? <p className="video-review-empty">등록 요청을 불러오는 중입니다.</p> : pending.length ? <div className="video-review-list">{pending.map((item) => <article key={item.id}>
       {item.submission_type === "profile" ? <div className="player-request-profile-mark">PROFILE<br />EDIT</div> : <Image src={item.previewUrl} alt={`${item.player_name} ${typeLabels[item.submission_type]} 미리보기`} width={190} height={132} sizes="(max-width: 720px) 100vw, 190px" />}
-      <div><small>{submissionLabel(item)}{item.file_size ? ` · ${(item.file_size / 1024 / 1024).toFixed(1)}MB` : ""}</small><h4>{item.player_name} <span>{item.school_name}</span></h4><p>{item.relationship === "guardian" ? "보호자" : "선수 본인"} · {item.contact}</p><p className={item.social_consent ? "social-consent yes" : "social-consent"}>{item.social_consent ? "SNS 활용 동의" : "SNS 활용 미동의"}</p>{item.submission_type === "profile" && <dl className="player-request-data">{Object.entries(item.profile_data).map(([key, value]) => <div key={key}><dt>{fieldLabels[key] || key}</dt><dd>{fieldValue(key, value)}{key === "height" ? "cm" : key === "weight" ? "kg" : ""}</dd></div>)}</dl>}<em>{new Date(item.created_at).toLocaleString("ko-KR")}</em></div>
-      <div className="video-review-actions">{item.downloadUrl && <a href={item.downloadUrl} target="_blank" rel="noopener noreferrer">원본 받기</a>}<button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "approve")}>{busyId === item.id ? "처리 중…" : "승인·반영"}</button><button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "reject")}>반려·삭제</button></div>
+      <div><small>{submissionLabel(item)}{item.file_size ? ` · ${(item.file_size / 1024 / 1024).toFixed(1)}MB` : ""}</small><h4>{item.player_name} <span>{item.school_name}</span></h4><p>{item.relationship === "guardian" ? "보호자" : "선수 본인"} · {item.contact}</p><p className={item.social_consent ? "social-consent yes" : "social-consent"}>{item.social_consent ? "SNS 활용 동의" : "SNS 활용 미동의"}</p>{item.submission_type === "profile" && <dl className="player-request-data">{Object.entries(item.profile_data).filter(([key]) => !["featuredVideoRequest", "featuredVideoKey"].includes(key)).map(([key, value]) => <div key={key}><dt>{fieldLabels[key] || key}</dt><dd>{fieldValue(key, value)}{key === "height" ? "cm" : key === "weight" ? "kg" : ""}</dd></div>)}</dl>}<em>{new Date(item.created_at).toLocaleString("ko-KR")}</em></div>
+      <div className="video-review-actions">{item.featuredPreviewUrl && <a href={item.featuredPreviewUrl} target="_blank" rel="noopener noreferrer">선택 영상 보기</a>}{item.downloadUrl && <a href={item.downloadUrl} target="_blank" rel="noopener noreferrer">원본 받기</a>}<button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "approve")}>{busyId === item.id ? "처리 중…" : "승인·반영"}</button><button type="button" disabled={Boolean(busyId)} onClick={() => void review(item, "reject")}>반려·삭제</button></div>
     </article>)}</div> : <p className="video-review-empty">현재 확인할 사진·프로필 요청이 없습니다.</p>}
     {history.length > 0 && <details className="video-review-history"><summary>최근 처리 내역 {history.length}건</summary>{history.map((item) => <div key={item.id}><span className={item.status}>{item.status === "approved" ? "승인" : "반려"}</span><strong>{item.school_name} · {item.player_name}</strong><small>{submissionLabel(item)} · {new Date(item.created_at).toLocaleDateString("ko-KR")}</small>{item.status === "approved" && <button type="button" onClick={() => void copyProfile(item)}>프로필 링크 복사</button>}{item.review_reason && <em>{item.review_reason}</em>}</div>)}</details>}
   </section>;

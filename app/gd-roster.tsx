@@ -102,6 +102,7 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     const playerId = params.get("player");
     return players.find((player) => player.id === playerId) ?? null;
   });
+  const [featuredSelection, setFeaturedSelection] = useState<{ playerId: string; key: string | null } | null>(null);
   const [media, setMedia] = useState<MediaItem[]>(entry?.media ?? []);
   const [loading, setLoading] = useState(!entry);
   const [profileLoadComplete, setProfileLoadComplete] = useState(Boolean(entry));
@@ -1022,8 +1023,20 @@ export function TeamRoster({ sectionId, kicker, title, subtitle, teamLabel, mono
     })));
     return () => cancelAnimationFrame(frame);
   }, [profileLoadComplete, profileLoadFailed, selected?.id, displayPlayers, rosterChanges, sectionId]);
+  useEffect(() => {
+    const playerId = selected?.id;
+    if (!playerId) return;
+    let cancelled = false;
+    void fetch(`/api/player-featured-video?teamId=${encodeURIComponent(sectionId)}&playerId=${encodeURIComponent(playerId)}`, { cache: "no-store" })
+      .then(async (response) => response.ok ? await response.json() as { key: string | null } : { key: null })
+      .then((data) => { if (!cancelled) setFeaturedSelection({ playerId, key: data.key }); })
+      .catch(() => { if (!cancelled) setFeaturedSelection({ playerId, key: null }); });
+    return () => { cancelled = true; };
+  }, [sectionId, selected?.id]);
+  const selectedVideoKey = featuredSelection?.playerId === selected?.id ? featuredSelection?.key : null;
   const featuredVideo = selected
-    ? newestMediaFirst(selectedMedia.filter((item) => item.type === "video"))[0]
+    ? selectedMedia.find((item) => item.type === "video" && item.key === selectedVideoKey)
+      || newestMediaFirst(selectedMedia.filter((item) => item.type === "video"))[0]
     : undefined;
   const selectedTagline = selectedDetails?.introduction?.trim()
     || `${selectedDisplay?.position ?? "야구선수"}로서 매 순간 성장하고 있습니다.`;
