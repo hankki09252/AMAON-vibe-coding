@@ -53,7 +53,7 @@ export default function VideoSubmissionAdmin() {
   const pending = items.filter((item) => item.status === "pending");
   const history = items.filter((item) => item.status !== "pending").slice(0, 12);
   return <section className="video-review-panel">
-    <div className="member-admin-heading"><div><h3>선수 영상 승인</h3><p>승인 전 영상은 비공개입니다. 재생해 확인한 뒤 공개하거나 삭제하세요.</p></div><button type="button" onClick={() => void load()}>새로고침</button></div>
+    <div className="member-admin-heading"><div><h3>선수 영상 승인</h3><p>승인된 영상 중 가장 최근 영상이 대표 경기 영상으로 표시됩니다. 재생해 확인한 뒤 공개하거나 삭제하세요.</p></div><button type="button" onClick={() => void load()}>새로고침</button></div>
     <div className="video-review-summary"><strong>{pending.length}</strong><span>확인 대기</span><small>최근 요청 최대 40건 표시</small></div>
     {notice && <p className="member-verification-notice" role="status">{notice}</p>}
     {loading ? <p className="video-review-empty">등록 요청을 불러오는 중입니다.</p> : pending.length ? <div className="video-review-list">{pending.map((item) => <article key={item.id}>

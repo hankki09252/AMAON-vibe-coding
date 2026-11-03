@@ -3,29 +3,34 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import { managedTeamOptions } from "./team-directory";
+import originStyles from "./origin-request.module.css";
 
 type PlayerOption = { sectionId: string; school: string; player: { id: string; name: string; number: string; position: string; grade: string; year?: number; height?: number; weight?: number; batsThrows?: string } };
-type SubmissionMode = "video" | "profile_photo" | "photo" | "profile" | "transfer";
+type SubmissionMode = "video" | "featured_video" | "profile_photo" | "photo" | "profile" | "origin" | "transfer";
 type UploadTicket = { submissionId: string; storageKey: string; token: string; uploadEndpoint: string };
 type UploadTicketResponse = UploadTicket & { tickets?: UploadTicket[]; error?: string };
 type ProfileForm = { year: string; number: string; grade: string; position: string; height: string; weight: string; batsThrows: string; introduction: string; strengths: string; aspiration: string; transferTeamId: string };
+type OriginForm = { region: string; school: string; year: string; position: string };
 
 const categoryLabels = { batting: "타격", fielding: "수비", pitching: "투구" } as const;
 const modeLabels: Record<SubmissionMode, { title: string; description: string; icon: string }> = {
   video: { title: "선수 영상", description: "투구·타격·수비 영상", icon: "▶" },
+  featured_video: { title: "대표 경기 영상 변경", description: "새 영상으로 대표 영상 교체", icon: "★" },
   profile_photo: { title: "대표 프로필 사진", description: "선수 카드의 메인 사진", icon: "◎" },
   photo: { title: "경기·훈련 사진", description: "프로필 사진 앨범", icon: "▧" },
   profile: { title: "프로필 내용 수정", description: "소개·장점·목표·신체 정보", icon: "✎" },
+  origin: { title: "출신학교 등록", description: "이전 학교·팀 이력 추가", icon: "▦" },
   transfer: { title: "전학 요청", description: "옮긴 학교만 간단히 선택", icon: "⇄" },
 };
 const maxVideoBytes = 150 * 1024 * 1024;
 const maxImageBytes = 12 * 1024 * 1024;
 const maxGalleryPhotos = 10;
 const emptyProfile: ProfileForm = { year: "", number: "", grade: "", position: "", height: "", weight: "", batsThrows: "", introduction: "", strengths: "", aspiration: "", transferTeamId: "" };
+const emptyOrigin = (position = ""): OriginForm => ({ region: "", school: "", year: "", position });
 
 function fileContentType(file: File, mode: SubmissionMode) {
   if (file.type) return file.type.toLowerCase();
-  if (mode !== "video") return /\.png$/i.test(file.name) ? "image/png" : /\.webp$/i.test(file.name) ? "image/webp" : "image/jpeg";
+  if (mode !== "video" && mode !== "featured_video") return /\.png$/i.test(file.name) ? "image/png" : /\.webp$/i.test(file.name) ? "image/webp" : "image/jpeg";
   if (/\.mov$/i.test(file.name)) return "video/quicktime";
   if (/\.webm$/i.test(file.name)) return "video/webm";
   if (/\.m4v$/i.test(file.name)) return "video/x-m4v";
@@ -58,6 +63,7 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [duration, setDuration] = useState(0);
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfile);
+  const [originForm, setOriginForm] = useState<OriginForm[]>([emptyOrigin()]);
   const [consent, setConsent] = useState(false);
   const [socialConsent, setSocialConsent] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
@@ -73,12 +79,14 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
     return players.filter(({ school, player }) => `${school}${player.name}${player.number}`.replace(/\s+/g, "").toLowerCase().includes(keyword)).slice(0, 8);
   }, [players, query]);
   const uploading = submitting;
-  const needsFile = mode !== "profile" && mode !== "transfer";
+  const needsFile = mode !== "profile" && mode !== "origin" && mode !== "transfer";
   const validContent = mode === "transfer"
     ? Boolean(profileForm.transferTeamId)
+    : mode === "origin"
+    ? originForm.length > 0 && originForm.length <= 10 && originForm.every((item) => item.region.trim() && item.school.trim() && /^\d{4}$/.test(item.year) && Number(item.year) >= 1950 && Number(item.year) <= 2100 && item.position.trim())
     : mode === "profile"
     ? Object.values(profileForm).some((value) => value.trim())
-    : mode === "photo" ? photoFiles.length > 0 : Boolean(file && (mode !== "video" || duration));
+    : mode === "photo" ? photoFiles.length > 0 : Boolean(file && ((mode !== "video" && mode !== "featured_video") || duration));
 
   useEffect(() => {
     if (!open) return;
@@ -98,6 +106,7 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
 
   function choosePlayer(item: PlayerOption) {
     setSelected(item); setQuery(`${item.school} ${item.player.name}`); setProfileForm(initialProfile(item.player));
+    setOriginForm([emptyOrigin(item.player.position)]);
   }
 
   async function chooseFile(event: ChangeEvent<HTMLInputElement>) {
@@ -113,7 +122,7 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
       return;
     }
     const contentType = fileContentType(chosen, mode);
-    if (mode === "video") {
+    if (mode === "video" || mode === "featured_video") {
       if (chosen.size > maxVideoBytes) return setNotice("영상 용량이 150MB를 넘습니다. 휴대폰에서 앞뒤를 조금 잘라 다시 선택해 주세요.");
       if (!/^(video\/(mp4|quicktime|webm|x-m4v))$/.test(contentType)) return setNotice("MP4, MOV, WEBM 영상만 등록할 수 있습니다.");
       try { const seconds = await readDuration(chosen); if (seconds > 90.5) return setNotice("영상은 90초 이내로 잘라서 등록해 주세요."); setFile(chosen); setDuration(seconds); }
@@ -151,12 +160,12 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
     if (!selected || !validContent || !contact.trim() || !consent || uploading) return setNotice("선수, 등록 내용, 연락처와 필수 동의를 모두 확인해 주세요.");
     setNotice(""); setSuccessId(""); setProgress(needsFile ? 0 : null); setSubmitting(true); setSubmitStage("creating");
     try {
-      const isVideo = mode === "video";
+      const isVideo = mode === "video" || mode === "featured_video";
       const endpoint = isVideo ? "/api/video-submissions" : "/api/player-submissions";
       const contentType = file ? fileContentType(file, mode) : "application/json";
       const requestBody = isVideo
         ? { teamId: selected.sectionId, playerId: selected.player.id, category, relationship, contact: contact.trim(), consent, socialConsent, fileName: file!.name, fileSize: file!.size, durationSeconds: duration, contentType }
-        : { teamId: selected.sectionId, playerId: selected.player.id, submissionType: mode === "transfer" ? "profile" : mode, relationship, contact: contact.trim(), consent, socialConsent, profileData: mode === "transfer" ? { transferTeamId: profileForm.transferTeamId } : { ...profileForm, transferTeamId: "" }, fileName: file?.name, fileSize: file?.size, contentType, files: mode === "photo" ? photoFiles.map((item) => ({ fileName: item.name, fileSize: item.size, contentType: fileContentType(item, mode) })) : undefined };
+        : { teamId: selected.sectionId, playerId: selected.player.id, submissionType: mode === "transfer" || mode === "origin" ? "profile" : mode, relationship, contact: contact.trim(), consent, socialConsent, profileData: mode === "transfer" ? { transferTeamId: profileForm.transferTeamId } : mode === "origin" ? { originSchools: originForm.map((item) => ({ ...item, year: Number(item.year) })) } : { ...profileForm, transferTeamId: "" }, fileName: file?.name, fileSize: file?.size, contentType, files: mode === "photo" ? photoFiles.map((item) => ({ fileName: item.name, fileSize: item.size, contentType: fileContentType(item, mode) })) : undefined };
       const ticketResponse = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(requestBody) });
       const ticket = await ticketResponse.json().catch(() => ({})) as UploadTicketResponse;
       if (!ticketResponse.ok) throw new Error(ticket.error || "등록 요청을 시작하지 못했습니다.");
@@ -187,7 +196,7 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
   function resetAndClose() {
     if (uploading) return;
     onClose();
-    window.setTimeout(() => { setMode("video"); setQuery(""); setSelected(null); setFile(null); setPhotoFiles([]); setDuration(0); setProfileForm(emptyProfile); setContact(""); setConsent(false); setSocialConsent(false); setNotice(""); setProgress(null); setSuccessId(""); }, 250);
+    window.setTimeout(() => { setMode("video"); setQuery(""); setSelected(null); setFile(null); setPhotoFiles([]); setDuration(0); setProfileForm(emptyProfile); setOriginForm([emptyOrigin()]); setContact(""); setConsent(false); setSocialConsent(false); setNotice(""); setProgress(null); setSuccessId(""); }, 250);
   }
 
   if (!open) return null;
@@ -196,8 +205,8 @@ export default function VideoSubmission({ open, players, onClose }: { open: bool
     <header><div><small>AMAON PROFILE REQUEST</small><h2 id="video-submit-title">선수 프로필 등록·수정</h2><p>필요한 항목 하나만 간단히 보내주세요. 운영팀 확인 후 공개됩니다.</p></div><button type="button" onClick={resetAndClose} disabled={uploading} aria-label="닫기">×</button></header>
     {successId ? <div className="video-submit-success"><span>✓</span><h3>{activeLabel} 접수가 완료되었습니다</h3><p>운영팀이 확인한 뒤 선수 프로필에 반영합니다.</p><small>접수번호 {successId}</small><button type="button" onClick={resetAndClose}>확인</button></div> : <form onSubmit={submit}>
       <section className="video-submit-step"><b>01</b><div><h3>무엇을 등록할까요?</h3><p>한 번에 필요한 항목 하나만 선택하세요.</p><div className="player-submit-modes">{(Object.keys(modeLabels) as SubmissionMode[]).map((value) => <button type="button" className={mode === value ? "active" : ""} key={value} onClick={() => chooseMode(value)}><span>{modeLabels[value].icon}</span><strong>{modeLabels[value].title}</strong><small>{modeLabels[value].description}</small></button>)}</div></div></section>
-      <section className="video-submit-step"><b>02</b><div><h3>선수 찾기</h3><p>학교명 또는 선수 이름을 입력하세요.</p><input value={query} onChange={(event) => { setQuery(event.target.value); setSelected(null); }} placeholder="학교명 또는 선수명 입력" aria-label="등록할 선수 검색" />{selected ? <button className="video-submit-selected" type="button" onClick={() => { setSelected(null); setQuery(""); setProfileForm(emptyProfile); }}><strong>{selected.player.number} {selected.player.name}</strong><span>{selected.school} · {selected.player.position} · {selected.player.grade}</span><em>다시 선택</em></button> : results.length > 0 && <div className="video-submit-results">{results.map((item) => <button type="button" key={`${item.sectionId}-${item.player.id}`} onClick={() => choosePlayer(item)}><strong>{item.player.name}</strong><span>{item.school} · {item.player.position} · {item.player.grade}</span><em>{item.player.number}</em></button>)}</div>}</div></section>
-      <section className="video-submit-step"><b>03</b><div><h3>{activeLabel}</h3>{mode === "video" && <><p>90초 이내 · 최대 150MB · MP4/MOV/WEBM</p><div className="video-submit-category">{Object.entries(categoryLabels).map(([value, label]) => <button type="button" className={category === value ? "active" : ""} key={value} onClick={() => setCategory(value as keyof typeof categoryLabels)}>{label}</button>)}</div></>}{(mode === "profile_photo" || mode === "photo") && <p>JPG·PNG·WEBP · 사진당 최대 12MB {mode === "profile_photo" ? "· 새 사진이 대표사진으로 표시됩니다." : "· 한 번에 최대 10장까지 선택할 수 있습니다."}</p>}{needsFile && <><input ref={fileInput} hidden type="file" multiple={mode === "photo"} accept={mode === "video" ? "video/mp4,video/quicktime,video/webm,.m4v" : "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"} onChange={chooseFile} /><button className={`video-submit-file${file || photoFiles.length ? " ready" : ""}`} type="button" onClick={() => fileInput.current?.click()}><span>{file || photoFiles.length ? "✓" : "+"}</span><strong>{mode === "photo" && photoFiles.length ? `${photoFiles.length}장 선택됨` : file ? file.name : mode === "video" ? "휴대폰에서 영상 선택" : mode === "photo" ? "휴대폰에서 사진 여러 장 선택" : "휴대폰에서 사진 선택"}</strong>{mode === "photo" && photoFiles.length ? <small>총 {(photoFiles.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024).toFixed(1)}MB · 다시 눌러 변경</small> : file && <small>{(file.size / 1024 / 1024).toFixed(1)}MB{mode === "video" ? ` · ${Math.ceil(duration)}초` : ""}</small>}</button></>}{mode === "profile" && <ProfileFields value={profileForm} onChange={setProfileForm} />}{mode === "transfer" && <TransferFields value={profileForm.transferTeamId} currentTeamId={selected?.sectionId || ""} onChange={(transferTeamId) => setProfileForm((current) => ({ ...current, transferTeamId }))} />}</div></section>
+      <section className="video-submit-step"><b>02</b><div><h3>선수 찾기</h3><p>학교명 또는 선수 이름을 입력하세요.</p><input value={query} onChange={(event) => { setQuery(event.target.value); setSelected(null); }} placeholder="학교명 또는 선수명 입력" aria-label="등록할 선수 검색" />{selected ? <button className="video-submit-selected" type="button" onClick={() => { setSelected(null); setQuery(""); setProfileForm(emptyProfile); setOriginForm([emptyOrigin()]); }}><strong>{selected.player.number} {selected.player.name}</strong><span>{selected.school} · {selected.player.position} · {selected.player.grade}</span><em>다시 선택</em></button> : results.length > 0 && <div className="video-submit-results">{results.map((item) => <button type="button" key={`${item.sectionId}-${item.player.id}`} onClick={() => choosePlayer(item)}><strong>{item.player.name}</strong><span>{item.school} · {item.player.position} · {item.player.grade}</span><em>{item.player.number}</em></button>)}</div>}</div></section>
+      <section className="video-submit-step"><b>03</b><div><h3>{activeLabel}</h3>{mode === "featured_video" && <p>새 경기 영상을 올려 주세요. 운영팀 승인 후 가장 최근 영상이 대표 경기 영상으로 표시됩니다. 기존 영상은 앨범에 남습니다.</p>}{(mode === "video" || mode === "featured_video") && <><p>90초 이내 · 최대 150MB · MP4/MOV/WEBM</p><div className="video-submit-category">{Object.entries(categoryLabels).map(([value, label]) => <button type="button" className={category === value ? "active" : ""} key={value} onClick={() => setCategory(value as keyof typeof categoryLabels)}>{label}</button>)}</div></>}{(mode === "profile_photo" || mode === "photo") && <p>JPG·PNG·WEBP · 사진당 최대 12MB {mode === "profile_photo" ? "· 새 사진이 대표사진으로 표시됩니다." : "· 한 번에 최대 10장까지 선택할 수 있습니다."}</p>}{needsFile && <><input ref={fileInput} hidden type="file" multiple={mode === "photo"} accept={mode === "video" || mode === "featured_video" ? "video/mp4,video/quicktime,video/webm,.m4v" : "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"} onChange={chooseFile} /><button className={`video-submit-file${file || photoFiles.length ? " ready" : ""}`} type="button" onClick={() => fileInput.current?.click()}><span>{file || photoFiles.length ? "✓" : "+"}</span><strong>{mode === "photo" && photoFiles.length ? `${photoFiles.length}장 선택됨` : file ? file.name : mode === "video" || mode === "featured_video" ? "휴대폰에서 영상 선택" : mode === "photo" ? "휴대폰에서 사진 여러 장 선택" : "휴대폰에서 사진 선택"}</strong>{mode === "photo" && photoFiles.length ? <small>총 {(photoFiles.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024).toFixed(1)}MB · 다시 눌러 변경</small> : file && <small>{(file.size / 1024 / 1024).toFixed(1)}MB{mode === "video" || mode === "featured_video" ? ` · ${Math.ceil(duration)}초` : ""}</small>}</button></>}{mode === "profile" && <ProfileFields value={profileForm} onChange={setProfileForm} />}{mode === "origin" && <div className="player-profile-request-fields"><p>초·중학교나 이전 팀을 적어 주세요. 운영팀 확인 후 출신학교 이력에 추가됩니다.</p>{originForm.map((item, index) => <div className={originStyles.row} key={index}><strong>{index + 1}번째 출신학교</strong><div className={originStyles.fields}><label>지역<input value={item.region} maxLength={30} placeholder="예: 서울" onChange={(event) => setOriginForm((current) => current.map((row, i) => i === index ? { ...row, region: event.target.value } : row))} /></label><label>학교·팀 이름<input value={item.school} maxLength={60} placeholder="예: ○○중학교" onChange={(event) => setOriginForm((current) => current.map((row, i) => i === index ? { ...row, school: event.target.value } : row))} /></label><label>활동 연도<input type="number" min="1950" max="2100" value={item.year} placeholder="예: 2025" onChange={(event) => setOriginForm((current) => current.map((row, i) => i === index ? { ...row, year: event.target.value } : row))} /></label><label>당시 포지션<input value={item.position} maxLength={20} placeholder="예: 외야수" onChange={(event) => setOriginForm((current) => current.map((row, i) => i === index ? { ...row, position: event.target.value } : row))} /></label></div>{originForm.length > 1 && <button className={originStyles.remove} type="button" onClick={() => setOriginForm((current) => current.filter((_, i) => i !== index))}>이 학교 삭제</button>}</div>)}{originForm.length < 10 && <button className={originStyles.add} type="button" onClick={() => setOriginForm((current) => [...current, emptyOrigin(selected?.player.position)])}>+ 출신학교 추가</button>}</div>}{mode === "transfer" && <TransferFields value={profileForm.transferTeamId} currentTeamId={selected?.sectionId || ""} onChange={(transferTeamId) => setProfileForm((current) => ({ ...current, transferTeamId }))} />}</div></section>
       <section className="video-submit-step"><b>04</b><div><h3>연락처와 동의</h3><p>확인 결과를 안내받을 연락처를 남겨주세요.</p><div className="video-submit-relationship"><button type="button" className={relationship === "guardian" ? "active" : ""} onClick={() => setRelationship("guardian")}>보호자</button><button type="button" className={relationship === "player" ? "active" : ""} onClick={() => setRelationship("player")}>선수 본인</button></div><input value={contact} onChange={(event) => setContact(event.target.value)} maxLength={80} placeholder="휴대폰 번호 또는 카카오톡 ID" aria-label="연락처" /><label className="video-submit-consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span>필수 · 본인은 선수 또는 보호자이며, 제출 내용의 아마ON 공개와 운영팀 확인·편집에 동의합니다.</span></label><label className="video-submit-consent optional"><input type="checkbox" checked={socialConsent} onChange={(event) => setSocialConsent(event.target.checked)} /><span>선택 · 한끼방패 공식 인스타그램 등 SNS에서 제출 자료를 편집·게시하는 데 동의합니다.</span></label></div></section>
       {notice && <p className="video-submit-notice" role="alert">{notice}</p>}
       <div className="video-submit-final">

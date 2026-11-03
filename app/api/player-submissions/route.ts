@@ -6,6 +6,7 @@ import { createSupabaseAdminClient } from "../../supabase/admin";
 import { managedTeamLabel } from "../../team-directory";
 import { sendTelegramSubmissionNotification } from "../../telegram-notification";
 import { ensureProfileRosterPlayer, resolveSubmissionPlayer } from "../../submission-player";
+import { newOriginRows, parseSubmittedOrigins } from "../../submission-origins";
 
 const bucket = "media";
 const maxImageBytes = 12 * 1024 * 1024;
@@ -138,10 +139,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "전학할 학교를 다시 선택해 주세요." }, { status: 400 });
     }
     const data = profilePayload(body.profileData);
-    if (!Object.keys(data).length) return Response.json({ error: "수정할 프로필 내용을 하나 이상 입력해 주세요." }, { status: 400 });
-    const { error } = await db.from("player_profile_submissions").insert({ ...base, profile_data: data, status: "pending", content_type: "application/json", file_size: 0 });
+    const originInput = body.profileData && typeof body.profileData === "object" && !Array.isArray(body.profileData)
+      ? (body.profileData as Record<string, unknown>).originSchools : undefined;
+    const origins = originInput === undefined ? null : parseSubmittedOrigins(originInput);
+    if (originInput !== undefined && (!origins || Object.keys(data).length)) return Response.json({ error: "출신학교 정보를 다시 확인해 주세요." }, { status: 400 });
+    if (!Object.keys(data).length && !origins) return Response.json({ error: "수정할 프로필 내용을 하나 이상 입력해 주세요." }, { status: 400 });
+    const { error } = await db.from("player_profile_submissions").insert({ ...base, profile_data: origins ? { originSchools: origins } : data, status: "pending", content_type: "application/json", file_size: 0 });
     if (error) return Response.json({ error: "프로필 수정 요청을 저장하지 못했습니다." }, { status: 500 });
-    const requestType = data.transferTeamId ? "전학 요청" : "선수 프로필 수정";
+    const requestType = origins ? "출신학교 등록" : data.transferTeamId ? "전학 요청" : "선수 프로필 수정";
     after(() => sendTelegramSubmissionNotification({ requestType }));
     const response = Response.json({ ok: true, submissionId: id }, { status: 201 });
     response.headers.append("Set-Cookie", `${visitorCookie}=${requester.visitorId}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`);
@@ -230,6 +235,31 @@ export async function PATCH(request: Request) {
     const { error } = await db.from("player_profile_submissions").update({ status: "rejected", review_reason: reason, reviewed_at: new Date().toISOString(), reviewed_by: user.email }).eq("id", id).eq("status", "pending");
     if (error) return Response.json({ error: "반려 처리를 저장하지 못했습니다." }, { status: 500 });
     return Response.json({ ok: true });
+  }
+
+  if (row.submission_type === "profile" && row.profile_data.originSchools !== undefined) {
+    const origins = parseSubmittedOrigins(row.profile_data.originSchools);
+    if (!origins) return Response.json({ error: "출신학교 요청 내용이 올바르지 않습니다." }, { status: 400 });
+    try {
+      if (!await resolveSubmissionPlayer(db, row.team_id, row.player_id)) return Response.json({ error: "선수 소속 또는 공개 상태가 변경되어 승인할 수 없습니다." }, { status: 409 });
+    } catch {
+      return Response.json({ error: "선수 정보를 확인하지 못했습니다." }, { status: 500 });
+    }
+    const { data: existing, error: readError } = await db.from("player_origin_schools")
+      .select("sequence,region,school,year,position").eq("team_id", row.team_id).eq("player_id", row.player_id);
+    if (readError) return Response.json({ error: "기존 출신학교를 확인하지 못했습니다." }, { status: 500 });
+    const additions = newOriginRows(existing || [], origins);
+    if (!additions) return Response.json({ error: "출신학교는 최대 10곳까지 등록할 수 있습니다. 기존 이력을 확인해 주세요." }, { status: 409 });
+    if (additions.length) {
+      const { error: insertError } = await db.from("player_origin_schools").insert(additions.map((item) => ({
+        ...item, team_id: row.team_id, player_id: row.player_id, updated_by: user.email || "",
+      })));
+      if (insertError) return Response.json({ error: "출신학교를 반영하지 못했습니다." }, { status: 500 });
+    }
+    const { error: updateError } = await db.from("player_profile_submissions")
+      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.email }).eq("id", id).eq("status", "pending");
+    if (updateError) return Response.json({ error: "승인 상태를 저장하지 못했습니다." }, { status: 500 });
+    return Response.json({ ok: true, profileUrl: `/?team=${encodeURIComponent(row.team_id)}&player=${encodeURIComponent(row.player_id)}#${encodeURIComponent(row.team_id)}` });
   }
 
   if (row.submission_type === "profile") {

@@ -3,23 +3,26 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { managedTeamLabel } from "./team-directory";
+import type { SubmittedOrigin } from "./submission-origins";
 
 type Submission = {
   id: string; team_id: string; player_id: string; player_name: string; school_name: string;
   submission_type: "profile" | "profile_photo" | "photo"; relationship: "player" | "guardian";
-  contact: string; social_consent: boolean; profile_data: Record<string, string | number>; original_name: string;
+  contact: string; social_consent: boolean; profile_data: Record<string, string | number | SubmittedOrigin[]>; original_name: string;
   file_size: number; status: "pending" | "approved" | "rejected"; review_reason: string; created_at: string;
   previewUrl: string; downloadUrl: string;
 };
 
 const typeLabels = { profile: "프로필 수정", profile_photo: "대표 프로필 사진", photo: "경기·훈련 사진" } as const;
-const fieldLabels: Record<string, string> = { transferTeamId: "전학할 학교", year: "기준 연도", number: "등번호", grade: "학년", position: "포지션", height: "키", weight: "몸무게", batsThrows: "투타", introduction: "자기소개", strengths: "나의 장점", aspiration: "목표와 포부" };
+const fieldLabels: Record<string, string> = { transferTeamId: "전학할 학교", originSchools: "출신학교", year: "기준 연도", number: "등번호", grade: "학년", position: "포지션", height: "키", weight: "몸무게", batsThrows: "투타", introduction: "자기소개", strengths: "나의 장점", aspiration: "목표와 포부" };
 
-function fieldValue(key: string, value: string | number) {
+function fieldValue(key: string, value: string | number | SubmittedOrigin[]) {
+  if (key === "originSchools" && Array.isArray(value)) return value.map((item) => `${item.region} ${item.school} · ${item.year}년 · ${item.position}`).join(" / ");
   return key === "transferTeamId" ? managedTeamLabel[String(value)] || String(value) : String(value);
 }
 
 function submissionLabel(item: Submission) {
+  if (item.submission_type === "profile" && item.profile_data.originSchools) return "출신학교 등록";
   return item.submission_type === "profile" && item.profile_data.transferTeamId ? "전학 요청" : typeLabels[item.submission_type];
 }
 
@@ -66,7 +69,7 @@ export default function PlayerSubmissionAdmin() {
   const pending = items.filter((item) => item.status === "pending");
   const history = items.filter((item) => item.status !== "pending").slice(0, 12);
   return <section className="video-review-panel player-submission-review">
-    <div className="member-admin-heading"><div><h3>선수 사진·프로필·전학 승인</h3><p>대표사진, 앨범사진, 프로필 수정과 전학 요청을 확인한 뒤 반영하세요.</p></div><button type="button" onClick={() => void load()}>새로고침</button></div>
+    <div className="member-admin-heading"><div><h3>선수 사진·프로필·출신학교 승인</h3><p>사진, 프로필, 출신학교와 전학 요청을 확인한 뒤 반영하세요.</p></div><button type="button" onClick={() => void load()}>새로고침</button></div>
     <div className="video-review-summary"><strong>{pending.length}</strong><span>확인 대기</span><small>최근 요청 최대 40건 표시</small></div>
     {notice && <p className="member-verification-notice" role="status">{notice}</p>}
     {loading ? <p className="video-review-empty">등록 요청을 불러오는 중입니다.</p> : pending.length ? <div className="video-review-list">{pending.map((item) => <article key={item.id}>

@@ -1,0 +1,8 @@
+.row{display:grid;gap:11px;padding:15px;border:1px solid #444;background:#111}
+.row>strong{color:#ff8a3e;font-size:12px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.remove,.add{min-height:42px;padding:10px 14px;border:1px solid #666;background:#171717;color:#fff;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.remove{justify-self:end}
+.add{border-color:#ff6500;color:#ff8a3e}
+.remove:hover,.remove:focus-visible,.add:hover,.add:focus-visible{border-color:#ff8a3e;outline:2px solid #ff8a3e;outline-offset:2px}
+@media(max-width:520px){.fields{grid-template-columns:1fr}}
