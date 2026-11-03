@@ -4,6 +4,7 @@
 
 import Image from "next/image";
 import homeStyles from "./home-redesign.module.css";
+import supportStyles from "./support-banner.module.css";
 import { DEFAULT_INTRO_VIDEO_URL, parseIntroVideoUrl } from "./intro-video";
 import { homePartnerAds } from "./home-partner-ads";
 import Link from "next/link";
@@ -681,6 +682,19 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         </div>
       </header>
 
+      {!initialProfile && !pendingProfile && <details className={supportStyles.banner}>
+        <summary>
+          <span className={supportStyles.label}>SUPPORT AMAON</span>
+          <strong>아마ON의 선수 이야기가 이어지도록 응원해 주세요.</strong>
+          <span className={supportStyles.action}>후원 계좌 보기 <span aria-hidden="true">⌄</span></span>
+        </summary>
+        <div className={supportStyles.details}>
+          <div className={supportStyles.account}><span>NH농협은행</span><strong>302-2177-2877-01</strong><span>예금주: 한끼방패 브랜드랩</span></div>
+          <button type="button" onClick={() => void copySupportAccount()} aria-live="polite">{supportCopyNotice || "계좌번호 복사"}</button>
+          <p>후원은 자유이며 서비스 이용이나 선수 등록 여부와 무관합니다. <a href="#support">후원 안내 자세히 보기 →</a></p>
+        </div>
+      </details>}
+
       <div className={`mobile-drawer-backdrop${mobileMenuOpen ? " open" : ""}`} onMouseDown={() => setMobileMenuOpen(false)}>
         <aside id="mobile-site-menu" className="mobile-drawer" aria-label="모바일 전체 메뉴" onMouseDown={(event) => event.stopPropagation()}>
           <div className="mobile-drawer-head">
@@ -1143,7 +1157,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         <button onClick={() => jumpToSection("community")}>커뮤니티 바로가기 <span>↗</span></button>
       </section>
 
-      <section className="support-section" aria-labelledby="support-title">
+      <section className="support-section" id="support" aria-labelledby="support-title">
         <div className="support-message">
           <small>SUPPORT AMAON · BUY US A COFFEE</small>
           <h2 id="support-title">아마ON이 도움이 되셨다면,<br /><em>커피 한 잔으로 응원해 주세요.</em></h2>

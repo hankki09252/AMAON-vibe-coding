@@ -1,0 +1,55 @@
+.banner {
+  position: relative;
+  z-index: 3;
+  border-bottom: 1px solid #653517;
+  background: linear-gradient(100deg, #23150e, #101010 58%, #1b110c);
+  color: #fff;
+}
+
+.banner summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 9px 20px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.banner summary::-webkit-details-marker { display: none; }
+.banner summary:hover, .banner summary:focus-visible { background: rgba(255, 105, 0, .1); outline: 2px solid #ff6900; outline-offset: -2px; }
+.label { color: #ff8a3e; font-size: 10px; font-weight: 900; letter-spacing: 1.4px; white-space: nowrap; }
+.banner summary strong { font-size: 13px; line-height: 1.45; word-break: keep-all; }
+.action { color: #ff8a3e; font-size: 12px; font-weight: 900; white-space: nowrap; }
+.action span { display: inline-block; margin-left: 4px; transition: transform .2s ease; }
+.banner[open] .action span { transform: rotate(180deg); }
+
+.details {
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 20px;
+  margin: 0 auto;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #45301f;
+}
+
+.account { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.account span { color: #d6d0c9; font-size: 11px; }
+.account strong { color: #fff; font-size: 17px; letter-spacing: .3px; }
+.details button { min-height: 38px; padding: 8px 14px; border: 1px solid #ff6900; background: #ff6900; color: #080808; font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; white-space: nowrap; }
+.details button:hover, .details button:focus-visible { background: #fff; outline: 2px solid #ff6900; outline-offset: 2px; }
+.details p { grid-column: 1 / -1; margin: 0; color: #aaa; font-size: 11px; line-height: 1.5; }
+.details a { margin-left: 8px; color: #ff8a3e; font-weight: 800; text-decoration: none; }
+.details a:hover, .details a:focus-visible { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .banner summary { min-height: 58px; display: grid; grid-template-columns: minmax(0, 1fr) auto; justify-content: stretch; gap: 2px 12px; padding: 8px 16px; }
+  .label { grid-column: 1; font-size: 8px; }
+  .banner summary strong { grid-column: 1; font-size: 12px; }
+  .action { grid-column: 2; grid-row: 1 / 3; font-size: 11px; }
+  .details { grid-template-columns: 1fr; padding: 14px 16px 17px; }
+  .details button { width: 100%; }
+}
