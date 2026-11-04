@@ -5,6 +5,7 @@
 import Image from "next/image";
 import homeStyles from "./home-redesign.module.css";
 import supportStyles from "./support-banner.module.css";
+import sweetPotatoStyles from "./sweet-potato-banner.module.css";
 import { DEFAULT_INTRO_VIDEO_URL, parseIntroVideoUrl } from "./intro-video";
 import { homePartnerAds } from "./home-partner-ads";
 import Link from "next/link";
@@ -812,6 +813,32 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           </div>
         </div>
       </section>
+
+      {!pendingProfile && <aside className={sweetPotatoStyles.banner} aria-label="아마ON 고구마 상품 안내">
+        <a
+          className={sweetPotatoStyles.link}
+          href="https://slit.to/@hankki09252/objet/o20261031bd2cc4da6e7a16f6"
+          target="_blank"
+          rel="sponsored noopener noreferrer"
+          aria-label="아마ON 바로 먹는 고구마 상품 페이지 보기 (새 창)"
+        >
+          <Image
+            className={sweetPotatoStyles.image}
+            src="/amaon-sweet-potato-banner.png"
+            alt="아마ON 바로 먹는 고구마 상품 안내 이미지"
+            width={112}
+            height={112}
+            loading="lazy"
+            sizes="(max-width: 640px) 84px, 112px"
+          />
+          <span className={sweetPotatoStyles.copy}>
+            <small>광고 · 아마ON 추천 상품</small>
+            <strong>바로 먹는 고구마</strong>
+            <span>운동 전후 간편하게 챙기는 고구마</span>
+          </span>
+          <span className={sweetPotatoStyles.action} aria-hidden="true">상품 보러 가기 ↗</span>
+        </a>
+      </aside>}
 
       {!pendingProfile && <aside className={homeStyles.collaboration} aria-label="아마ON 협업 코칭 안내">
         <a className={homeStyles.collaborationLink} href="https://www.instagram.com/seobotde04/" target="_blank" rel="sponsored noopener noreferrer" aria-label="A2P Baseball 서동욱 코치 인스타그램 계정 보기 (새 창)">
