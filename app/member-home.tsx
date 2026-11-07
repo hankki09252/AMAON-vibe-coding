@@ -5,7 +5,7 @@
 import Image from "next/image";
 import homeStyles from "./home-redesign.module.css";
 import supportStyles from "./support-banner.module.css";
-import sweetPotatoStyles from "./sweet-potato-banner.module.css";
+import productBannerStyles from "./product-banner.module.css";
 import { DEFAULT_INTRO_VIDEO_URL, parseIntroVideoUrl } from "./intro-video";
 import { homePartnerAds } from "./home-partner-ads";
 import Link from "next/link";
@@ -814,30 +814,38 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         </div>
       </section>
 
-      {!pendingProfile && <aside className={sweetPotatoStyles.banner} aria-label="아마ON 고구마 상품 안내">
-        <a
-          className={sweetPotatoStyles.link}
-          href="https://slit.to/@hankki09252/objet/o20261031bd2cc4da6e7a16f6"
-          target="_blank"
-          rel="sponsored noopener noreferrer"
-          aria-label="아마ON 바로 먹는 고구마 상품 페이지 보기 (새 창)"
-        >
-          <Image
-            className={sweetPotatoStyles.image}
-            src="/amaon-sweet-potato-banner.png"
-            alt="아마ON 바로 먹는 고구마 상품 안내 이미지"
-            width={112}
-            height={112}
-            loading="lazy"
-            sizes="(max-width: 640px) 84px, 112px"
-          />
-          <span className={sweetPotatoStyles.copy}>
-            <small>광고 · 아마ON 추천 상품</small>
-            <strong>바로 먹는 고구마</strong>
-            <span>운동 전후 간편하게 챙기는 고구마</span>
-          </span>
-          <span className={sweetPotatoStyles.action} aria-hidden="true">상품 보러 가기 ↗</span>
-        </a>
+      {!pendingProfile && <aside className={productBannerStyles.banner} aria-label="아마ON 추천 상품">
+        <details>
+          <summary className={productBannerStyles.summary}>
+            <Image
+              className={productBannerStyles.image}
+              src="/benflo-helmet-banner.png"
+              alt=""
+              width={112}
+              height={112}
+              loading="lazy"
+              sizes="(max-width: 640px) 84px, 112px"
+            />
+            <span className={productBannerStyles.copy}>
+              <small>광고 · 아마ON 추천 상품</small>
+              <strong>벤플로 · 훈련 후 헬멧 냄새 관리</strong>
+              <span>벤플로와 바로 먹는 고구마 상품을 만나보세요.</span>
+            </span>
+            <span className={productBannerStyles.action} aria-hidden="true"><span>상품 2개 보기</span><span>접기</span> ↓</span>
+          </summary>
+          <div className={productBannerStyles.choices}>
+            <a href="https://slit.to/s/n73h83" target="_blank" rel="sponsored noopener noreferrer" aria-label="벤플로 상품 페이지 보기 (새 창)">
+              <Image src="/benflo-helmet-detail.png" alt="" width={70} height={70} loading="lazy" sizes="70px" />
+              <span><small>헬멧 관리</small><strong>벤플로</strong></span>
+              <b aria-hidden="true">보러 가기 ↗</b>
+            </a>
+            <a href="https://slit.to/@hankki09252/objet/o20261031bd2cc4da6e7a16f6" target="_blank" rel="sponsored noopener noreferrer" aria-label="바로 먹는 고구마 상품 페이지 보기 (새 창)">
+              <Image src="/amaon-sweet-potato-banner.png" alt="" width={70} height={70} loading="lazy" sizes="70px" />
+              <span><small>간편 간식</small><strong>바로 먹는 고구마</strong></span>
+              <b aria-hidden="true">보러 가기 ↗</b>
+            </a>
+          </div>
+        </details>
       </aside>}
 
       {!pendingProfile && <aside className="hero-instagram-cta" aria-label="선수 프로필 직접 등록 안내">
