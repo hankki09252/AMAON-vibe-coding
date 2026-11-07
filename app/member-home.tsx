@@ -455,6 +455,15 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   }, [publishedPlayerSearchIndex, query]);
 
   function jumpToSection(sectionId: string) {
+    const pageUrl = new URL(window.location.href);
+    if (pageUrl.searchParams.has("team") || pageUrl.searchParams.has("player")) {
+      pageUrl.searchParams.delete("team");
+      pageUrl.searchParams.delete("player");
+      pageUrl.searchParams.delete("media");
+      pageUrl.hash = sectionId;
+      window.location.assign(pageUrl.toString());
+      return;
+    }
     const isRosterSection = sectionId.endsWith("-roster") && Boolean(schoolByRosterSection[sectionId]);
     if (isRosterSection) setActiveRosterSection(sectionId);
     else setActiveRosterSection(null);
@@ -643,7 +652,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
         </div>
       </div>}
       <header className="topbar">
-        <a className="brand-lockup" href="#top" aria-label="아마ON 홈">
+        <Link className="brand-lockup" href="/#top" aria-label="아마ON 홈">
           <Image
             className="brand-logo-image"
             src="/amaon-emblem-2026.png"
@@ -652,16 +661,16 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
             height={72}
             priority
           />
-        </a>
+        </Link>
         <nav aria-label="주요 메뉴">
           <a className="topbar-guide-link" href="/about">아마온 소개</a>
-          <a href="#schools">학교 찾기</a>
-          <a href="#schools">경기·인천 학교</a>
-          <a href="#players">선수 프로필</a>
-          {(spotlights.length > 0 || isAdmin) && <a href="#spotlight">이 선수 어때?</a>}
+          <Link href="/#schools">학교 찾기</Link>
+          <Link href="/#schools">경기·인천 학교</Link>
+          <Link href="/#players">선수 프로필</Link>
+          {(spotlights.length > 0 || isAdmin || initialProfile) && <Link href="/#spotlight">이 선수 어때?</Link>}
           <Link href="/weekly">AMAON WEEKLY</Link>
-          {isAdmin && <a href="#weekly-editor">위클리 글쓰기</a>}
-          <a href="#community">커뮤니티</a>
+          {isAdmin && <Link href="/#weekly-editor">위클리 글쓰기</Link>}
+          <Link href="/#community">커뮤니티</Link>
         </nav>
         <PwaInstallButton />
         {signedIn ? <button className="outline-button" onClick={() => jumpToSection("community")}>내 회원정보</button> : <a className="outline-button" href="/login">로그인</a>}
@@ -712,7 +721,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
                 { id: "top", icon: "⌂", eyebrow: "HOME", label: "홈" },
                 { id: "schools", icon: "▦", eyebrow: "TEAM", label: "학교 찾기" },
                 { id: "players", icon: "◎", eyebrow: "PLAYER", label: "선수 프로필" },
-                ...(spotlights.length > 0 || isAdmin ? [{ id: "spotlight", icon: "✦", eyebrow: "DISCOVER", label: "이 선수 어때?" }] : []),
+                ...(spotlights.length > 0 || isAdmin || initialProfile ? [{ id: "spotlight", icon: "✦", eyebrow: "DISCOVER", label: "이 선수 어때?" }] : []),
                 { id: "video-ranking", icon: "▶", eyebrow: "FILM", label: "영상 TOP 5" },
                 { id: "community", icon: "◌", eyebrow: "COMMUNITY", label: "커뮤니티" },
                 { id: "how", icon: "＋", eyebrow: "GUIDE", label: "등록 안내" },
