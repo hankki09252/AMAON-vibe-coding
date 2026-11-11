@@ -1,5 +1,5 @@
 .home{--home-orange:#ff6500;background:#050505}
-.home :global(.hero){position:relative;isolation:isolate;min-height:clamp(570px,68vw,760px);display:block;overflow:hidden;padding:0;border-bottom:0;background:#050505}
+.home :global(.hero){position:relative;z-index:2;isolation:isolate;min-height:clamp(570px,68vw,760px);display:block;overflow:visible;padding:0;border-bottom:0;background:#050505}
 .heroMedia{position:absolute;z-index:-2;inset:0;background:radial-gradient(circle at 78% 55%,#17202a 0%,#080b10 48%,#050505 85%)}
 .heroMedia img{object-fit:contain;object-position:88% center}
 .home :global(.hero):after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.96) 0%,rgba(0,0,0,.68) 35%,rgba(0,0,0,.14) 63%,rgba(0,0,0,.72) 100%),linear-gradient(0deg,#050505 0%,transparent 28%,rgba(0,0,0,.12) 100%)}
@@ -20,6 +20,11 @@
 .home :global(.hero-search>span){display:grid;place-items:center;padding-left:24px;color:#111;font-size:34px}
 .home :global(.hero-search input){min-width:0;border:0;background:#fff;color:#111;font-size:17px}.home :global(.hero-search input:focus){outline:none}.home :global(.hero-search button){border:0;background:linear-gradient(100deg,#ff7a17,var(--home-orange));color:#090909;font-size:15px;font-weight:1000;cursor:pointer}
 .home :global(.hero-search-results){position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:8;max-height:300px;overflow:auto;background:#0d0d0d;border:1px solid #444;box-shadow:0 20px 45px #000}
+@media(max-width:640px){
+  .home :global(.hero-search-results){position:static;max-height:min(42dvh,340px);margin-top:8px;overflow-y:auto;overscroll-behavior:contain;border-radius:8px}
+  .home :global(.hero-search-results button){grid-template-columns:minmax(65px,auto) minmax(0,1fr) auto;gap:8px;min-height:64px;padding:9px 12px}
+  .home :global(.hero-search-results span){min-width:0;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+}
 .collaboration{max-width:1460px;margin:18px auto 0;padding:0 clamp(22px,4vw,44px)}
 .collaborationLink{min-height:148px;display:flex;align-items:center;gap:24px;padding:8px 22px 8px 8px;border:1px solid #35516d;border-left:5px solid #ff6500;background:linear-gradient(105deg,#0d1c32,#0b0d12 58%,#16100d);color:#fff;text-decoration:none;transition:border-color .18s ease,transform .18s ease}
 .collaborationLink:hover,.collaborationLink:focus-visible{border-color:#ff8a3e;transform:translateY(-2px);outline:2px solid #ff8a3e;outline-offset:2px}
