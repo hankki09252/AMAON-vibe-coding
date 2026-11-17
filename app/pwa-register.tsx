@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-const VERSION_CHECK_INTERVAL = 60_000;
+const VERSION_CHECK_INTERVAL = 15 * 60_000;
 
 export default function PwaRegister() {
   const currentVersion = useRef<string | null>(null);
@@ -19,7 +19,7 @@ export default function PwaRegister() {
     }
 
     const checkForUpdate = async () => {
-      if (disposed || isReloading.current || !navigator.onLine) return;
+      if (disposed || isReloading.current || !navigator.onLine || document.visibilityState !== "visible") return;
 
       try {
         const response = await fetch(`/api/version?checkedAt=${Date.now()}`, {

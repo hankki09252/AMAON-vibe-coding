@@ -1,6 +1,7 @@
 import { publicAccess } from "./public-access";
 import { apiAdmin, validTeamId } from "./api-auth";
 import { createSupabaseAdminClient } from "./supabase/admin";
+import { revalidateTag, unstable_cache } from "next/cache";
 
 const signedUrlTtlSeconds = 60 * 60 * 24 * 7;
 const assetResponseHeaders = { "cache-control": "private, max-age=60, stale-while-revalidate=300" };
@@ -57,6 +58,19 @@ function restoredAsset(kind: "banner" | "emblem", teamId: string) {
   };
 }
 
+const readTeamAsset = unstable_cache(async (kind: "banner" | "emblem", teamId: string) => {
+  const prefix = `teams/${teamId}/${kind}/`;
+  const db = createSupabaseAdminClient();
+  const { data, error } = await db.storage.from("media").list(prefix, { limit: 20, sortBy: { column: "created_at", order: "desc" } });
+  if (error) throw new Error(`학교 이미지를 확인하지 못했습니다: ${error.message}`);
+  const object = data?.[0];
+  if (!object) return restoredAsset(kind, teamId);
+  const key = `${prefix}${object.name}`;
+  const { data: signed, error: signError } = await db.storage.from("media").createSignedUrl(key, signedUrlTtlSeconds);
+  if (signError) throw new Error(`학교 이미지 주소를 만들지 못했습니다: ${signError.message}`);
+  return { key, url: signed?.signedUrl || "", uploadedAt: object.created_at };
+}, ["team-assets"], { tags: ["team-assets"], revalidate: 60 * 60 });
+
 export function createTeamAssetHandlers(kind: "banner" | "emblem") {
   const maxSize = kind === "banner" ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
   const label = kind === "banner" ? "팀 배너" : "팀 엠블럼";
@@ -72,16 +86,9 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
       return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
     }
     if (!teamIds.length && !validTeamId(teamId)) return Response.json({ error: "학교 정보가 올바르지 않습니다." }, { status: 400 });
-    const db = createSupabaseAdminClient();
-
     async function loadAsset(id: string) {
       if (access && !access.team(id)) return null;
-      const { data } = await db.storage.from("media").list(pathPrefix(id), { limit: 20, sortBy: { column: "created_at", order: "desc" } });
-      const object = data?.[0];
-      if (!object) return restoredAsset(kind, id);
-      const key = `${pathPrefix(id)}${object.name}`;
-      const { data: signed } = await db.storage.from("media").createSignedUrl(key, signedUrlTtlSeconds);
-      return { key, url: signed?.signedUrl || "", uploadedAt: object.created_at };
+      return readTeamAsset(kind, id).catch(() => restoredAsset(kind, id));
     }
 
     if (teamIds.length) {
@@ -108,6 +115,7 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const { error } = await db.storage.from("media").upload(key, bytes, { contentType: file.type, cacheControl: "31536000", upsert: true });
     if (error) return Response.json({ error: error.message }, { status: 500 });
+    revalidateTag("team-assets", { expire: 0 });
     const { data: signed } = await db.storage.from("media").createSignedUrl(key, signedUrlTtlSeconds);
     return Response.json({ ok: true, key, url: signed?.signedUrl || "" }, { status: 201 });
   }
@@ -120,6 +128,7 @@ export function createTeamAssetHandlers(kind: "banner" | "emblem") {
     const db = createSupabaseAdminClient();
     const existing = await db.storage.from("media").list(pathPrefix(teamId), { limit: 20 });
     if (existing.data?.length) await db.storage.from("media").remove(existing.data.map((item) => `${pathPrefix(teamId)}${item.name}`));
+    revalidateTag("team-assets", { expire: 0 });
     return new Response(null, { status: 204 });
   }
   return { GET, POST, DELETE };

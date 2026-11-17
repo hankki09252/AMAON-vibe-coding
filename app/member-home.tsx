@@ -176,6 +176,8 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   const [regionNotice, setRegionNotice] = useState("");
   const [managedRosterPlayers, setManagedRosterPlayers] = useState<ManagedRosterPlayer[]>([]);
   const [teamDirectoryAssets, setTeamDirectoryAssets] = useState<TeamDirectoryAssets>({});
+  const [schoolAssetsVisible, setSchoolAssetsVisible] = useState(false);
+  const requestedTeamAssets = useRef(new Set<string>());
   const [activeRosterSection, setActiveRosterSection] = useState<string | null>(profileEntry?.team ?? null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -257,34 +259,20 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
   }, [pendingProfile]);
 
   useEffect(() => {
-    if (pendingProfile) return; // Prioritize the shared player over the home directory assets.
-    const teamIds = [...new Set(Object.values(rosterSectionBySchool))];
-    const loadAssets = async () => {
-      async function loadAssetKind(kind: "banners" | "emblems") {
-        const chunks = Array.from({ length: Math.ceil(teamIds.length / 50) }, (_, index) =>
-          teamIds.slice(index * 50, (index + 1) * 50),
-        );
-        const responses = await Promise.all(chunks.map((chunk) =>
-          fetch(`/api/team-${kind}?teamIds=${encodeURIComponent(chunk.join(","))}`),
-        ));
-        const payloads = await Promise.all(responses.map(async (response) => response.ok
-          ? (await response.json() as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {}
-          : {},
-        ));
-        return Object.assign({}, ...payloads) as Record<string, TeamDirectoryAsset | null>;
-      }
+    if (pendingProfile || schoolAssetsVisible) return;
+    const section = document.getElementById("schools");
+    if (!section || !('IntersectionObserver' in window)) {
+      const frame = window.requestAnimationFrame(() => setSchoolAssetsVisible(true));
+      return () => window.cancelAnimationFrame(frame);
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setSchoolAssetsVisible(true);
+    }, { rootMargin: "600px" });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [pendingProfile, schoolAssetsVisible]);
 
-      const [banners, emblems] = await Promise.all([
-        loadAssetKind("banners"),
-        loadAssetKind("emblems"),
-      ]);
-      setTeamDirectoryAssets(Object.fromEntries(Object.values(rosterSectionBySchool).map((teamId) => [teamId, {
-        banner: banners[teamId]?.url || undefined,
-        emblem: emblems[teamId]?.url || undefined,
-      }])));
-    };
-    void loadAssets().catch(() => undefined);
-
+  useEffect(() => {
     function syncTeamAsset(event: Event) {
       const detail = (event as CustomEvent<{ teamId?: string; kind?: "banner" | "emblem"; url?: string }>).detail;
       if (!detail?.teamId || !detail.kind) return;
@@ -297,7 +285,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
     }
     window.addEventListener("amaon:team-asset-changed", syncTeamAsset);
     return () => window.removeEventListener("amaon:team-asset-changed", syncTeamAsset);
-  }, [pendingProfile]);
+  }, []);
 
   useEffect(() => {
     function syncRosterChange(event: Event) {
@@ -447,6 +435,40 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
       return matchesRegion && matchesQuery;
     });
   }, [publishedSchools, query, region]);
+
+  useEffect(() => {
+    if (pendingProfile || !schoolAssetsVisible) return;
+    const teamIds = [...new Set(filteredSchools.map((school) => rosterSectionBySchool[school.name]).filter(Boolean))]
+      .filter((teamId) => !requestedTeamAssets.current.has(teamId));
+    if (!teamIds.length) return;
+    teamIds.forEach((teamId) => requestedTeamAssets.current.add(teamId));
+
+    async function loadAssetKind(kind: "banners" | "emblems") {
+      const chunks = Array.from({ length: Math.ceil(teamIds.length / 50) }, (_, index) =>
+        teamIds.slice(index * 50, (index + 1) * 50),
+      );
+      const responses = await Promise.all(chunks.map((chunk) =>
+        fetch(`/api/team-${kind}?teamIds=${encodeURIComponent(chunk.join(","))}`),
+      ));
+      if (responses.some((response) => !response.ok)) throw new Error("학교 이미지를 불러오지 못했습니다.");
+      const payloads = await Promise.all(responses.map(async (response) =>
+        ((await response.json()) as { items?: Record<string, TeamDirectoryAsset | null> }).items ?? {},
+      ));
+      return Object.assign({}, ...payloads) as Record<string, TeamDirectoryAsset | null>;
+    }
+
+    void Promise.all([loadAssetKind("banners"), loadAssetKind("emblems")])
+      .then(([banners, emblems]) => {
+        setTeamDirectoryAssets((current) => ({
+          ...current,
+          ...Object.fromEntries(teamIds.map((teamId) => [teamId, {
+            banner: banners[teamId]?.url || undefined,
+            emblem: emblems[teamId]?.url || undefined,
+          }])),
+        }));
+      })
+      .catch(() => teamIds.forEach((teamId) => requestedTeamAssets.current.delete(teamId)));
+  }, [filteredSchools, pendingProfile, schoolAssetsVisible]);
 
   const matchingPlayers = useMemo(() => {
     const keyword = query.trim().replace(/\s+/g, "").toLowerCase();
