@@ -691,6 +691,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
           <Link href="/#players">선수 프로필</Link>
           {(spotlights.length > 0 || isAdmin || initialProfile) && <Link href="/#spotlight">이 선수 어때?</Link>}
           <Link href="/weekly">AMAON WEEKLY</Link>
+          <Link href="/carb-calculator">탄수화물 계산기</Link>
           {isAdmin && <Link href="/#weekly-editor">위클리 글쓰기</Link>}
           <Link href="/#community">커뮤니티</Link>
         </nav>
@@ -765,6 +766,7 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
               })}
             </nav>
           <Link className="mobile-weekly-link" href="/weekly"><span><small>NEW CONTENT</small><strong>AMAON WEEKLY</strong></span><b>→</b></Link>
+          <Link className="mobile-weekly-link" href="/carb-calculator"><span><small>PLAYER FUEL</small><strong>탄수화물 계산기</strong></span><b>→</b></Link>
           {isAdmin && <a className="mobile-weekly-link" href="#weekly-editor" onClick={() => setMobileMenuOpen(false)}><span><small>OPERATOR ONLY</small><strong>위클리 글쓰기</strong></span><b>→</b></a>}
           {isAdmin && <a className="mobile-weekly-link" href="#spotlight-editor" onClick={() => setMobileMenuOpen(false)}><span><small>OPERATOR ONLY</small><strong>선수 게시물 연결</strong></span><b>→</b></a>}
           <button type="button" className="mobile-guide-link" onClick={() => { setMobileMenuOpen(false); setGuideOpen(true); }}>
