@@ -937,9 +937,9 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
 
       {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
         <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><div className={homeStyles.weeklyHeaderActions}><Link href="/weekly">전체 보기 →</Link>{isAdmin && <a href="#weekly-editor">글쓰기 →</a>}</div></header>
-        <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={post.externalUrl || `/weekly/${post.slug}`} target={post.externalUrl ? "_blank" : undefined} rel={post.externalUrl ? "noopener noreferrer" : undefined} key={post.id}>
+        <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
           <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : post.previewImageId ? `/api/weekly/image/${post.previewImageId}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
-          <span className="home-weekly-copy"><small>{post.externalUrl ? "한끼방패 블로그 · AMAON WEEKLY" : `AMAON WEEKLY #${String(post.issueNumber).padStart(2, "0")}`}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.externalUrl ? "블로그에서 원문 읽기" : post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>{post.externalUrl ? "원문 보기 ↗" : "3분 읽기 →"}</em></b></span>
+          <span className="home-weekly-copy"><small>{post.externalUrl ? "한끼방패 블로그 · AMAON WEEKLY" : `AMAON WEEKLY #${String(post.issueNumber).padStart(2, "0")}`}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.externalUrl ? "아마온에서 소개 보기" : post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>{post.externalUrl ? "자세히 보기 →" : "3분 읽기 →"}</em></b></span>
         </Link>)}</div>
       </section>}
 

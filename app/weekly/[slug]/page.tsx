@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import WeeklyTrackedLink from "../weekly-actions";
 import { readWeeklyBySlug, weeklyCoverUrl, weeklyPlayerUrl } from "../weekly-data";
 import type { WeeklyPost } from "../weekly-data";
@@ -36,7 +36,15 @@ export default async function WeeklyDetailPage({ params }: Props) {
   const { slug } = await params;
   const post = await readWeeklyBySlug(slug);
   if (!post) notFound();
-  if (post.externalUrl) redirect(post.externalUrl);
+  if (post.externalUrl) return <main className={styles.page}>
+    <header className={styles.topbar}><Link href="/" className={styles.brand}>아마ON</Link><nav aria-label="WEEKLY 메뉴"><Link href="/weekly">전체 WEEKLY</Link><Link href="/#players">선수 찾기</Link></nav></header>
+    <article className={styles.article}>
+      <header className={styles.articleHead}><div><small>AMAON WEEKLY · 한끼방패 블로그</small><span>{dateLabel(post.publishedAt)}</span></div><h1>{post.title}</h1><p>{post.summary}</p></header>
+      <figure className={styles.heroImage}><Image src={weeklyCoverUrl(post)} alt={`${post.title} 대표 이미지`} fill sizes="(max-width: 760px) 100vw, 1180px" priority /></figure>
+      <div className={styles.blogBridge}><small>FROM AMAON TO HANKKI BLOG</small><h2>이야기 이어 보기</h2><p>아마온에서 소개를 확인하셨다면, 한끼방패 블로그에서 글 전체를 읽어보세요.</p><a href={post.externalUrl} target="_blank" rel="noopener noreferrer">네이버 블로그 원문 읽기 ↗</a><Link href="/weekly">다른 위클리 글 보기 →</Link></div>
+    </article>
+    <footer className={styles.footer}><strong>AMAON WEEKLY</strong><span>© 2026 HANKKI AMATEUR BASEBALL</span></footer>
+  </main>;
   const hasPlayer = Boolean(post.playerId);
   const profileUrl = weeklyPlayerUrl(post);
   const paragraphs = post.body.split(/(?:\r?\n){2,}/);

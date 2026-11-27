@@ -53,6 +53,15 @@ export default function WeeklyBlogAdmin() {
     document.getElementById("weekly-blog-import")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  async function copyAmaonLink(row: WeeklyRow) {
+    try {
+      await navigator.clipboard.writeText(`https://www.amaon.kr/weekly/${row.slug}`);
+      setNotice("아마온 글 주소를 복사했습니다. 스레드 글에 붙여넣으세요.");
+    } catch {
+      setNotice(`아마온 글 주소: https://www.amaon.kr/weekly/${row.slug}`);
+    }
+  }
+
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setNotice("");
     const normalized = normalizeNaverBlogUrl(form.url);
@@ -86,16 +95,16 @@ export default function WeeklyBlogAdmin() {
   const imagePreview = coverPreview || form.coverUrl || (form.imageUrl ? `/api/weekly/blog-preview?image=${encodeURIComponent(form.imageUrl)}` : "");
 
   return <section id="weekly-blog-import" className={styles.panel} aria-labelledby="weekly-blog-title">
-    <div className={styles.heading}><div><small>BLOG LINK · OPERATOR ONLY</small><h3 id="weekly-blog-title">한끼방패 블로그 글 연결</h3><p>글 주소를 넣고 미리본 뒤 제목·소개·대표 이미지를 확인해 공개하세요. 방문자는 카드를 누르면 블로그 원문으로 이동합니다.</p></div></div>
+    <div className={styles.heading}><div><small>BLOG LINK · OPERATOR ONLY</small><h3 id="weekly-blog-title">한끼방패 블로그 글 연결</h3><p>글 주소를 넣고 미리본 뒤 제목·소개·대표 이미지를 확인해 공개하세요. 스레드에는 아마온 글 주소를 공유하고, 방문자는 아마온에서 블로그 원문으로 이동합니다.</p></div></div>
     <form className={styles.form} onSubmit={(event) => void save(event)}>
       <label>네이버 블로그 게시물 주소<div className={styles.urlRow}><input type="url" required value={form.url} onChange={(event) => setForm((current) => ({ ...current, url: event.target.value }))} placeholder="https://blog.naver.com/블로그아이디/게시물번호" /><button type="button" onClick={() => void preview()} disabled={busy || !form.url.trim()}>링크 미리보기</button></div></label>
-      <div className={styles.preview}>{imagePreview ? <Image src={imagePreview} alt="블로그 카드 대표 이미지 미리보기" width={320} height={220} unoptimized /> : <span>썸네일 미리보기</span>}<div><strong>{form.title || "블로그 글 제목"}</strong><p>{form.summary || "한 줄 소개가 이곳에 표시됩니다."}</p><small>한끼방패 블로그 · 원문 보기 ↗</small></div></div>
+      <div className={styles.preview}>{imagePreview ? <Image src={imagePreview} alt="블로그 카드 대표 이미지 미리보기" width={320} height={220} unoptimized /> : <span>썸네일 미리보기</span>}<div><strong>{form.title || "블로그 글 제목"}</strong><p>{form.summary || "한 줄 소개가 이곳에 표시됩니다."}</p><small>한끼방패 블로그 · 아마온에서 보기 →</small></div></div>
       <div className={styles.twoColumns}><label>카드 제목<input required minLength={2} maxLength={120} value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} /></label><label>대표 이미지 파일 {form.coverUrl ? "(교체 선택)" : "(자동 추출 실패 시 필수)"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseCover(event.target.files?.[0] || null)} /></label></div>
       <label>짧은 소개<textarea required minLength={10} maxLength={240} value={form.summary} onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))} /></label>
       <label className={styles.check}><input type="checkbox" checked={form.published} onChange={(event) => setForm((current) => ({ ...current, published: event.target.checked }))} /> 지금 공개하기</label>
       <div className={styles.actions}><button type="submit" disabled={busy || !form.previewedUrl}>{busy ? "저장 중…" : form.id ? "블로그 카드 수정" : "블로그 카드 저장"}</button>{form.id && <button type="button" onClick={() => { setForm(blank); chooseCover(null); setNotice(""); }}>새 링크 등록</button>}</div>
       {notice && <p className={styles.notice} role="status">{notice}</p>}
     </form>
-    {blogRows.length > 0 && <div className={styles.list}><h4>등록된 블로그 카드</h4>{blogRows.map((row) => <div key={row.id}><span><strong>{row.title}</strong><small>{row.published ? "공개 중" : "임시저장"}</small></span><button type="button" onClick={() => edit(row)}>수정</button></div>)}</div>}
+    {blogRows.length > 0 && <div className={styles.list}><h4>등록된 블로그 카드</h4>{blogRows.map((row) => <div key={row.id}><span><strong>{row.title}</strong><small>{row.published ? "공개 중" : "임시저장"}</small></span>{row.published && <button type="button" onClick={() => void copyAmaonLink(row)}>아마온 링크 복사</button>}<button type="button" onClick={() => edit(row)}>수정</button></div>)}</div>}
   </section>;
 }
