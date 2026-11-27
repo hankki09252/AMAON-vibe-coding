@@ -31,6 +31,15 @@ export function blogUrlFromBody(body: string): string | null {
   return normalizeNaverBlogUrl(body.slice(blogMarker.length));
 }
 
+export function blogSlug(url: string): string {
+  const normalized = normalizeNaverBlogUrl(url);
+  if (!normalized) throw new Error("네이버 블로그 게시물 주소를 확인해 주세요.");
+  const logNo = new URL(normalized).pathname.split("/").at(-1);
+  let hash = 2166136261;
+  for (const char of normalized) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+  return `blog-${logNo}-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
 export function allowedNaverImageUrl(value: string): string | null {
   try {
     const url = new URL(value);

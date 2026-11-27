@@ -7,8 +7,8 @@ import { blogBody, blogUrlFromBody, normalizeNaverBlogUrl } from "./weekly/weekl
 import styles from "./weekly-blog-admin.module.css";
 
 type WeeklyRow = { id: string; issue_number: number; slug: string; title: string; summary: string; body: string; coverUrl: string; published: boolean };
-type BlogForm = { id: string; issueNumber: number; slug: string; url: string; previewedUrl: string; title: string; summary: string; imageUrl: string; coverUrl: string; published: boolean };
-const blank: BlogForm = { id: "", issueNumber: 0, slug: "", url: "", previewedUrl: "", title: "", summary: "", imageUrl: "", coverUrl: "", published: true };
+type BlogForm = { id: string; url: string; previewedUrl: string; title: string; summary: string; imageUrl: string; coverUrl: string; published: boolean };
+const blank: BlogForm = { id: "", url: "", previewedUrl: "", title: "", summary: "", imageUrl: "", coverUrl: "", published: true };
 
 export default function WeeklyBlogAdmin() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function WeeklyBlogAdmin() {
   function edit(row: WeeklyRow) {
     const url = blogUrlFromBody(row.body);
     if (!url) return;
-    setForm({ id: row.id, issueNumber: row.issue_number, slug: row.slug, url, previewedUrl: url, title: row.title, summary: row.summary, imageUrl: "", coverUrl: row.coverUrl || "", published: row.published });
+    setForm({ id: row.id, url, previewedUrl: url, title: row.title, summary: row.summary, imageUrl: "", coverUrl: row.coverUrl || "", published: row.published });
     chooseCover(null); setNotice(""); setManualMode(true); setCreatedUrl("");
     document.getElementById("weekly-blog-import")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -65,8 +65,6 @@ export default function WeeklyBlogAdmin() {
       setNotice(duplicate.published ? "이미 아마온에 등록된 글입니다. 아래 주소를 스레드에 공유하세요." : "이미 임시저장된 글입니다. 아래 목록에서 수정해 공개하세요.");
       return;
     }
-    const nextIssue = form.id ? form.issueNumber : Math.max(0, ...rows.map((row) => row.issue_number)) + 1;
-    if (nextIssue > 999) { setNotice("위클리 회차 한도에 도달했습니다."); return; }
     setBusy(true);
     let draft = form;
     if (normalized !== form.previewedUrl) {
@@ -87,17 +85,15 @@ export default function WeeklyBlogAdmin() {
       const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
       file = new File([blob], `weekly-blog-cover.${extension}`, { type: blob.type });
     }
-    const path = new URL(normalized).pathname.slice(1).replace("/", "-").toLowerCase();
     const data = new FormData();
-    const slug = draft.slug || `blog-${path}`;
-    const fields = { id: draft.id, issueNumber: String(nextIssue), slug, title: draft.title.trim(), summary: draft.summary.trim().length >= 10 ? draft.summary.trim() : "한끼방패 블로그에서 글 전체를 읽어보세요.", oneIssueTitle: "한끼방패 블로그", body: blogBody(normalized), onMessage: "블로그에서 원문 읽기", teamId: "", playerId: "", playerName: "", schoolName: "", position: "", published: String(draft.published) };
+    const fields = { id: draft.id, title: draft.title.trim(), summary: draft.summary.trim(), body: blogBody(normalized), published: String(draft.published) };
     Object.entries(fields).forEach(([key, value]) => data.set(key, value));
     if (file) data.set("cover", file);
     const response = await fetch("/api/weekly", { method: "POST", body: data }).catch(() => null);
     const payload = await response?.json().catch(() => ({})) || {};
     setBusy(false);
-    if (!response?.ok) { setNotice(payload.error || "블로그 카드를 저장하지 못했습니다."); return; }
-    setForm(blank); chooseCover(null); setManualMode(false); setCreatedUrl(draft.published ? `https://www.amaon.kr/weekly/${slug}` : ""); setNotice(draft.published ? "블로그 글을 아마온 위클리에 등록했습니다. 아래 주소를 스레드에 공유하세요." : "블로그 카드를 임시저장했습니다.");
+    if (!response?.ok) { if (response?.status === 409 && payload.slug) setCreatedUrl(`https://www.amaon.kr/weekly/${payload.slug}`); setNotice(payload.error || "블로그 카드를 저장하지 못했습니다."); return; }
+    setForm(blank); chooseCover(null); setManualMode(false); setCreatedUrl(draft.published ? `https://www.amaon.kr/weekly/${payload.slug}` : ""); setNotice(draft.published ? "블로그 글을 아마온 위클리에 등록했습니다. 아래 주소를 스레드에 공유하세요." : "블로그 카드를 임시저장했습니다.");
     await load(); router.refresh();
   }
 

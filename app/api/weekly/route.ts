@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
-import { blogUrlFromBody } from "../../weekly/weekly-blog-link";
+import { blogSlug, blogUrlFromBody } from "../../weekly/weekly-blog-link";
 
 const bucket = "media";
 const allowedImages = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -34,13 +34,14 @@ export async function POST(request: Request) {
 
   const idInput = text(form, "id", 40);
   const id = idInput || randomUUID();
-  const issueNumber = Number(form.get("issueNumber"));
-  const slug = text(form, "slug", 100);
   const title = text(form, "title", 120);
-  const summary = text(form, "summary", 240);
-  const oneIssueTitle = text(form, "oneIssueTitle", 100);
   const body = text(form, "body", 5000);
-  const onMessage = text(form, "onMessage", 160);
+  const isBlog = body.startsWith("AMAON_BLOG_LINK_V1\n");
+  const blogUrl = blogUrlFromBody(body);
+  const rawSummary = text(form, "summary", 240);
+  const summary = isBlog && rawSummary.length < 10 ? "한끼방패 블로그에서 글 전체를 읽어보세요." : rawSummary;
+  const oneIssueTitle = isBlog ? "한끼방패 블로그" : text(form, "oneIssueTitle", 100);
+  const onMessage = isBlog ? "블로그에서 원문 읽기" : text(form, "onMessage", 160);
   const teamId = text(form, "teamId", 80);
   const playerId = text(form, "playerId", 80);
   const playerName = text(form, "playerName", 80);
@@ -49,12 +50,34 @@ export async function POST(request: Request) {
   const published = form.get("published") === "true";
   const cover = form.get("cover");
 
-  if ((idInput && !uuidPattern.test(idInput)) || !Number.isInteger(issueNumber) || issueNumber < 1 || issueNumber > 999 || !slugPattern.test(slug)
-    || title.length < 2 || summary.length < 10 || oneIssueTitle.length < 2 || body.length < 20 || onMessage.length < 2) {
-    return Response.json({ error: "회차, 주소와 원고 필수 항목을 다시 확인해 주세요." }, { status: 400 });
+  if (idInput && !uuidPattern.test(idInput)) return Response.json({ error: "수정할 글을 찾지 못했습니다." }, { status: 400 });
+  if (isBlog && !blogUrl) return Response.json({ error: "네이버 블로그 게시물 주소를 확인해 주세요." }, { status: 400 });
+
+  const db = createSupabaseAdminClient();
+  const existing = idInput ? await db.from("weekly_posts").select("cover_storage_key,published_at,issue_number,slug,body").eq("id", id).maybeSingle() : { data: null, error: null };
+  if (existing.error || (idInput && !existing.data)) return Response.json({ error: "수정할 WEEKLY를 찾지 못했습니다." }, { status: 404 });
+  if (isBlog && idInput && !blogUrlFromBody(existing.data?.body || "")) return Response.json({ error: "블로그 글만 이 화면에서 수정할 수 있습니다." }, { status: 400 });
+
+  let issueNumber = Number(form.get("issueNumber"));
+  let slug = text(form, "slug", 100);
+  if (blogUrl) {
+    if (idInput && existing.data) {
+      issueNumber = existing.data.issue_number;
+      slug = existing.data.slug;
+    } else {
+      const { data: latest, error: latestError } = await db.from("weekly_posts").select("issue_number").order("issue_number", { ascending: false }).limit(1).maybeSingle();
+      if (latestError) return Response.json({ error: "위클리 등록 순서를 확인하지 못했습니다." }, { status: 500 });
+      issueNumber = Number(latest?.issue_number || 0) + 1;
+      slug = blogSlug(blogUrl);
+      const { data: duplicate, error: duplicateError } = await db.from("weekly_posts").select("id,published").eq("slug", slug).maybeSingle();
+      if (duplicateError) return Response.json({ error: "같은 블로그 글의 등록 여부를 확인하지 못했습니다." }, { status: 500 });
+      if (duplicate) return Response.json({ error: duplicate.published ? "이미 아마온에 등록된 블로그 글입니다." : "이미 임시저장된 블로그 글입니다. 아래 목록에서 수정해 공개하세요.", slug: duplicate.published ? slug : "" }, { status: 409 });
+    }
   }
-  if (body.startsWith("AMAON_BLOG_LINK_V1\n") && !blogUrlFromBody(body)) {
-    return Response.json({ error: "네이버 블로그 게시물 주소를 확인해 주세요." }, { status: 400 });
+
+  if (!Number.isInteger(issueNumber) || issueNumber < 1 || issueNumber > 999 || !slugPattern.test(slug)
+    || title.length < 2 || summary.length < 10 || oneIssueTitle.length < 2 || body.length < 20 || onMessage.length < 2) {
+    return Response.json({ error: isBlog ? "블로그 제목이나 등록 정보를 가져오지 못했습니다. 제목을 확인해 주세요." : "회차, 주소와 원고 필수 항목을 다시 확인해 주세요." }, { status: 400 });
   }
   const hasPlayer = Boolean(teamId || playerId || playerName || schoolName || position);
   if (hasPlayer && (!validTeamId(teamId) || !validPlayerId(playerId) || !playerName || !schoolName)) {
@@ -64,9 +87,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "대표 이미지는 JPG·PNG·WEBP, 최대 4MB까지 가능합니다." }, { status: 400 });
   }
 
-  const db = createSupabaseAdminClient();
-  const existing = idInput ? await db.from("weekly_posts").select("cover_storage_key,published_at").eq("id", id).maybeSingle() : { data: null, error: null };
-  if (existing.error) return Response.json({ error: "수정할 WEEKLY를 찾지 못했습니다." }, { status: 404 });
   let coverKey = existing.data?.cover_storage_key || "";
   let uploadedKey = "";
   if (cover instanceof File && cover.size) {
@@ -87,8 +107,8 @@ export async function POST(request: Request) {
     : await db.from("weekly_posts").insert(row);
   if (error) {
     if (uploadedKey) await db.storage.from(bucket).remove([uploadedKey]);
-    return Response.json({ error: error.code === "23505" ? "회차 또는 주소가 이미 사용 중입니다." : "WEEKLY를 저장하지 못했습니다." }, { status: 500 });
+    return Response.json({ error: error.code === "23505" ? isBlog ? "이미 등록된 블로그 글이거나 등록 순서가 겹쳤습니다. 다시 눌러 주세요." : "회차 또는 주소가 이미 사용 중입니다." : "WEEKLY를 저장하지 못했습니다." }, { status: 500 });
   }
   if (uploadedKey && existing.data?.cover_storage_key) await db.storage.from(bucket).remove([existing.data.cover_storage_key]);
-  return Response.json({ ok: true, id });
+  return Response.json({ ok: true, id, slug });
 }
