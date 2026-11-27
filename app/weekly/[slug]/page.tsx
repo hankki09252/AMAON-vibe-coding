@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import WeeklyTrackedLink from "../weekly-actions";
 import { readWeeklyBySlug, weeklyCoverUrl, weeklyPlayerUrl } from "../weekly-data";
 import type { WeeklyPost } from "../weekly-data";
@@ -36,6 +36,7 @@ export default async function WeeklyDetailPage({ params }: Props) {
   const { slug } = await params;
   const post = await readWeeklyBySlug(slug);
   if (!post) notFound();
+  if (post.externalUrl) redirect(post.externalUrl);
   const hasPlayer = Boolean(post.playerId);
   const profileUrl = weeklyPlayerUrl(post);
   const paragraphs = post.body.split(/(?:\r?\n){2,}/);

@@ -34,6 +34,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
     initialProfile ? Promise.resolve([]) : readPublishedSpotlights().catch(() => []),
     readIntroVideoUrl().catch(() => DEFAULT_INTRO_VIDEO_URL),
   ]);
-  const weeklyPreviews = weeklyPosts.map(({ id, issueNumber, slug, title, summary, coverStorageKey, previewImageId, playerName, schoolName }) => ({ id, issueNumber, slug, title, summary, coverStorageKey, previewImageId, playerName, schoolName }));
+  const weeklyPreviews = weeklyPosts.map(({ id, issueNumber, slug, title, summary, coverStorageKey, previewImageId, playerName, schoolName, externalUrl }) => ({ id, issueNumber, slug, title, summary, coverStorageKey, previewImageId, playerName, schoolName, externalUrl }));
   return <>{!initialProfile && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", name: "아마온", alternateName: ["아마ON", "AMAON"], url: "https://www.amaon.kr/" }) }} />}<MemberHome signedIn={Boolean(user)} initialProfile={initialProfile} profileEntry={profileEntry} recentPlayers={recentPlayers} weeklyPosts={weeklyPreviews} spotlights={spotlights} initialIntroVideoUrl={introVideoUrl} /></>;
 }

@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { apiAdmin, validPlayerId, validTeamId } from "../../api-auth";
 import { createSupabaseAdminClient } from "../../supabase/admin";
+import { blogUrlFromBody } from "../../weekly/weekly-blog-link";
 
 const bucket = "media";
 const allowedImages = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -51,6 +52,9 @@ export async function POST(request: Request) {
   if ((idInput && !uuidPattern.test(idInput)) || !Number.isInteger(issueNumber) || issueNumber < 1 || issueNumber > 999 || !slugPattern.test(slug)
     || title.length < 2 || summary.length < 10 || oneIssueTitle.length < 2 || body.length < 20 || onMessage.length < 2) {
     return Response.json({ error: "회차, 주소와 원고 필수 항목을 다시 확인해 주세요." }, { status: 400 });
+  }
+  if (body.startsWith("AMAON_BLOG_LINK_V1\n") && !blogUrlFromBody(body)) {
+    return Response.json({ error: "네이버 블로그 게시물 주소를 확인해 주세요." }, { status: 400 });
   }
   const hasPlayer = Boolean(teamId || playerId || playerName || schoolName || position);
   if (hasPlayer && (!validTeamId(teamId) || !validPlayerId(playerId) || !playerName || !schoolName)) {

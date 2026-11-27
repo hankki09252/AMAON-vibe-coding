@@ -58,8 +58,9 @@ import type { PlayerSpotlight } from "./spotlight-data";
 
 const VideoSubmission = dynamic(() => import("./video-submission"));
 const WeeklyAdmin = dynamic(() => import("./weekly-admin"));
+const WeeklyBlogAdmin = dynamic(() => import("./weekly-blog-admin"));
 const SpotlightSection = dynamic(() => import("./spotlight-section"));
-type WeeklyPreview = Pick<WeeklyPost, "id" | "issueNumber" | "slug" | "title" | "summary" | "coverStorageKey" | "previewImageId" | "playerName" | "schoolName">;
+type WeeklyPreview = Pick<WeeklyPost, "id" | "issueNumber" | "slug" | "title" | "summary" | "coverStorageKey" | "previewImageId" | "playerName" | "schoolName" | "externalUrl">;
 
 
 type TeamDirectoryAsset = { key: string; url: string; uploadedAt: string };
@@ -936,14 +937,15 @@ export default function Home({ signedIn = false, initialProfile = null, profileE
 
       {!pendingProfile && weeklyPosts.length > 0 && <section className="home-weekly" aria-labelledby="home-weekly-title">
         <header><div><small>PLAYER · ONE ISSUE · ON</small><h2 id="home-weekly-title">AMAON <em>WEEKLY</em></h2><p>선수와 부모를 위한 고교야구 주간 브리핑</p></div><div className={homeStyles.weeklyHeaderActions}><Link href="/weekly">전체 보기 →</Link>{isAdmin && <a href="#weekly-editor">글쓰기 →</a>}</div></header>
-        <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={`/weekly/${post.slug}`} key={post.id}>
+        <div className="home-weekly-grid">{weeklyPosts.map((post, index) => <Link className={index === 0 ? "home-weekly-card featured" : "home-weekly-card"} href={post.externalUrl || `/weekly/${post.slug}`} target={post.externalUrl ? "_blank" : undefined} rel={post.externalUrl ? "noopener noreferrer" : undefined} key={post.id}>
           <span className="home-weekly-cover"><Image src={post.coverStorageKey ? `/api/weekly/cover/${post.id}` : post.previewImageId ? `/api/weekly/image/${post.previewImageId}` : "/og.png"} alt={`${post.title} 대표 이미지`} fill sizes={index === 0 ? "(max-width: 760px) 100vw, 55vw" : "(max-width: 760px) 100vw, 24vw"} /></span>
-          <span className="home-weekly-copy"><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>3분 읽기 →</em></b></span>
+          <span className="home-weekly-copy"><small>{post.externalUrl ? "한끼방패 블로그 · AMAON WEEKLY" : `AMAON WEEKLY #${String(post.issueNumber).padStart(2, "0")}`}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.externalUrl ? "블로그에서 원문 읽기" : post.playerName ? `${post.schoolName} · ${post.playerName}` : "고교야구 주간 브리핑"} <em>{post.externalUrl ? "원문 보기 ↗" : "3분 읽기 →"}</em></b></span>
         </Link>)}</div>
       </section>}
 
       {!pendingProfile && isAdmin && <section id="weekly-editor" className={homeStyles.weeklyEditor} aria-label="운영자 위클리 글쓰기">
         <div className={homeStyles.weeklyEditorIntro}><small>OPERATOR WORKSPACE</small><h2>위클리 글쓰기</h2><p>새 글을 작성하거나 아래 목록에서 기존 글을 수정할 수 있습니다.</p></div>
+        <WeeklyBlogAdmin />
         <WeeklyAdmin playerOptions={weeklyPlayerOptions} />
       </section>}
 

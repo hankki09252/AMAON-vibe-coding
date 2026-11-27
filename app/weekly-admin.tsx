@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import imageStyles from "./weekly-admin-images.module.css";
+import { blogUrlFromBody } from "./weekly/weekly-blog-link";
 
 export type WeeklyPlayerOption = { teamId: string; playerId: string; name: string; school: string; position: string };
 type WeeklyRow = {
@@ -32,7 +33,7 @@ export default function WeeklyAdmin({ playerOptions }: { playerOptions: WeeklyPl
     const posts = await postResponse.json().catch(() => ({}));
     const report = await statResponse.json().catch(() => ({}));
     if (!postResponse.ok) return setNotice(posts.error || "WEEKLY 목록을 불러오지 못했습니다.");
-    setItems(posts.items || []); setStats(report.stats || {});
+    setItems((posts.items || []).filter((row: WeeklyRow) => !blogUrlFromBody(row.body))); setStats(report.stats || {});
   }, []);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);

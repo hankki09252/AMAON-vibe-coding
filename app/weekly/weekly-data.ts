@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createSupabaseAdminClient } from "../supabase/admin";
+import { blogUrlFromBody } from "./weekly-blog-link";
 
 export type WeeklyPost = {
   id: string;
@@ -9,6 +10,7 @@ export type WeeklyPost = {
   summary: string;
   oneIssueTitle: string;
   body: string;
+  externalUrl: string | null;
   onMessage: string;
   coverStorageKey: string;
   teamId: string;
@@ -61,6 +63,7 @@ function mapPost(row: WeeklyRow): WeeklyPost {
     summary: row.summary,
     oneIssueTitle: row.one_issue_title,
     body: row.body,
+    externalUrl: blogUrlFromBody(row.body),
     onMessage: row.on_message,
     coverStorageKey: row.cover_storage_key || "",
     teamId: row.team_id || "",

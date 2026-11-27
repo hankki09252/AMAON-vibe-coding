@@ -39,9 +39,9 @@ export default async function WeeklyArchivePage() {
     </section>
     <section className={styles.archive} aria-labelledby="weekly-list-title">
       <div className={styles.sectionHead}><div><small>WEEKLY ARCHIVE</small><h2 id="weekly-list-title">지난 브리핑</h2></div><div className={writeStyles.sectionActions}><span>{String(posts.length).padStart(2, "0")} STORIES</span>{role && <Link href="/#weekly-editor">+ 새 글 작성</Link>}</div></div>
-      {posts.length ? <div className={styles.archiveGrid}>{posts.map((post, index) => <Link className={styles.archiveCard} href={`/weekly/${post.slug}`} key={post.id}>
+      {posts.length ? <div className={styles.archiveGrid}>{posts.map((post, index) => <Link className={styles.archiveCard} href={post.externalUrl || `/weekly/${post.slug}`} target={post.externalUrl ? "_blank" : undefined} rel={post.externalUrl ? "noopener noreferrer" : undefined} key={post.id}>
         <span className={styles.cover}><Image src={weeklyPreviewUrl(post)} alt={`${post.title} 대표 이미지`} fill sizes="(max-width: 760px) 100vw, 50vw" priority={index === 0} /></span>
-        <span className={styles.cardCopy}><small>AMAON WEEKLY #{String(post.issueNumber).padStart(2, "0")} · {dateLabel(post.publishedAt)}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.playerName ? `${post.schoolName} · ${post.playerName} 선수` : "고교야구 주간 브리핑"} <em>읽기 →</em></b></span>
+        <span className={styles.cardCopy}><small>{post.externalUrl ? "한끼방패 블로그" : `AMAON WEEKLY #${String(post.issueNumber).padStart(2, "0")}`} · {dateLabel(post.publishedAt)}</small><strong>{post.title}</strong><p>{post.summary}</p><b>{post.externalUrl ? "블로그에서 원문 읽기" : post.playerName ? `${post.schoolName} · ${post.playerName} 선수` : "고교야구 주간 브리핑"} <em>{post.externalUrl ? "원문 보기 ↗" : "읽기 →"}</em></b></span>
       </Link>)}</div> : <div className={styles.empty}>첫 번째 AMAON WEEKLY를 준비하고 있습니다.</div>}
     </section>
     <footer className={styles.footer}><strong>AMAON WEEKLY</strong><span>© 2026 HANKKI AMATEUR BASEBALL</span></footer>
